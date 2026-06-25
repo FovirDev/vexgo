@@ -27,6 +27,7 @@ type GeneralSettings struct {
 	AllowGuestViewPosts bool      `json:"allowGuestViewPosts" gorm:"default:true"` // Whether guests can view posts
 	SiteName            string    `json:"siteName" gorm:"size:100;default:VexGo"`  // Site name
 	SiteDescription     string    `json:"siteDescription" gorm:"type:text"`        // Site description
+	SiteIcon            string    `json:"siteIcon" gorm:"type:text"`               // Site icon URL
 	ItemsPerPage        int       `json:"itemsPerPage" gorm:"default:20"`          // Items per page
 	CreatedAt           time.Time `json:"created_at"`                              // Creation time
 	UpdatedAt           time.Time `json:"updated_at"`                              // Update time

@@ -374,8 +374,28 @@ func RegisterStaticRoutes(r *gin.Engine, dataDir string, s3Enabled bool) {
 		c.Data(http.StatusOK, "text/html; charset=utf-8", content)
 	})
 
-	// Favicon: allow overrides via ./data/favicon.ico (highest priority)
+	// Favicon: allow overrides via configured site icon (highest priority), then ./data/favicon.ico, then theme default
 	r.GET("/favicon.ico", func(c *gin.Context) {
+		// Check if a site icon URL is configured in GeneralSettings
+		if DBProvider != nil {
+			var settings model.GeneralSettings
+			if err := DBProvider().First(&settings).Error; err == nil && settings.SiteIcon != "" {
+				iconURL := settings.SiteIcon
+				// If it's a local path (starts with /), serve from the local filesystem
+				if strings.HasPrefix(iconURL, "/uploads/") {
+					localPath := filepath.Join(DataDir, "media", filepath.Base(iconURL))
+					if _, err := os.Stat(localPath); err == nil {
+						c.File(localPath)
+						return
+					}
+				} else {
+					// External URL or S3 URL - redirect
+					c.Redirect(http.StatusFound, iconURL)
+					return
+				}
+			}
+		}
+
 		localFavicon := filepath.Join(DataDir, FaviconFile)
 		if _, err := os.Stat(localFavicon); err == nil {
 			c.File(localFavicon)

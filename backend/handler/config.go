@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"archive/zip"
 	"bytes"
 	"encoding/json"
 	"fmt"
@@ -11,7 +12,6 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
-	"archive/zip"
 
 	"vexgo/backend/model"
 	"vexgo/backend/public"
@@ -273,14 +273,15 @@ func GetGeneralSettings(c *gin.Context) {
 	if err := db.First(&config).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			// Return default configuration
-			c.JSON(http.StatusOK, model.GeneralSettings{
-				CaptchaEnabled:      false,
-				RegistrationEnabled: true,
-				AllowGuestViewPosts: true,
-				SiteName:            "VexGo",
-				SiteDescription:     "",
-				ItemsPerPage:        20,
-			})
+		c.JSON(http.StatusOK, model.GeneralSettings{
+			CaptchaEnabled:      false,
+			RegistrationEnabled: true,
+			AllowGuestViewPosts: true,
+			SiteName:            "VexGo",
+			SiteDescription:     "",
+			SiteIcon:            "",
+			ItemsPerPage:        20,
+		})
 			return
 		}
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get general settings"})
@@ -298,6 +299,7 @@ func UpdateGeneralSettings(c *gin.Context) {
 		AllowGuestViewPosts bool   `json:"allowGuestViewPosts"`
 		SiteName            string `json:"siteName"`
 		SiteDescription     string `json:"siteDescription"`
+		SiteIcon            string `json:"siteIcon"`
 		ItemsPerPage        int    `json:"itemsPerPage"`
 	}
 
@@ -317,6 +319,7 @@ func UpdateGeneralSettings(c *gin.Context) {
 				AllowGuestViewPosts: req.AllowGuestViewPosts,
 				SiteName:            req.SiteName,
 				SiteDescription:     req.SiteDescription,
+				SiteIcon:            req.SiteIcon,
 				ItemsPerPage:        req.ItemsPerPage,
 			}
 			if err := db.Create(&config).Error; err != nil {
@@ -334,6 +337,7 @@ func UpdateGeneralSettings(c *gin.Context) {
 		config.AllowGuestViewPosts = req.AllowGuestViewPosts
 		config.SiteName = req.SiteName
 		config.SiteDescription = req.SiteDescription
+		config.SiteIcon = req.SiteIcon
 		config.ItemsPerPage = req.ItemsPerPage
 
 		if err := db.Save(&config).Error; err != nil {
@@ -750,13 +754,13 @@ func GetThemes(c *gin.Context) {
 // GetThemePreview returns the preview image for a theme
 func GetThemePreview(c *gin.Context) {
 	themeID := c.Param("id")
-	
+
 	// Check if theme exists
 	if !public.ThemeExists(themeID) {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Theme not found"})
 		return
 	}
-	
+
 	// Read theme metadata
 	metaPath := filepath.Join(public.DataDir, public.ThemesDir, themeID, public.ThemeMetaFile)
 	content, err := os.ReadFile(metaPath)
@@ -764,28 +768,28 @@ func GetThemePreview(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to read theme metadata"})
 		return
 	}
-	
+
 	var themeInfo public.ThemeInfo
 	if err := json.Unmarshal(content, &themeInfo); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid theme metadata"})
 		return
 	}
-	
+
 	// Check if preview is specified
 	if themeInfo.Preview == "" {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Preview not specified"})
 		return
 	}
-	
+
 	// Build preview image path
 	previewPath := filepath.Join(public.DataDir, public.ThemesDir, themeID, themeInfo.Preview)
-	
+
 	// Check if preview image exists
 	if _, err := os.Stat(previewPath); os.IsNotExist(err) {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Preview image not found"})
 		return
 	}
-	
+
 	// Serve the preview image
 	c.File(previewPath)
 }
@@ -957,19 +961,19 @@ func UploadTheme(c *gin.Context) {
 			if _, err := os.Stat(metaPath); err == nil {
 				// Found the theme directory
 				themeDir = entry.Name()
-				
+
 				// Read and parse the theme metadata
 				content, err := os.ReadFile(metaPath)
 				if err != nil {
 					c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to read theme metadata"})
 					return
 				}
-				
+
 				if err := json.Unmarshal(content, &themeInfo); err != nil {
 					c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid theme metadata"})
 					return
 				}
-				
+
 				break
 			}
 		}
@@ -985,12 +989,12 @@ func UploadTheme(c *gin.Context) {
 				c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to read theme metadata"})
 				return
 			}
-			
+
 			if err := json.Unmarshal(content, &themeInfo); err != nil {
 				c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid theme metadata"})
 				return
 			}
-			
+
 			// Use the theme ID from metadata or generate one
 			if themeInfo.ID == "" {
 				// Generate a theme ID from the filename
@@ -1019,7 +1023,7 @@ func UploadTheme(c *gin.Context) {
 
 	// Create the theme directory in data/theme
 	targetThemeDir := filepath.Join(public.DataDir, public.ThemesDir, themeDir)
-	
+
 	// Remove existing theme directory if it exists
 	if err := os.RemoveAll(targetThemeDir); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to remove existing theme directory"})
