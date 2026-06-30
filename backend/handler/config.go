@@ -273,15 +273,15 @@ func GetGeneralSettings(c *gin.Context) {
 	if err := db.First(&config).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			// Return default configuration
-		c.JSON(http.StatusOK, model.GeneralSettings{
-			CaptchaEnabled:      false,
-			RegistrationEnabled: true,
-			AllowGuestViewPosts: true,
-			SiteName:            "VexGo",
-			SiteDescription:     "",
-			SiteIcon:            "",
-			ItemsPerPage:        20,
-		})
+		    c.JSON(http.StatusOK, model.GeneralSettings{
+			    CaptchaEnabled:      false,
+			    RegistrationEnabled: true,
+			    AllowGuestViewPosts: true,
+			    SiteName:            "VexGo",
+			    SiteDescription:     "",
+			    SiteIcon:            "",
+			    ItemsPerPage:        20,
+		    })
 			return
 		}
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get general settings"})
