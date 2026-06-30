@@ -1,14 +1,14 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from '@/lib/I18nContext';
-import { configApi } from '@/lib/api';
+import { configApi, uploadApi } from '@/lib/api';
 import type { GeneralSettings } from '@/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Settings, Save } from 'lucide-react';
+import { ArrowLeft, Settings, Save, Upload, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 export function GeneralSettingsPage() {
@@ -23,10 +23,12 @@ export function GeneralSettingsPage() {
     allowGuestViewPosts: true,
     siteName: t('common.siteName') || 'VexGo',
     siteDescription: '',
+    siteIcon: '',
     itemsPerPage: 20,
     createdAt: '',
     updatedAt: ''
   });
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     loadConfig();
@@ -65,6 +67,35 @@ export function GeneralSettingsPage() {
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleIconUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      toast.error(t('generalSettings.iconInvalidType'));
+      return;
+    }
+
+    try {
+      const response = await uploadApi.uploadFile(file);
+      if (response.data.file?.url) {
+        setConfig({ ...config, siteIcon: response.data.file.url });
+      }
+      toast.success(t('generalSettings.iconUploadSuccess'));
+    } catch (error) {
+      console.error('上传图标失败:', error);
+      toast.error(t('generalSettings.iconUploadFailed'));
+    }
+
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const handleRemoveIcon = () => {
+    setConfig({ ...config, siteIcon: '' });
   };
 
   if (loading) {
@@ -135,6 +166,54 @@ export function GeneralSettingsPage() {
               onChange={(e) => setConfig({ ...config, siteDescription: e.target.value })}
               placeholder={t('generalSettings.siteDescriptionPlaceholder')}
             />
+          </div>
+
+          {/* 网站图标 */}
+          <div className="space-y-2">
+            <Label>{t('generalSettings.siteIcon')}</Label>
+            <div className="flex items-center gap-4">
+              {config.siteIcon ? (
+                <div className="relative w-16 h-16 rounded-lg border overflow-hidden">
+                  <img
+                    src={config.siteIcon}
+                    alt="Site Icon"
+                    className="w-full h-full object-cover"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleRemoveIcon}
+                    className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full p-0.5"
+                  >
+                    <Trash2 className="w-3 h-3" />
+                  </button>
+                </div>
+              ) : (
+                <div className="w-16 h-16 rounded-lg border border-dashed flex items-center justify-center bg-muted/30">
+                  <Settings className="w-6 h-6 text-muted-foreground" />
+                </div>
+              )}
+              <div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  <Upload className="w-4 h-4 mr-2" />
+                  {t('generalSettings.iconUpload')}
+                </Button>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {t('generalSettings.iconDesc')}
+                </p>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/png,image/jpeg,image/svg+xml,image/x-icon,image/vnd.microsoft.icon"
+                  className="hidden"
+                  onChange={handleIconUpload}
+                />
+              </div>
+            </div>
           </div>
 
           {/* 每页显示数量 */}

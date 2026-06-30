@@ -39,6 +39,7 @@ export interface GeneralSettings {
   allowGuestViewPosts: boolean; // 是否允许访客浏览文章
   siteName: string;             // 网站名称
   siteDescription: string;      // 网站描述
+  siteIcon: string;             // 网站图标URL
   itemsPerPage: number;         // 每页显示数量
   createdAt: string;
   updatedAt: string;

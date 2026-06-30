@@ -39,6 +39,7 @@ export function Layout({ children }: LayoutProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [siteName, setSiteName] = useState("VexGo");
+  const [siteIcon, setSiteIcon] = useState("");
   const [allowGuestView, setAllowGuestView] = useState(true);
   const [loading, setLoading] = useState(true);
 
@@ -48,10 +49,19 @@ export function Layout({ children }: LayoutProps) {
         const response = await configApi.getGeneralSettings();
         if (response.data.siteName) {
           setSiteName(response.data.siteName);
-          // 更新网页标题
           document.title = response.data.siteName;
         }
-        // 加载允许访客浏览的设置
+        if (response.data.siteIcon) {
+          setSiteIcon(response.data.siteIcon);
+          // Update favicon link
+          let link = document.querySelector<HTMLLinkElement>("link[rel~='icon']");
+          if (!link) {
+            link = document.createElement("link");
+            link.rel = "icon";
+            document.head.appendChild(link);
+          }
+          link.href = response.data.siteIcon;
+        }
         setAllowGuestView(response.data.allowGuestViewPosts !== false);
       } catch (error) {
         console.error(t("common.error"), error);
@@ -170,16 +180,26 @@ export function Layout({ children }: LayoutProps) {
           <div className="flex h-16 items-center justify-between gap-4">
             {/* Logo */}
             <Link to="/" className="flex items-center gap-2 shrink-0">
-              <img
-                src="/assets/vexgo-light.ico"
-                alt="Logo"
-                className="w-8 h-8 dark:hidden"
-              />
-              <img
-                src="/assets/vexgo-dark.ico"
-                alt="Logo"
-                className="w-8 h-8 hidden dark:block"
-              />
+              {siteIcon ? (
+                <img
+                  src={siteIcon}
+                  alt="Logo"
+                  className="w-8 h-8"
+                />
+              ) : (
+                <>
+                  <img
+                    src="/assets/vexgo-light.ico"
+                    alt="Logo"
+                    className="w-8 h-8 dark:hidden"
+                  />
+                  <img
+                    src="/assets/vexgo-dark.ico"
+                    alt="Logo"
+                    className="w-8 h-8 hidden dark:block"
+                  />
+                </>
+              )}
               <span className="text-xl font-bold hidden sm:inline">
                 {siteName}
               </span>
@@ -364,16 +384,26 @@ export function Layout({ children }: LayoutProps) {
         <div className="container mx-auto px-4 py-8">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
             <div className="flex items-center gap-2">
-              <img
-                src="/assets/vexgo-light.ico"
-                alt="Logo"
-                className="w-6 h-6 dark:hidden"
-              />
-              <img
-                src="/assets/vexgo-dark.ico"
-                alt="Logo"
-                className="w-6 h-6 hidden dark:block"
-              />
+              {siteIcon ? (
+                <img
+                  src={siteIcon}
+                  alt="Logo"
+                  className="w-6 h-6"
+                />
+              ) : (
+                <>
+                  <img
+                    src="/assets/vexgo-light.ico"
+                    alt="Logo"
+                    className="w-6 h-6 dark:hidden"
+                  />
+                  <img
+                    src="/assets/vexgo-dark.ico"
+                    alt="Logo"
+                    className="w-6 h-6 hidden dark:block"
+                  />
+                </>
+              )}
               <span className="font-semibold">{siteName}</span>
             </div>
             <p className="text-sm text-muted-foreground">
