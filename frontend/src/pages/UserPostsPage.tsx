@@ -30,7 +30,7 @@ export function UserPostsPage() {
       });
       setPosts(response.data.posts);
       setTotalPages(response.data.pagination.totalPages);
-      // 从第一篇文章中获取用户信息
+      // Get the user info from the first post
       if (response.data.posts.length > 0 && response.data.posts[0].author) {
         setUser(response.data.posts[0].author);
       }
@@ -67,7 +67,7 @@ export function UserPostsPage() {
         </Button>
 
         <div className="flex flex-col md:flex-row gap-6">
-          {/* 用户信息 */}
+          {/* User info */}
           <div className="w-full md:w-64">
             <Card>
               <CardContent className="p-6">
@@ -81,7 +81,7 @@ export function UserPostsPage() {
             </Card>
           </div>
 
-          {/* 文章列表 */}
+          {/* Post list */}
           <div className="flex-1">
             {[1, 2, 3].map((i) => (
               <Card key={i} className="mb-4">
@@ -103,7 +103,7 @@ export function UserPostsPage() {
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-6xl">
-      {/* 返回按钮 */}
+      {/* Back button */}
       <Button variant="ghost" size="sm" asChild className="mb-6">
         <Link to="/" className="flex items-center gap-2">
           <ArrowLeft className="w-4 h-4" />
@@ -112,7 +112,7 @@ export function UserPostsPage() {
       </Button>
 
       <div className="flex flex-col md:flex-row gap-6">
-        {/* 用户信息 */}
+        {/* User info */}
         <div className="w-full md:w-64">
           <Card className="sticky top-8">
             <CardContent className="p-6">
@@ -140,7 +140,7 @@ export function UserPostsPage() {
                   </p>
                 )}
 
-                {/* 生日和个性签名 */}
+                {/* Birthday and bio */}
                 <div className="flex flex-col gap-1 mb-4 text-sm text-muted-foreground">
                   {user?.birthday &&
                     !JSON.parse(localStorage.getItem("userSettings") || "{}")
@@ -178,7 +178,7 @@ export function UserPostsPage() {
           </Card>
         </div>
 
-        {/* 文章列表 */}
+        {/* Post list */}
         <div className="flex-1">
           <h1 className="text-2xl font-bold mb-6">
             {t("userPostsPage.userPosts", {
@@ -260,7 +260,7 @@ export function UserPostsPage() {
             </div>
           )}
 
-          {/* 分页 */}
+          {/* Pagination */}
           {totalPages > 1 && (
             <div className="flex items-center justify-between mt-6">
               <div className="text-sm text-muted-foreground">

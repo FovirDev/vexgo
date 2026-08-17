@@ -85,7 +85,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  // SSO 登录：直接接受后端签发的 JWT，拉取用户信息后更新 context
+  // SSO login: accept the JWT issued by the backend, fetch the user, and update the context
   const loginWithToken = async (token: string) => {
     localStorage.setItem("token", token);
     const response = await authApi.getMe();

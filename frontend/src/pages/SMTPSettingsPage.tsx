@@ -139,7 +139,7 @@ export function SMTPSettingsPage() {
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">
-      {/* 头部 */}
+      {/* Header */}
       <div className="mb-6">
         <Button
           variant="ghost"
@@ -167,7 +167,7 @@ export function SMTPSettingsPage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          {/* 启用开关 */}
+          {/* Enable switch */}
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
               <Label htmlFor="enabled">{t("smtpSettings.enableSMTP")}</Label>
@@ -184,7 +184,7 @@ export function SMTPSettingsPage() {
             />
           </div>
 
-          {/* SMTP 服务器地址 */}
+          {/* SMTP server address */}
           <div className="space-y-2">
             <Label htmlFor="host">{t("smtpSettings.smtpHost")}</Label>
             <Input
@@ -196,7 +196,7 @@ export function SMTPSettingsPage() {
             />
           </div>
 
-          {/* 端口 */}
+          {/* Port */}
           <div className="space-y-2">
             <Label htmlFor="port">{t("smtpSettings.smtpPort")}</Label>
             <Input
@@ -214,7 +214,7 @@ export function SMTPSettingsPage() {
             </p>
           </div>
 
-          {/* 邮箱账号 */}
+          {/* Email account */}
           <div className="space-y-2">
             <Label htmlFor="username">{t("smtpSettings.emailAccount")}</Label>
             <Input
@@ -228,7 +228,7 @@ export function SMTPSettingsPage() {
             />
           </div>
 
-          {/* 邮箱密码/授权码 */}
+          {/* Email password / auth code */}
           <div className="space-y-2">
             <Label htmlFor="password">
               {t("smtpSettings.emailPassword")}{" "}
@@ -253,7 +253,7 @@ export function SMTPSettingsPage() {
             </p>
           </div>
 
-          {/* 发件人邮箱 */}
+          {/* Sender email */}
           <div className="space-y-2">
             <Label htmlFor="fromEmail">{t("smtpSettings.fromEmail")}</Label>
             <Input
@@ -268,7 +268,7 @@ export function SMTPSettingsPage() {
             />
           </div>
 
-          {/* 发件人名称 */}
+          {/* Sender name */}
           <div className="space-y-2">
             <Label htmlFor="fromName">{t("smtpSettings.fromName")}</Label>
             <Input
@@ -282,7 +282,7 @@ export function SMTPSettingsPage() {
             />
           </div>
 
-          {/* 测试邮箱 */}
+          {/* Test email */}
           <div className="space-y-2">
             <Label htmlFor="testEmail">{t("smtpSettings.testEmail")}</Label>
             <Input
@@ -300,7 +300,7 @@ export function SMTPSettingsPage() {
             </p>
           </div>
 
-          {/* 操作按钮 */}
+          {/* Action buttons */}
           <div className="flex gap-3 pt-4 border-t">
             <Button onClick={handleSave} disabled={saving} className="flex-1">
               <Save className="w-4 h-4 mr-2" />
@@ -321,7 +321,7 @@ export function SMTPSettingsPage() {
         </CardContent>
       </Card>
 
-      {/* 帮助信息 */}
+      {/* Help info */}
       <Card className="mt-6">
         <CardHeader>
           <CardTitle className="text-base">

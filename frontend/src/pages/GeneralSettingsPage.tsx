@@ -128,7 +128,7 @@ export function GeneralSettingsPage() {
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">
-      {/* 头部 */}
+      {/* Header */}
       <div className="mb-6">
         <Button
           variant="ghost"
@@ -156,7 +156,7 @@ export function GeneralSettingsPage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          {/* 网站名称 */}
+          {/* Site name */}
           <div className="space-y-2">
             <Label htmlFor="siteName">{t("generalSettings.siteName")}</Label>
             <Input
@@ -169,7 +169,7 @@ export function GeneralSettingsPage() {
             />
           </div>
 
-          {/* 网站描述 */}
+          {/* Site description */}
           <div className="space-y-2">
             <Label htmlFor="siteDescription">
               {t("generalSettings.siteDescription")}
@@ -184,7 +184,7 @@ export function GeneralSettingsPage() {
             />
           </div>
 
-          {/* 网站图标 */}
+          {/* Site icon */}
           <div className="space-y-2">
             <Label>{t("generalSettings.siteIcon")}</Label>
             <div className="flex items-center gap-4">
@@ -232,7 +232,7 @@ export function GeneralSettingsPage() {
             </div>
           </div>
 
-          {/* 每页显示数量 */}
+          {/* Items per page */}
           <div className="space-y-2">
             <Label htmlFor="itemsPerPage">
               {t("generalSettings.itemsPerPage")}
@@ -256,7 +256,7 @@ export function GeneralSettingsPage() {
             </p>
           </div>
 
-          {/* 启用滑块验证 */}
+          {/* Enable slider captcha */}
           <div className="flex items-center justify-between rounded-lg border p-4">
             <div className="space-y-0.5">
               <Label htmlFor="captchaEnabled">
@@ -275,7 +275,7 @@ export function GeneralSettingsPage() {
             />
           </div>
 
-          {/* 允许注册 */}
+          {/* Allow registration */}
           <div className="flex items-center justify-between rounded-lg border p-4">
             <div className="space-y-0.5">
               <Label htmlFor="registrationEnabled">
@@ -294,7 +294,7 @@ export function GeneralSettingsPage() {
             />
           </div>
 
-          {/* 允许访客浏览文章 */}
+          {/* Allow guests to view posts */}
           <div className="flex items-center justify-between rounded-lg border p-4">
             <div className="space-y-0.5">
               <Label htmlFor="allowGuestViewPosts">
@@ -315,7 +315,7 @@ export function GeneralSettingsPage() {
         </CardContent>
       </Card>
 
-      {/* 保存按钮 */}
+      {/* Save button */}
       <div className="mt-6 flex justify-end">
         <Button onClick={handleSave} disabled={saving} size="lg">
           {saving ? (

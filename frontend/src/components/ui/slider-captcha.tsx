@@ -37,13 +37,13 @@ export function SliderCaptcha({
   const isDraggingRef = useRef(false);
   const sliderPositionRef = useRef(0);
 
-  // 同步 ref 和 state
+  // Keep refs in sync with state
   useEffect(() => {
     isDraggingRef.current = isDragging;
     sliderPositionRef.current = sliderPosition;
   }, [isDragging, sliderPosition]);
 
-  // 生成验证码
+  // Generate a captcha
   const generateCaptcha = useCallback(async () => {
     try {
       setIsVerifying(true);
@@ -65,14 +65,14 @@ export function SliderCaptcha({
     }
   }, []);
 
-  // 当弹窗打开时生成验证码
+  // Generate a captcha when the dialog opens
   useEffect(() => {
     if (isOpen) {
       generateCaptcha();
     }
   }, [isOpen, generateCaptcha]);
 
-  // 验证拼图
+  // Verify the puzzle
   const verifyCaptcha = useCallback(
     async (x: number) => {
       if (!captchaData) return;
@@ -81,14 +81,14 @@ export function SliderCaptcha({
         setIsVerifying(true);
         setError("");
 
-        // 计算拼图块左边缘的x坐标
-        // 滑块宽度40px，拼图块宽度60px
-        // 滑块中心 = x + 20，拼图块中心应该与滑块中心对齐
-        // 拼图块左边缘 = 滑块中心 - 30 = x + 20 - 30 = x - 10
+        // Calculate the x-coordinate of the puzzle piece's left edge
+        // Slider width is 40px, puzzle piece width is 60px
+        // Slider center = x + 20; the puzzle piece center should align with the slider center
+        // Puzzle left edge = slider center - 30 = x + 20 - 30 = x - 10
         const puzzleX = Math.round(x - 10);
         console.log("滑块位置:", x, "拼图块左边缘:", puzzleX);
 
-        // 调用后端验证接口
+        // Call the backend verify endpoint
         const response = await fetch("/api/captcha/verify", {
           method: "POST",
           headers: {
@@ -109,24 +109,24 @@ export function SliderCaptcha({
         const data = await response.json();
 
         if (data.success) {
-          // 验证成功
+          // Verification succeeded
           setIsVerified(true);
           onSuccess({
             id: captchaData.id,
             token: captchaData.token,
             x: puzzleX,
           });
-          // 验证成功后关闭弹窗
+          // Close the dialog after a successful verification
           setTimeout(() => {
             onClose();
           }, 500);
         } else {
-          // 验证失败
+          // Verification failed
           throw new Error(data.message || "验证失败，请重试");
         }
       } catch (err) {
         setError(err instanceof Error ? err.message : "验证失败，请重试");
-        // 验证失败后刷新验证码
+        // Refresh the captcha after a failed verification
         setTimeout(() => {
           generateCaptcha();
         }, 1000);
@@ -137,7 +137,7 @@ export function SliderCaptcha({
     [captchaData, onSuccess, onClose, generateCaptcha],
   );
 
-  // 处理滑块拖动
+  // Handle slider dragging
   const handleMouseDown = (e: React.MouseEvent) => {
     if (isVerified) return;
     setIsDragging(true);
@@ -145,7 +145,7 @@ export function SliderCaptcha({
     currentXRef.current = sliderPosition;
   };
 
-  // 添加全局鼠标事件监听
+  // Attach global mouse event listeners
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       if (!isDraggingRef.current || !trackRef.current) return;
@@ -167,7 +167,7 @@ export function SliderCaptcha({
       if (!isDraggingRef.current) return;
       setIsDragging(false);
 
-      // 验证拼图位置
+      // Verify the puzzle position
       if (sliderPositionRef.current > 0) {
         verifyCaptcha(sliderPositionRef.current);
       }
@@ -184,7 +184,7 @@ export function SliderCaptcha({
     }
   }, [isDragging, verifyCaptcha]);
 
-  // 处理触摸事件
+  // Handle touch events
   const handleTouchStart = (e: React.TouchEvent) => {
     if (isVerified) return;
     setIsDragging(true);
@@ -192,7 +192,7 @@ export function SliderCaptcha({
     currentXRef.current = sliderPosition;
   };
 
-  // 添加全局触摸事件监听
+  // Attach global touch event listeners
   useEffect(() => {
     const handleTouchMove = (e: TouchEvent) => {
       if (!isDraggingRef.current || !trackRef.current) return;
@@ -216,7 +216,7 @@ export function SliderCaptcha({
       if (!isDraggingRef.current) return;
       setIsDragging(false);
 
-      // 验证拼图位置
+      // Verify the puzzle position
       if (sliderPositionRef.current > 0) {
         verifyCaptcha(sliderPositionRef.current);
       }
@@ -235,7 +235,7 @@ export function SliderCaptcha({
     }
   }, [isDragging, verifyCaptcha]);
 
-  // 如果弹窗未打开，不渲染任何内容
+  // Do not render anything if the dialog is closed
   if (!isOpen) return null;
 
   return (
@@ -280,12 +280,12 @@ export function SliderCaptcha({
 
         {captchaData && (
           <div className="space-y-4">
-            {/* 拼图区域 */}
+            {/* Puzzle area */}
             <div
               className="relative bg-gray-100 rounded overflow-hidden flex justify-center items-center"
               style={{ height: "160px" }}
             >
-              {/* 背景图片 */}
+              {/* Background image */}
               <div
                 className="relative"
                 style={{ width: "320px", height: "160px" }}
@@ -296,14 +296,14 @@ export function SliderCaptcha({
                   className="w-full h-full"
                 />
 
-                {/* 拼图块 - 与滑块中心对齐 */}
+                {/* Puzzle piece - aligned with the slider center */}
                 <div
                   className="absolute pointer-events-none"
                   style={{
-                    // 滑块宽度40px，拼图块宽度60px
-                    // 滑块中心 = sliderPosition + 20
-                    // 拼图块中心应该与滑块中心对齐
-                    // 拼图块左边缘 = 滑块中心 - 30 = sliderPosition - 10
+                    // Slider width is 40px, puzzle piece width is 60px
+                    // Slider center = sliderPosition + 20
+                    // The puzzle piece center should align with the slider center
+                    // Puzzle left edge = slider center - 30 = sliderPosition - 10
                     left: `${sliderPosition - 10}px`,
                     top: `${captchaData.y}px`,
                   }}
@@ -317,18 +317,18 @@ export function SliderCaptcha({
               </div>
             </div>
 
-            {/* 滑块轨道 */}
+            {/* Slider track */}
             <div
               ref={trackRef}
               className="relative h-10 bg-gray-200 rounded-full overflow-hidden"
             >
-              {/* 进度条 - 跟随滑块中心位置 */}
+              {/* Progress bar - follows the slider center */}
               <div
                 className="absolute top-0 left-0 h-full bg-blue-500 transition-all duration-75"
                 style={{ width: `${sliderPosition + 20}px` }}
               />
 
-              {/* 滑块 */}
+              {/* Slider */}
               <div
                 ref={sliderRef}
                 className={`absolute top-1/2 w-10 h-10 bg-white rounded-full shadow-lg flex items-center justify-center cursor-pointer transform -translate-y-1/2 transition-all duration-75 ${
@@ -366,7 +366,7 @@ export function SliderCaptcha({
               </div>
             </div>
 
-            {/* 提示文字 */}
+            {/* Hint text */}
             <div className="text-center text-sm text-gray-600">
               {isVerified ? (
                 <span className="text-green-600 font-medium">
@@ -377,7 +377,7 @@ export function SliderCaptcha({
               )}
             </div>
 
-            {/* 刷新按钮 */}
+            {/* Refresh button */}
             <div className="flex justify-center">
               <Button
                 variant="ghost"

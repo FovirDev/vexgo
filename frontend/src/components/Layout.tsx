@@ -73,10 +73,10 @@ export function Layout({ children }: LayoutProps) {
     loadSettings();
   }, [t]);
 
-  // 检查是否需要重定向到登录页面
+  // Check whether we need to redirect to the login page
   useEffect(() => {
     if (!loading && !isAuthenticated && !allowGuestView) {
-      // 只在非登录页面且需要登录时重定向
+      // Only redirect on non-login pages when login is required
       if (location.pathname !== "/login" && location.pathname !== "/register") {
         navigate("/login");
       }
@@ -99,10 +99,10 @@ export function Layout({ children }: LayoutProps) {
     navigate("/");
   };
 
-  // 消息数量
+  // Unread message count
   const [unreadCount, setUnreadCount] = useState(0);
 
-  // 获取未读消息数量的函数
+  // Fetch the unread message count
   const fetchUnreadCount = async () => {
     try {
       const response = await messagesApi.getUnreadCount();
@@ -113,19 +113,19 @@ export function Layout({ children }: LayoutProps) {
   };
 
   useEffect(() => {
-    // 只有登录后才获取未读消息数量
+    // Only fetch the unread count when logged in
     if (isAuthenticated) {
       fetchUnreadCount();
     }
   }, [isAuthenticated]);
 
-  // 定期检查未读消息数量（每30秒）
+  // Periodically refresh the unread count (every 30s)
   useEffect(() => {
     let interval: NodeJS.Timeout;
     if (isAuthenticated) {
       interval = setInterval(() => {
         fetchUnreadCount();
-      }, 30000); // 30秒检查一次
+      }, 30000); // check every 30 seconds
     }
     return () => {
       if (interval) {
@@ -134,10 +134,10 @@ export function Layout({ children }: LayoutProps) {
     };
   }, [isAuthenticated]);
 
-  // 监听路由变化，当进入或离开消息页面时更新未读数量
+  // Refresh the unread count on route changes, e.g. when entering or leaving the messages page
   useEffect(() => {
     if (isAuthenticated) {
-      // 当路由变化时检查未读消息数量
+      // Check the unread count whenever the route changes
       fetchUnreadCount();
     }
   }, [isAuthenticated, location.pathname]);
@@ -162,7 +162,7 @@ export function Layout({ children }: LayoutProps) {
     if (path === "/") {
       return location.pathname === "/";
     }
-    // 对于管理后台的特定路由，需要精确匹配
+    // Admin routes need exact matching
     if (path === "/admin") {
       return location.pathname === "/admin";
     }
@@ -170,12 +170,12 @@ export function Layout({ children }: LayoutProps) {
   };
 
   if (loading) {
-    return null; // 或者返回一个加载状态
+    return null; // or render a loading state
   }
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
-      {/* 导航栏 */}
+      {/* Navbar */}
       <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container mx-auto px-4">
           <div className="flex h-16 items-center justify-between gap-4">
@@ -202,7 +202,7 @@ export function Layout({ children }: LayoutProps) {
               </span>
             </Link>
 
-            {/* 搜索框 - 桌面端 */}
+            {/* Search box - desktop */}
             <form
               onSubmit={handleSearch}
               className="hidden md:flex flex-1 max-w-md"
@@ -219,7 +219,7 @@ export function Layout({ children }: LayoutProps) {
               </div>
             </form>
 
-            {/* 导航链接 - 桌面端 */}
+            {/* Nav links - desktop */}
             <nav className="hidden md:flex items-center gap-1">
               {navItems.map((item) => (
                 <Button
@@ -242,7 +242,7 @@ export function Layout({ children }: LayoutProps) {
               ))}
             </nav>
 
-            {/* 用户菜单 */}
+            {/* User menu */}
             <div className="flex items-center gap-2">
               {isAuthenticated ? (
                 <DropdownMenu>
@@ -318,7 +318,7 @@ export function Layout({ children }: LayoutProps) {
                 </div>
               )}
 
-              {/* 移动端菜单按钮 */}
+              {/* Mobile menu button */}
               <Button
                 variant="ghost"
                 size="icon"
@@ -334,10 +334,10 @@ export function Layout({ children }: LayoutProps) {
             </div>
           </div>
 
-          {/* 移动端菜单 */}
+          {/* Mobile menu */}
           {mobileMenuOpen && (
             <div className="md:hidden border-t py-4 space-y-4">
-              {/* 搜索框 */}
+              {/* Search box */}
               <form onSubmit={handleSearch}>
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -351,7 +351,7 @@ export function Layout({ children }: LayoutProps) {
                 </div>
               </form>
 
-              {/* 导航链接 */}
+              {/* Nav links */}
               <nav className="flex flex-col gap-2">
                 {navItems.map((item) => (
                   <Button
@@ -373,10 +373,10 @@ export function Layout({ children }: LayoutProps) {
         </div>
       </header>
 
-      {/* 主内容 */}
+      {/* Main content */}
       <main className="flex-1">{children}</main>
 
-      {/* 页脚 */}
+      {/* Footer */}
       <footer className="border-t bg-muted/50">
         <div className="container mx-auto px-4 py-8">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">

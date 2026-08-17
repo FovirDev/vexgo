@@ -48,7 +48,7 @@ export function ModerationPage() {
     async (search?: string) => {
       setLoading(true);
       try {
-        // 确保只更新当前标签页的数据，避免其他标签页数据被清空
+        // Only update the active tab's data so other tabs aren't cleared
         if (activeTab === "pending") {
           const response = await getPendingPosts({
             limit: 100,
@@ -83,7 +83,7 @@ export function ModerationPage() {
       } catch (error) {
         console.error("加载数据失败:", error);
         toast.error(t("moderation.loadFailed"));
-        // 出错时保持当前数据不变，避免白屏
+        // Keep the current data unchanged on error to avoid a blank screen
       } finally {
         setLoading(false);
       }
@@ -96,7 +96,7 @@ export function ModerationPage() {
   }, [activeTab, loadData]);
 
   const handleSearch = async () => {
-    // 直接调用loadData函数，传递搜索参数
+    // Call loadData directly with the search term
     await loadData(searchTerm);
   };
 
@@ -106,7 +106,7 @@ export function ModerationPage() {
     }
   };
 
-  // 当切换标签页时，清空搜索
+  // Clear the search when switching tabs
   const handleTabChange = (tab: string) => {
     setActiveTab(tab);
     setSearchTerm("");
@@ -487,7 +487,7 @@ export function ModerationPage() {
         </TabsContent>
       </Tabs>
 
-      {/* 拒绝原因对话框 */}
+      {/* Reject reason dialog */}
       {showRejectDialog && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 w-full max-w-md">

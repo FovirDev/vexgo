@@ -104,7 +104,7 @@ export function AdminPage() {
   const handleDeletePost = async (postId: string) => {
     try {
       await postsApi.deletePost(postId);
-      // 保持在文章管理页，刷新数据
+      // Stay on the post management page and refresh the data
       setActiveTab("posts");
       loadData();
     } catch (error) {

@@ -39,7 +39,7 @@ export function UserManagementPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
 
-  // 角色显示映射
+  // Role display mapping
   const roleDisplayMap: Record<
     string,
     {
@@ -54,7 +54,7 @@ export function UserManagementPage() {
     guest: { label: t("roles.guest"), variant: "outline" },
   };
 
-  // 可分配的角色选项（根据当前用户角色确定）
+  // Assignable role options (based on the current user's role)
   const getAssignableRoles = () => {
     if (currentUser?.role === "super_admin") {
       return [
@@ -97,7 +97,7 @@ export function UserManagementPage() {
 
   const handleSearch = () => {
     setSearchQuery(searchTerm);
-    setCurrentPage(1); // 搜索时重置到第一页
+    setCurrentPage(1); // reset to the first page on search
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -111,7 +111,7 @@ export function UserManagementPage() {
       const response = await updateUserRole(userId, newRole);
       toast.success(response.data.message);
 
-      // 更新本地用户列表
+      // Update the local user list
       setUsers((prevUsers) =>
         prevUsers.map((user) =>
           user.id === userId
@@ -138,7 +138,7 @@ export function UserManagementPage() {
       const response = await deleteUser(userId);
       toast.success(response.data.message);
 
-      // 从本地用户列表中移除删除的用户
+      // Remove the deleted user from the local list
       setUsers((prevUsers) => prevUsers.filter((user) => user.id !== userId));
     } catch (error) {
       console.error("删除用户失败:", error);
@@ -146,12 +146,12 @@ export function UserManagementPage() {
     }
   };
 
-  // 检查是否可以删除用户
+  // Check whether the user can be deleted
   const canDeleteUser = (user: User) => {
-    if (currentUser?.id === user.id) return false; // 不能删除自己
-    if (currentUser?.role === "super_admin") return true; // 超级管理员可以删除任何用户
+    if (currentUser?.id === user.id) return false; // cannot delete yourself
+    if (currentUser?.role === "super_admin") return true; // super admins can delete any user
     if (currentUser?.role === "admin") {
-      // 管理员只能删除作者、贡献者和访客
+      // Admins can only delete authors, contributors, and guests
       return ["author", "contributor", "guest"].includes(user.role);
     }
     return false;
@@ -341,7 +341,7 @@ export function UserManagementPage() {
             ))}
           </div>
 
-          {/* 分页 */}
+          {/* Pagination */}
           {totalPages > 1 && (
             <div className="flex items-center justify-between mt-6">
               <div className="text-sm text-muted-foreground">

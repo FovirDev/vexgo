@@ -30,7 +30,7 @@ export function ResetPasswordPage() {
   const [success, setSuccess] = useState(false);
   const [step, setStep] = useState<"request" | "reset">("request");
 
-  // 如果 URL 中有 token，直接进入重置密码步骤
+  // If the URL contains a token, go straight to the reset password step
   useEffect(() => {
     if (token) {
       setStep("reset");
@@ -87,7 +87,7 @@ export function ResetPasswordPage() {
       await authApi.resetPassword({ token, password });
       setSuccess(true);
       setError("");
-      // 3秒后跳转到登录页
+      // Navigate to the login page after 3 seconds
       setTimeout(() => {
         navigate("/login");
       }, 3000);

@@ -7,7 +7,7 @@ type Props = {
   onCrop: (file: File) => void;
   outputWidth?: number;
   outputHeight?: number;
-  circle?: boolean; // 是否使用圆形裁剪
+  circle?: boolean; // whether to use a circular crop
 };
 
 export const ImageCropper: React.FC<Props> = ({
@@ -106,7 +106,7 @@ export const ImageCropper: React.FC<Props> = ({
       image.onerror = rej;
     });
 
-    // 圆形模式：创建圆形裁剪路径
+    // Circle mode: create a circular crop path
     if (circle) {
       const centerX = outputWidth / 2;
       const centerY = outputHeight / 2;

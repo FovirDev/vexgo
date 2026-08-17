@@ -1,4 +1,4 @@
-// 用户类型
+// User types
 export interface User {
   id: string;
   username: string;
@@ -9,43 +9,43 @@ export interface User {
   createdAt?: string;
   birthday?: string;
   bio?: string;
-  // 隐私设置
+  // Privacy settings
   profile_visibility?: "public" | "private";
   hide_email?: boolean;
   hide_birthday?: boolean;
   hide_bio?: boolean;
 }
 
-// SMTP 配置类型
+// SMTP config types
 export interface SMTPConfig {
   id: string;
   enabled: boolean;
   host: string;
   port: number;
   username: string;
-  password: string; // 仅用于设置，获取时不返回
+  password: string; // only used for setting, never returned on fetch
   fromEmail: string;
   fromName: string;
-  testEmail: string; // 测试邮件收件人邮箱
+  testEmail: string; // recipient email for test messages
   createdAt: string;
   updatedAt: string;
 }
 
-// 通用设置类型
+// General settings types
 export interface GeneralSettings {
   id: string;
-  captchaEnabled: boolean; // 是否启用滑块验证
-  registrationEnabled: boolean; // 是否允许注册
-  allowGuestViewPosts: boolean; // 是否允许访客浏览文章
-  siteName: string; // 网站名称
-  siteDescription: string; // 网站描述
-  siteIcon: string; // 网站图标URL
-  itemsPerPage: number; // 每页显示数量
+  captchaEnabled: boolean; // whether the slider captcha is enabled
+  registrationEnabled: boolean; // whether registration is allowed
+  allowGuestViewPosts: boolean; // whether guests can view posts
+  siteName: string; // site name
+  siteDescription: string; // site description
+  siteIcon: string; // site icon URL
+  itemsPerPage: number; // number of items per page
   createdAt: string;
   updatedAt: string;
 }
 
-// 文章类型
+// Post types
 export interface Post {
   id: string;
   title: string;
@@ -67,7 +67,7 @@ export interface Post {
   commentsCount?: number;
 }
 
-// 分类类型
+// Category types
 export interface Category {
   id: string;
   name: string;
@@ -75,14 +75,14 @@ export interface Category {
   createdAt?: string;
 }
 
-// 标签类型
+// Tag types
 export interface Tag {
   id: string;
   name: string;
   createdAt?: string;
 }
 
-// 评论类型
+// Comment types
 export interface Comment {
   id: string;
   postId: string;
@@ -94,7 +94,7 @@ export interface Comment {
   updatedAt: string;
 }
 
-// 评论审核配置类型
+// Comment moderation config types
 export interface CommentModerationConfig {
   id: string;
   enabled: boolean;
@@ -110,7 +110,7 @@ export interface CommentModerationConfig {
   updatedAt: string;
 }
 
-// AI 模型信息类型
+// AI model info types
 export interface AIModel {
   id: string;
   object: string;
@@ -118,19 +118,19 @@ export interface AIModel {
   owned_by: string;
 }
 
-// AI 配置类型
+// AI config types
 export interface AIConfig {
   id: string;
   enabled: boolean;
-  provider: string; // 提供商 (openai, azure, etc.)
-  apiEndpoint: string; // API端点URL
-  apiKey: string; // API密钥（仅用于设置，获取时不返回）
-  modelName: string; // 模型名称
+  provider: string; // provider (openai, azure, etc.)
+  apiEndpoint: string; // API endpoint URL
+  apiKey: string; // API key (only used for setting, never returned on fetch)
+  modelName: string; // model name
   createdAt: string;
   updatedAt: string;
 }
 
-// 媒体文件类型
+// Media file types
 export interface MediaFile {
   id: string;
   url: string;
@@ -139,7 +139,7 @@ export interface MediaFile {
   createdAt?: string;
 }
 
-// 分页类型
+// Pagination types
 export interface Pagination {
   total: number;
   page: number;
@@ -147,41 +147,41 @@ export interface Pagination {
   limit: number;
 }
 
-// API响应类型
+// API response types
 export interface ApiResponse<T> {
   message?: string;
   data?: T;
   error?: string;
 }
 
-// 登录/注册响应
+// Login/register response
 export interface AuthResponse {
   message: string;
   user: User;
-  token?: string; // 注册时如果需要邮箱验证，可能不返回 token
+  token?: string; // may be omitted when registration requires email verification
   email_verified?: boolean;
   requires_verification?: boolean;
 }
 
-// 文章列表响应
+// Post list response
 export interface PostsResponse {
   posts: Post[];
   pagination: Pagination;
 }
 
-// 评论列表响应
+// Comment list response
 export interface CommentsResponse {
   comments: Comment[];
 }
 
-// 点赞响应
+// Like response
 export interface LikeResponse {
   message: string;
   isLiked: boolean;
   likesCount: number;
 }
 
-// 上传响应
+// Upload response
 export interface UploadResponse {
   message: string;
   file?: MediaFile;
@@ -189,7 +189,7 @@ export interface UploadResponse {
   errors?: string[];
 }
 
-// 统计响应
+// Stats response
 export interface StatsResponse {
   stats: {
     posts: number;

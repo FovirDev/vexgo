@@ -43,12 +43,12 @@ export function CreatorApplicationReviewPage() {
         limit: 100,
         status: "pending",
       });
-      // 确保 applications 是数组，即使后端返回 null 或 undefined
+      // Ensure applications is an array even if the backend returns null or undefined
       setApplications(response.data.applications || []);
     } catch (error) {
       console.error("加载创作者申请列表失败:", error);
       toast.error(t("errors.networkError"));
-      // 发生错误时也设置为空数组，避免白屏
+      // Also fall back to an empty array on error to avoid a blank screen
       setApplications([]);
     } finally {
       setLoading(false);

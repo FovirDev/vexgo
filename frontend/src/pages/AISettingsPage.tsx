@@ -160,7 +160,7 @@ export function AISettingsPage() {
     );
   }
 
-  // 获取当前选中的模型信息
+  // Get the currently selected model info
   const selectedModel = models.find((m) => m.id === config.modelName);
 
   return (
@@ -355,7 +355,7 @@ export function AISettingsPage() {
             </div>
           </div>
 
-          {/* 操作按钮 */}
+          {/* Action buttons */}
           <div className="flex gap-3 pt-4 border-t">
             <Button onClick={handleSave} disabled={saving} className="flex-1">
               <Save className="w-4 h-4 mr-2" />
@@ -374,7 +374,7 @@ export function AISettingsPage() {
         </CardContent>
       </Card>
 
-      {/* 帮助信息 */}
+      {/* Help info */}
       <Card className="mt-6">
         <CardHeader>
           <CardTitle className="text-base">配置说明</CardTitle>

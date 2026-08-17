@@ -39,7 +39,7 @@ export function SettingsPage() {
       : locale;
   });
 
-  // Privacy settings - 只从 user 对象初始化（从后端获取）
+  // Privacy settings - initialized only from the user object (fetched from the backend)
   const [profileVisibility, setProfileVisibility] = useState<
     "public" | "private"
   >(() => {
@@ -87,7 +87,7 @@ export function SettingsPage() {
     setError("");
 
     try {
-      // 保存隐私设置到服务器
+      // Save the privacy settings to the server
       const response = await authApi.updateSettings({
         profile_visibility: profileVisibility,
         hide_email: hideEmail,
@@ -95,15 +95,15 @@ export function SettingsPage() {
         hide_bio: hideBio,
       });
 
-      // 更新本地用户信息
+      // Update the local user info
       if (response.data.user) {
         updateUser(response.data.user);
       }
 
-      // 单独保存主题设置
+      // Save the theme setting separately
       localStorage.setItem("theme", theme);
 
-      // 单独保存语言设置
+      // Save the language setting separately
       localStorage.setItem("locale", language);
 
       setSuccess(t("settings.saveSuccess"));

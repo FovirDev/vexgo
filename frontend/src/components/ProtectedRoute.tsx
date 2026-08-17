@@ -26,7 +26,7 @@ export function ProtectedRoute({
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  // 检查是否需要管理员权限（包括超级管理员和管理员）
+  // Check whether admin access is required (admin or super_admin)
   if (requireAdmin && user?.role !== "admin" && user?.role !== "super_admin") {
     return <Navigate to="/" replace />;
   }

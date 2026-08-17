@@ -62,7 +62,7 @@ function App() {
         <Router>
           <Layout>
             <Routes>
-              {/* 公开路由 */}
+              {/* Public routes */}
               <Route path="/" element={<HomePage />} />
               <Route path="/post/:id" element={<PostDetailPage />} />
               <Route path="/user/:id" element={<UserPostsPage />} />
@@ -71,7 +71,7 @@ function App() {
               <Route path="/reset-password" element={<ResetPasswordPage />} />
               <Route path="/verify-email" element={<VerifyEmailPage />} />
 
-              {/* 需要登录的路由 */}
+              {/* Routes requiring login */}
               <Route
                 path="/write"
                 element={
@@ -122,7 +122,7 @@ function App() {
                 }
               />
 
-              {/* 需要管理员权限的路由 */}
+              {/* Routes requiring admin access */}
               <Route
                 path="/admin"
                 element={

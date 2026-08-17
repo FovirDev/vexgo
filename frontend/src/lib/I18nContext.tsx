@@ -16,7 +16,7 @@ interface I18nProviderProps {
 
 export function I18nProvider({ children }: I18nProviderProps) {
   const [locale, setLocaleState] = useState(() => {
-    // 初始化时从 localStorage 读取
+    // Read from localStorage on init
     const savedLocale = localStorage.getItem("locale");
     if (savedLocale === "zh-CN" || savedLocale === "en-US") {
       return savedLocale;
@@ -28,7 +28,7 @@ export function I18nProvider({ children }: I18nProviderProps) {
     if (newLocale === "zh-CN" || newLocale === "en-US") {
       setLocaleState(newLocale);
       setLocaleUtil(newLocale);
-      // 保存到 localStorage
+      // Save to localStorage
       localStorage.setItem("locale", newLocale);
     }
   }, []);

@@ -44,12 +44,12 @@ export function PostDetailPage() {
   const navigate = useNavigate();
   const { user, isAuthenticated } = useAuth();
   const { t } = useTranslation();
-  // 检查是否有初始数据
+  // Check whether initial data is available
   const initialData = (
     window as Window & { __INITIAL_DATA__?: { post?: Post } }
   ).__INITIAL_DATA__;
 
-  // 处理初始数据中的标签标准化
+  // Normalize tags in the initial data
   const processedInitialData = initialData?.post
     ? {
         ...initialData.post,
@@ -57,10 +57,10 @@ export function PostDetailPage() {
       }
     : null;
 
-  // 初始状态使用处理后的initialData，确保客户端渲染与服务器端一致
+  // Initialize state with the processed initialData so client and server rendering match
   const [post, setPost] = useState<Post | null>(processedInitialData || null);
   const [comments, setComments] = useState<Comment[]>([]);
-  // SSR 已提供文章数据时无需等待 API 加载，直接渲染；否则进入加载态
+  // When SSR already provided the post, render directly without waiting for the API; otherwise show the loading state
   const [loading, setLoading] = useState(!processedInitialData);
   const [commentContent, setCommentContent] = useState("");
   const [isLiked, setIsLiked] = useState(false);
@@ -126,11 +126,11 @@ export function PostDetailPage() {
     const loadData = async () => {
       if (id) {
         try {
-          // 加载评论和点赞状态
+          // Load comments and like status
           await loadComments();
           await loadLikeStatus();
 
-          // 如果没有初始数据，从API加载
+          // Load from the API when there is no initial data
           if (!initialData?.post) {
             setLoading(true);
             await loadPost();
@@ -158,7 +158,7 @@ export function PostDetailPage() {
       const response = await likesApi.toggleLike(id!);
       setIsLiked(response.data.isLiked);
       setLikesCount(response.data.likesCount);
-      // 通知其他页面（例如首页）更新对应文章的点赞状态
+      // Notify other pages (e.g. the home page) to update the post's like status
       try {
         window.dispatchEvent(
           new CustomEvent("like-changed", {
@@ -193,7 +193,7 @@ export function PostDetailPage() {
       });
       setCommentContent("");
       await loadComments();
-      // 使用后端返回的 commentsCount 同步首页
+      // Sync the home page using the commentsCount returned by the backend
       const newCount = response.data.commentsCount ?? comments.length + 1;
       try {
         window.dispatchEvent(
@@ -246,7 +246,7 @@ export function PostDetailPage() {
       const postUrl = `${window.location.origin}/post/${id}`;
       await navigator.clipboard.writeText(postUrl);
       setShareSuccess(true);
-      // 3秒后隐藏成功提示
+      // Hide the success hint after 3 seconds
       setTimeout(() => {
         setShareSuccess(false);
       }, 3000);
@@ -294,7 +294,7 @@ export function PostDetailPage() {
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">
-      {/* 返回按钮 */}
+      {/* Back button */}
       <Button variant="ghost" size="sm" asChild className="mb-6">
         <Link to="/" className="flex items-center gap-2">
           <ArrowLeft className="w-4 h-4" />
@@ -302,9 +302,9 @@ export function PostDetailPage() {
         </Link>
       </Button>
 
-      {/* 文章头部 */}
+      {/* Post header */}
       <div className="mb-8">
-        {/* 文章状态和拒绝原因 */}
+        {/* Post status and rejection reason */}
         {post.status === "rejected" && (
           <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md">
             <div className="flex items-center gap-2 mb-1">
@@ -322,7 +322,7 @@ export function PostDetailPage() {
           </div>
         )}
 
-        {/* 分类和标签 */}
+        {/* Category and tags */}
         <div className="flex flex-wrap items-center gap-2 mb-4">
           {post.categoryInfo && (
             <Badge variant="secondary">{post.categoryInfo.name}</Badge>
@@ -334,10 +334,10 @@ export function PostDetailPage() {
           ))}
         </div>
 
-        {/* 标题 */}
+        {/* Title */}
         <h1 className="text-3xl md:text-4xl font-bold mb-6">{post.title}</h1>
 
-        {/* 作者信息 */}
+        {/* Author info */}
         <div className="flex items-center justify-between flex-wrap gap-4">
           <Link
             to={`/user/${post.author?.id}`}
@@ -375,7 +375,7 @@ export function PostDetailPage() {
             </div>
           </Link>
 
-          {/* 操作按钮 */}
+          {/* Action buttons */}
           <div className="flex items-center gap-2">
             {canEditPost && (
               <Button variant="outline" size="sm" asChild>
@@ -420,7 +420,7 @@ export function PostDetailPage() {
         </div>
       </div>
 
-      {/* 封面图 */}
+      {/* Cover image */}
       {post.coverImage && (
         <div className="mb-8 rounded-lg overflow-hidden">
           <img
@@ -431,12 +431,12 @@ export function PostDetailPage() {
         </div>
       )}
 
-      {/* 文章内容 */}
+      {/* Post content */}
       <div className="mb-12">
         <MarkdownRenderer content={post.content} />
       </div>
 
-      {/* 互动区域 */}
+      {/* Interaction area */}
       <div className="flex items-center justify-between py-6 border-y">
         <div className="flex items-center gap-4">
           <Button
@@ -480,14 +480,14 @@ export function PostDetailPage() {
         </div>
       </div>
 
-      {/* 评论区 */}
+      {/* Comments section */}
       <div id="comments" className="mt-12">
         <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
           <MessageCircle className="w-6 h-6" />
           {t("postDetailPage.comments")} ({comments.length})
         </h2>
 
-        {/* 发表评论 */}
+        {/* Write a comment */}
         {isAuthenticated ? (
           <Card className="mb-8">
             <CardContent className="p-4">
@@ -529,7 +529,7 @@ export function PostDetailPage() {
           </Card>
         )}
 
-        {/* 评论列表 */}
+        {/* Comment list */}
         <div className="space-y-4">
           {comments.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">

@@ -190,7 +190,7 @@ export function RegisterPage() {
     }
   };
 
-  // 验证码验证成功回调
+  // Callback when captcha verification succeeds
   const handleCaptchaSuccess = async (data: {
     id: string;
     token: string;
@@ -198,7 +198,7 @@ export function RegisterPage() {
   }) => {
     setCaptchaData(data);
 
-    // 调用预验证接口，标记验证码为已使用
+    // Call the pre-verify endpoint to mark the captcha as used
     try {
       await fetch("/api/captcha/verify", {
         method: "POST",
@@ -213,14 +213,14 @@ export function RegisterPage() {
       });
     } catch (error) {
       console.error("预验证失败:", error);
-      // 即使预验证失败，也保存数据，让用户尝试注册
+      // Keep the data even if pre-verification fails so the user can still try to register
     }
 
     setIsCaptchaVerified(true);
-    // 不自动执行注册，等待用户点击注册按钮
+    // Do not auto-register; wait for the user to click the register button
   };
 
-  // 重置验证码状态
+  // Reset the captcha state
   const resetCaptcha = () => {
     setCaptchaData(null);
     setIsCaptchaVerified(false);
@@ -243,14 +243,14 @@ export function RegisterPage() {
       resetCaptcha();
       navigate("/");
     } catch (err) {
-      // 邮箱验证等后端错误仍可弹窗提示
+      // Backend errors such as email verification can still be shown in a dialog
       const error = err as {
         response?: { data?: { message?: string } };
         message?: string;
       };
       let errorMessage = error.response?.data?.message || error.message || "";
 
-      // 处理后端返回的英文错误信息，根据当前语言转换为对应语言的提示
+      // Convert English error messages from the backend into the current locale
       if (errorMessage === "Email already registered") {
         errorMessage = t("errors.emailAlreadyUsed");
       } else if (errorMessage === "Username already registered") {
@@ -260,7 +260,7 @@ export function RegisterPage() {
       }
 
       toast.error(errorMessage || t("registerPage.registrationError"));
-      // 注册失败后不重置验证码状态，允许用户重试
+      // Keep the captcha state after a failed registration so the user can retry
     } finally {
       setLoading(false);
     }
@@ -291,13 +291,13 @@ export function RegisterPage() {
     }
     if (hasError) return;
 
-    // 检查是否允许注册
+    // Check whether registration is allowed
     if (!registrationEnabled) {
       toast.error(t("registerPage.registrationDisabled"));
       return;
     }
 
-    // 如果启用了滑块验证，检查是否已完成验证
+    // If the slider captcha is enabled, check whether verification is done
     if (captchaEnabled) {
       if (!isCaptchaVerified || !captchaData) {
         toast.error(t("registerPage.completeCaptcha"));
@@ -423,7 +423,7 @@ export function RegisterPage() {
               )}
             </div>
 
-            {/* 滑块验证区域 */}
+            {/* Slider captcha area */}
             {captchaEnabled && (
               <div className="mt-4">
                 <div className="flex items-center justify-between mb-2">
@@ -538,11 +538,11 @@ export function RegisterPage() {
         </CardContent>
       </Card>
 
-      {/* 验证码弹窗 */}
+      {/* Captcha dialog */}
       <SliderCaptcha
         isOpen={isCaptchaModalOpen}
         onClose={() => {
-          // 允许用户随时关闭验证窗口
+          // Allow the user to close the captcha dialog at any time
           setIsCaptchaModalOpen(false);
         }}
         onSuccess={handleCaptchaSuccess}

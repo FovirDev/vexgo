@@ -57,7 +57,7 @@ export function HomePage() {
     loadCategories();
     loadPopularPosts();
     loadPopularTags();
-    // 监听来自文章详情页的点赞事件，保持首页与详情页同步
+    // Listen for like events from the post detail page to keep the home page in sync
     const handler = (e: Event) => {
       try {
         const d = (e as CustomEvent).detail || {};
@@ -106,7 +106,7 @@ export function HomePage() {
     };
   }, []);
 
-  // 标准化后端返回的文章对象，确保 id/authorId 为字符串，时间为 ISO 字符串
+  // Normalize posts returned by the backend: id/authorId as strings, timestamps as ISO strings
   const normalizePost = (raw: Partial<Post>): Post => {
     if (!raw) return raw as Post;
     return {
@@ -130,7 +130,7 @@ export function HomePage() {
     setLoading(true);
     try {
       if (searchQuery && searchQuery.trim()) {
-        // 优先使用后端的标题搜索结果（分页友好），同时在客户端拉取一定数量的文章做标签匹配备援
+        // Prefer the backend title search (pagination-friendly); also fetch extra posts for client-side tag matching as a fallback
         const [respSearch, respBulk] = await Promise.all([
           postsApi.getPosts({
             page: currentPage,
@@ -138,7 +138,7 @@ export function HomePage() {
             search: searchQuery,
             category: selectedCategory || undefined,
           }),
-          // 拉取更多文章用于在客户端按标签匹配（后端可能不支持按标签搜索）
+          // Fetch more posts to match tags on the client (the backend may not support tag search)
           postsApi.getPosts({
             page: 1,
             limit: 200,
@@ -160,7 +160,7 @@ export function HomePage() {
         tagMatches.forEach((p) => combinedMap.set(p.id, p));
         const combined = Array.from(combinedMap.values());
         setPosts(combined);
-        // 使用标题搜索的分页信息作为页面分页参考
+        // Use the title search pagination info as the page pagination reference
         setPagination(respSearch.data.pagination);
       } else {
         const response = await postsApi.getPosts({
@@ -203,11 +203,11 @@ export function HomePage() {
 
   const loadPopularTags = async () => {
     try {
-      // 获取足够多的文章来统计标签
+      // Fetch enough posts to tally tags
       const response = await postsApi.getPosts({ page: 1, limit: 200 });
       const allPosts = response.data.posts.map((p) => normalizePost(p));
 
-      // 统计每个标签的出现次数
+      // Count how many times each tag appears
       const tagCounts: Record<string, number> = {};
       allPosts.forEach((post) => {
         post.tags?.forEach((tag: string) => {
@@ -217,11 +217,11 @@ export function HomePage() {
         });
       });
 
-      // 转换为数组并按出现次数排序
+      // Convert to an array and sort by occurrence count
       const sortedTags = Object.entries(tagCounts)
         .map(([name, count]) => ({ name, count }))
         .sort((a, b) => b.count - a.count)
-        .slice(0, 10); // 取前10个
+        .slice(0, 10); // keep the top 10
 
       setPopularTags(sortedTags);
     } catch (error) {
@@ -312,7 +312,7 @@ export function HomePage() {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      {/* 搜索提示 */}
+      {/* Search hint */}
       {searchQuery && (
         <div className="mb-6 flex items-center gap-2">
           <SearchX className="w-5 h-5 text-muted-foreground" />
@@ -334,7 +334,7 @@ export function HomePage() {
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-        {/* 主内容区 */}
+        {/* Main content area */}
         <div className="lg:col-span-3 space-y-6">
           {posts.length === 0 ? (
             <Card>
@@ -360,7 +360,7 @@ export function HomePage() {
                     key={post.id}
                     className="group hover:shadow-lg transition-shadow p-0 gap-0 overflow-hidden"
                   >
-                    {/* 封面图（直接放在 Card 顶部以便与卡片边缘贴合） */}
+                    {/* Cover image (placed at the top of the Card so it sits flush with the card edge) */}
                     {post.coverImage && (
                       <Link to={`/post/${post.id}`} className="block">
                         <div className="w-full overflow-hidden rounded-t-xl">
@@ -374,7 +374,7 @@ export function HomePage() {
                     )}
 
                     <CardContent className="p-6">
-                      {/* 分类和标签 */}
+                      {/* Category and tags */}
                       <div className="flex flex-wrap items-center gap-2 mb-3">
                         {post.categoryInfo && (
                           <Badge variant="secondary">
@@ -392,19 +392,19 @@ export function HomePage() {
                         ))}
                       </div>
 
-                      {/* 标题 */}
+                      {/* Title */}
                       <Link to={`/post/${post.id}`}>
                         <h2 className="text-xl font-bold mb-3 group-hover:text-primary transition-colors line-clamp-2">
                           {post.title}
                         </h2>
                       </Link>
 
-                      {/* 摘要 */}
+                      {/* Excerpt */}
                       <p className="text-muted-foreground mb-4 line-clamp-2">
                         {post.excerpt}
                       </p>
 
-                      {/* 作者和统计 */}
+                      {/* Author and stats */}
                       <div className="flex flex-col gap-2">
                         <Link
                           to={`/user/${post.author?.id}`}
@@ -434,7 +434,7 @@ export function HomePage() {
                                 {formatDate(post.createdAt)}
                               </span>
                             </div>
-                            {/* 生日和个性签名 */}
+                            {/* Birthday and bio */}
                             <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                               {post.author?.birthday &&
                                 !JSON.parse(
@@ -483,7 +483,7 @@ export function HomePage() {
                 ))}
               </div>
 
-              {/* 分页 */}
+              {/* Pagination */}
               {pagination.totalPages > 1 && (
                 <Pagination>
                   <PaginationContent>
@@ -543,9 +543,9 @@ export function HomePage() {
           )}
         </div>
 
-        {/* 侧边栏 */}
+        {/* Sidebar */}
         <div className="space-y-6">
-          {/* 分类 */}
+          {/* Categories */}
           <Card>
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
@@ -573,7 +573,7 @@ export function HomePage() {
             </CardContent>
           </Card>
 
-          {/* 热门标签 */}
+          {/* Popular tags */}
           <Card>
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
@@ -597,7 +597,7 @@ export function HomePage() {
             </CardContent>
           </Card>
 
-          {/* 热门文章 */}
+          {/* Popular posts */}
           <Card>
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
@@ -637,7 +637,7 @@ export function HomePage() {
             </CardContent>
           </Card>
 
-          {/* 关于 */}
+          {/* About */}
           <Card>
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">

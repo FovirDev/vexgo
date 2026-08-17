@@ -1,25 +1,25 @@
 import api from "./api";
 import type { User, Pagination } from "@/types";
 
-// 用户列表响应类型
+// User list response types
 export interface UsersResponse {
   users: User[];
   pagination: Pagination;
 }
 
-// 创作者申请响应类型
+// Creator application response types
 export interface CreatorApplicationResponse {
   message: string;
   applicationId?: string;
 }
 
-// 创作者申请列表响应类型
+// Creator application list response types
 export interface CreatorApplicationsResponse {
   applications: CreatorApplication[];
   pagination: Pagination;
 }
 
-// 创作者申请类型
+// Creator application types
 export interface CreatorApplication {
   id: string;
   userId: string;
@@ -32,26 +32,26 @@ export interface CreatorApplication {
   updatedAt: string;
 }
 
-// 获取用户列表
+// Get the user list
 export const getUsers = (params?: {
   page?: number;
   limit?: number;
   search?: string;
 }) => api.get<UsersResponse>("/users", { params });
 
-// 更新用户角色
+// Update a user's role
 export const updateUserRole = (id: string, role: string) =>
   api.put<{ message: string; user: User }>(`/users/${id}/role`, { role });
 
-// 删除用户
+// Delete a user
 export const deleteUser = (id: string) =>
   api.delete<{ message: string }>(`/users/${id}`);
 
-// 申请成为创作者
+// Apply to become a creator
 export const applyForCreator = (reason?: string) =>
   api.post<CreatorApplicationResponse>("/users/apply-creator", { reason });
 
-// 获取创作者申请列表（管理员用）
+// Get the creator application list (for admins)
 export const getCreatorApplications = (params?: {
   page?: number;
   limit?: number;
@@ -61,7 +61,7 @@ export const getCreatorApplications = (params?: {
     params,
   });
 
-// 审核创作者申请
+// Review a creator application
 export const reviewCreatorApplication = (
   applicationId: string,
   action: "approve" | "reject",

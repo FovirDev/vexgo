@@ -37,10 +37,10 @@ export function VerifyEmailPage() {
         setStatus("success");
         setMessage(response.data.message || "邮箱验证成功！");
 
-        // 检查是否需要重新登录（邮箱变更成功）
+        // Check whether re-login is required (email change succeeded)
         if (response.data.require_relogin) {
           setRequireRelogin(true);
-          // 清除本地登录状态
+          // Clear the local login state
           localStorage.removeItem("token");
           localStorage.removeItem("user");
         }

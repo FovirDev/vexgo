@@ -65,7 +65,7 @@ export function t(key: string, params?: Record<string, unknown>): string {
 
   let result = (value as string) || key;
 
-  // 如果提供了参数，进行替换
+  // Substitute parameters when provided
   if (params) {
     result = result.replace(/\{(\w+)\}/g, (match, paramName) => {
       return params[paramName] !== undefined

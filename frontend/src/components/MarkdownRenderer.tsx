@@ -18,7 +18,7 @@ export function MarkdownRenderer({
   const [isRendering, setIsRendering] = useState(true);
 
   useEffect(() => {
-    // 给ReactMarkdown一些时间来渲染内容
+    // Give ReactMarkdown some time to render the content
     const timer = setTimeout(() => {
       setIsRendering(false);
     }, 100);

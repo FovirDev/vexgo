@@ -30,7 +30,7 @@ import {
   ArrowLeft,
 } from "lucide-react";
 
-// 后端返回的文章字段可能比前端 Post 类型更宽松（category 可能是数字、tags 可能是对象数组）
+// Post fields from the backend may be looser than the frontend Post type (category may be numeric, tags may be an object array)
 interface LoadedPost {
   title: string;
   content: string;
@@ -89,7 +89,7 @@ export function WritePostPage() {
   const [saving, setSaving] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
 
-  // 判断用户角色
+  // Determine the user role
   const isContributor = user?.role === "contributor";
 
   useEffect(() => {
@@ -100,13 +100,13 @@ export function WritePostPage() {
       }
     };
     init();
-    // oxlint-disable-next-line react-hooks/exhaustive-deps -- 仅在路由 id 变化时加载一次；加入依赖会导致分类加载后 effect 无限重跑
+    // oxlint-disable-next-line react-hooks/exhaustive-deps -- load once per route id; adding the deps would cause the effect to loop after categories load
   }, [id]);
 
   const loadCategories = async () => {
     try {
       const response = await categoriesApi.getCategories();
-      // 确保前端 categories 的 id 为字符串，避免与后端数字 id 类型不一致导致 Select 无法匹配
+      // Ensure category ids are strings so they match the Select options (the backend may return numeric ids)
       const normalized = (response.data.categories || []).map((c) => ({
         ...c,
         id: String(c.id),
@@ -129,34 +129,34 @@ export function WritePostPage() {
       setContent(post.content || "");
       setOriginalContent(post.content || "");
       setExcerpt(post.excerpt || "");
-      // 后端的 category 可能是数字或字符串，需要根据分类列表找到对应的分类名称
+      // The backend category may be numeric or a string; resolve it to the matching category name
       if (post.category) {
         const categoryStr = String(post.category);
-        // 尝试在分类列表中找到对应的分类
+        // Try to find the matching category in the list
         const foundCategory = categories.find(
           (cat) => String(cat.id) === categoryStr || cat.name === categoryStr,
         );
-        // 如果找到对应的分类，使用分类的名称作为 value
+        // Use the category name as the value when a match is found
         if (foundCategory) {
           setCategory(foundCategory.name);
         } else {
-          // 如果没有找到对应的分类，使用原始值
+          // Fall back to the raw value when no match is found
           setCategory(categoryStr);
         }
       } else {
         setCategory("");
       }
-      // 后端返回的 tags 为对象数组 [{id,name}, ...]，前端需要字符串数组
+      // The backend may return tags as an object array [{id,name}, ...]; the frontend needs a string array
       try {
         let mappedTags: string[] = [];
         const rawTags = post.tags;
 
         if (Array.isArray(rawTags)) {
           if (rawTags.every((x) => typeof x === "string")) {
-            // 1) 如果后端直接返回字符串数组
+            // 1) The backend returns a plain string array
             mappedTags = rawTags;
           } else {
-            // 2) 常见情况：对象数组 [{id,name}, ...]
+            // 2) Common case: an object array [{id,name}, ...]
             mappedTags = rawTags
               .map((t) => {
                 if (!t) return "";
@@ -173,7 +173,7 @@ export function WritePostPage() {
               .filter((v): v is string => Boolean(v));
           }
         } else if (typeof rawTags === "string") {
-          // 3) 如果后端返回逗号分隔的字符串
+          // 3) The backend returns a comma-separated string
           mappedTags = rawTags
             .split(",")
             .map((s) => s.trim())
@@ -228,7 +228,7 @@ export function WritePostPage() {
       return;
     }
 
-    // 不再压缩原图：打开裁剪器，让用户选取封面区域
+    // No longer compress the original image: open the cropper so the user can select the cover area
     setSelectedFile(file);
     setShowCropper(true);
   };
@@ -291,7 +291,7 @@ export function WritePostPage() {
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">
-      {/* 头部 */}
+      {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <Button variant="ghost" size="sm" onClick={() => navigate(-1)}>
           <ArrowLeft className="w-4 h-4 mr-2" />
@@ -306,7 +306,7 @@ export function WritePostPage() {
             <Save className="w-4 h-4 mr-2" />
             {t("writePostPage.saveDraft")}
           </Button>
-          {/* 投稿者只能提交待审核文章，不能直接发布 */}
+          {/* Contributors can only submit posts for review, not publish directly */}
           {isContributor ? (
             <Button onClick={() => handleSubmit("pending")} disabled={saving}>
               {saving ? (
@@ -331,9 +331,9 @@ export function WritePostPage() {
         </div>
       </div>
 
-      {/* 表单 */}
+      {/* Form */}
       <div className="space-y-6">
-        {/* 标题 */}
+        {/* Title */}
         <div>
           <Input
             placeholder={t("writePostPage.titlePlaceholder")}
@@ -343,7 +343,7 @@ export function WritePostPage() {
           />
         </div>
 
-        {/* 封面图 */}
+        {/* Cover image */}
         <Card>
           <CardContent className="p-4">
             <Label className="block mb-2">
@@ -397,9 +397,9 @@ export function WritePostPage() {
           </CardContent>
         </Card>
 
-        {/* 分类和标签 */}
+        {/* Category and tags */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* 分类 */}
+          {/* Category */}
           <div>
             <Label htmlFor="category" className="block mb-2">
               {t("writePostPage.categoryLabel")} *
@@ -418,7 +418,7 @@ export function WritePostPage() {
             </Select>
           </div>
 
-          {/* 标签 */}
+          {/* Tags */}
           <div>
             <Label htmlFor="tags" className="block mb-2">
               {t("writePostPage.tagsLabel")}
@@ -443,7 +443,7 @@ export function WritePostPage() {
           </div>
         </div>
 
-        {/* 标签展示 */}
+        {/* Tag display */}
         {tags.length > 0 && (
           <div className="flex flex-wrap gap-2">
             {tags.map((tag, idx) => {
@@ -467,7 +467,7 @@ export function WritePostPage() {
           </div>
         )}
 
-        {/* 摘要 */}
+        {/* Excerpt */}
         <div>
           <Label htmlFor="excerpt" className="block mb-2">
             {t("writePostPage.excerptLabel")}
@@ -481,7 +481,7 @@ export function WritePostPage() {
           />
         </div>
 
-        {/* 富文本编辑器 */}
+        {/* Rich text editor */}
         <div>
           <Label className="block mb-2">
             {t("writePostPage.contentLabel")} *

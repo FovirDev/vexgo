@@ -172,7 +172,7 @@ export function MyPostsPage() {
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">
-      {/* 头部 */}
+      {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold flex items-center gap-2">
           <PenLine className="w-6 h-6" />
@@ -188,7 +188,7 @@ export function MyPostsPage() {
         )}
       </div>
 
-      {/* 文章列表 */}
+      {/* Post list */}
       {posts.length === 0 ? (
         <Card>
           <CardContent className="p-12 text-center">
@@ -219,7 +219,7 @@ export function MyPostsPage() {
                 <CardContent className="p-6">
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1">
-                      {/* 状态标签 */}
+                      {/* Status badge */}
                       <div className="flex items-center gap-2 mb-2">
                         {(() => {
                           const status = getStatusBadge(post.status);
@@ -240,19 +240,19 @@ export function MyPostsPage() {
                         </span>
                       </div>
 
-                      {/* 标题 */}
+                      {/* Title */}
                       <Link to={`/post/${post.id}`}>
                         <h2 className="text-lg font-semibold mb-2 hover:text-primary transition-colors">
                           {post.title}
                         </h2>
                       </Link>
 
-                      {/* 摘要 */}
+                      {/* Excerpt */}
                       <p className="text-muted-foreground text-sm line-clamp-2 mb-3">
                         {post.excerpt}
                       </p>
 
-                      {/* 标签 */}
+                      {/* Tags */}
                       {post.tags && post.tags.length > 0 && (
                         <div className="flex flex-wrap gap-1">
                           {post.tags.slice(0, 3).map((tag) => (
@@ -268,7 +268,7 @@ export function MyPostsPage() {
                       )}
                     </div>
 
-                    {/* 操作按钮 */}
+                    {/* Action buttons */}
                     <div className="flex flex-col gap-2">
                       <Button variant="outline" size="sm" asChild>
                         <Link to={`/post/${post.id}`}>
@@ -315,7 +315,7 @@ export function MyPostsPage() {
             ))}
           </div>
 
-          {/* 分页 */}
+          {/* Pagination */}
           {pagination.totalPages > 1 && (
             <Pagination className="mt-6">
               <PaginationContent>

@@ -21,7 +21,7 @@ import type {
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "/api";
 
-// 创建axios实例
+// Create an axios instance
 const api = axios.create({
   baseURL: API_BASE_URL,
   headers: {
@@ -30,7 +30,7 @@ const api = axios.create({
   timeout: 30000,
 });
 
-// 请求拦截器 - 添加认证令牌
+// Request interceptor - attach the auth token
 api.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
     const token = localStorage.getItem("token");
@@ -44,17 +44,17 @@ api.interceptors.request.use(
   },
 );
 
-// 响应拦截器 - 处理错误
+// Response interceptor - handle errors
 api.interceptors.response.use(
   (response) => response,
   (error: AxiosError) => {
     if (error.response?.status === 401) {
-      // 检查是否是认证相关接口（登录、注册等），这些接口的401错误不应该自动跳转
+      // Check whether this is an auth-related endpoint (login, register, etc.); 401s from these should not redirect automatically
       const isAuthEndpoint =
         error.config?.url?.includes("/auth/") ||
         error.config?.url?.includes("/verify-email");
 
-      // 只有非认证接口的401错误才自动跳转到登录页
+      // Only redirect to the login page for 401 errors from non-auth endpoints
       if (!isAuthEndpoint) {
         localStorage.removeItem("token");
         localStorage.removeItem("user");
@@ -65,7 +65,7 @@ api.interceptors.response.use(
   },
 );
 
-// 认证相关API
+// Auth-related APIs
 export const authApi = {
   register: (data: { username: string; email: string; password: string }) =>
     api.post<AuthResponse>("/auth/register", data),
@@ -114,7 +114,7 @@ export const authApi = {
     api.post<{ message: string }>("/auth/reset-password", data),
 };
 
-// 文章相关API
+// Post-related APIs
 export const postsApi = {
   getPosts: (params?: {
     page?: number;
@@ -152,7 +152,7 @@ export const postsApi = {
     api.get<PostsResponse>(`/posts/user/${userId}`, { params }),
 };
 
-// 分类相关API
+// Category-related APIs
 export const categoriesApi = {
   getCategories: () => api.get<{ categories: Category[] }>("/categories"),
 
@@ -160,12 +160,12 @@ export const categoriesApi = {
     api.post<{ message: string; category: Category }>("/categories", data),
 };
 
-// 标签相关API
+// Tag-related APIs
 export const tagsApi = {
   getTags: () => api.get<{ tags: Tag[] }>("/tags"),
 };
 
-// 评论相关API
+// Comment-related APIs
 export const commentsApi = {
   getComments: (postId: string) =>
     api.get<CommentsResponse>(`/comments/post/${postId}`),
@@ -184,7 +184,7 @@ export const commentsApi = {
     api.delete<{ message: string; commentsCount?: number }>(`/comments/${id}`),
 };
 
-// 点赞相关API
+// Like-related APIs
 export const likesApi = {
   toggleLike: (postId: string) => api.post<LikeResponse>(`/likes/${postId}`),
 
@@ -194,7 +194,7 @@ export const likesApi = {
     ),
 };
 
-// 上传相关API
+// Upload-related APIs
 export const uploadApi = {
   uploadFile: (file: File, onProgress?: (progress: number) => void) => {
     const formData = new FormData();
@@ -239,7 +239,7 @@ export const uploadApi = {
   deleteFile: (id: string) => api.delete<{ message: string }>(`/upload/${id}`),
 };
 
-// 统计相关API
+// Stats-related APIs
 export const statsApi = {
   getStats: () => api.get<StatsResponse>("/stats"),
 
@@ -250,7 +250,7 @@ export const statsApi = {
     api.get<{ posts: Post[] }>("/stats/latest-posts", { params: { limit } }),
 };
 
-// SMTP 配置相关API
+// SMTP config-related APIs
 export const configApi = {
   getSMTPConfig: () => api.get<SMTPConfig>("/config/smtp"),
 
@@ -260,7 +260,7 @@ export const configApi = {
   testSMTP: () =>
     api.post<{ message: string; to: string }>("/config/smtp/test"),
 
-  // 通用设置相关API
+  // General settings-related APIs
   getGeneralSettings: () => api.get<GeneralSettings>("/config/general"),
 
   updateGeneralSettings: (data: Partial<GeneralSettings>) =>
@@ -269,7 +269,7 @@ export const configApi = {
       data,
     ),
 
-  // 评论审核配置相关API
+  // Comment moderation config-related APIs
   getCommentModerationConfig: () =>
     api.get<CommentModerationConfig>("/moderation/comments/config"),
 
@@ -279,7 +279,7 @@ export const configApi = {
       data,
     ),
 
-  // AI 配置相关API
+  // AI config-related APIs
   getAIConfig: () => api.get<AIConfig>("/config/ai"),
 
   updateAIConfig: (data: Partial<AIConfig>) =>
@@ -288,11 +288,11 @@ export const configApi = {
   testAI: () =>
     api.post<{ message: string; response: string }>("/config/ai/test"),
 
-  // AI 模型相关API
+  // AI model-related APIs
   getAIModels: () =>
     api.get<{ message: string; models: AIModel[] }>("/config/ai/models"),
 
-  // 主题相关API
+  // Theme-related APIs
   getThemes: () =>
     api.get<{
       themes: Array<{
@@ -306,7 +306,7 @@ export const configApi = {
     }>("/themes"),
 };
 
-// 消息相关API
+// Message-related APIs
 export const messagesApi = {
   getMessages: (params?: {
     page?: number;

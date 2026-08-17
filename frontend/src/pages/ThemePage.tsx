@@ -57,7 +57,7 @@ export function ThemePage() {
       const [themesRes, configRes] = await Promise.all([
         api.get<{ themes: ThemeInfo[] }>("/themes"),
         api.get<{ activeTheme: string }>("/config/theme", {
-          params: { _t: Date.now() }, // 加时间戳，破除缓存
+          params: { _t: Date.now() }, // add a timestamp to bust the cache
         }),
       ]);
       setThemes(themesRes.data.themes || []);
@@ -114,7 +114,7 @@ export function ThemePage() {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // 检查文件类型
+    // Check the file type
     if (!file.name.endsWith(".zip")) {
       setMessage({
         type: "error",
@@ -136,14 +136,14 @@ export function ThemePage() {
         },
       });
       setMessage({ type: "success", text: t("themePage.uploadSuccess") });
-      // 重新加载主题列表
+      // Reload the theme list
       loadData();
     } catch (error) {
       console.error("上传主题失败:", error);
       setMessage({ type: "error", text: t("themePage.uploadFailed") });
     } finally {
       setUploading(false);
-      // 清空文件输入
+      // Clear the file input
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
       }

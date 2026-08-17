@@ -24,7 +24,7 @@ import {
   Users,
 } from "lucide-react";
 
-// 消息类型
+// Message types
 type MessageType = "comment" | "like" | "reply" | "review" | "role";
 
 type Message = {
@@ -49,23 +49,23 @@ export function MessageCenterPage() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("all");
 
-  // 消息数据
+  // Message data
   const [messages, setMessages] = useState<Message[]>([]);
 
   const [loading, setLoading] = useState(false);
 
-  // 检查是否是管理员
+  // Check whether the user is an admin
   const isAdmin = user?.role === "admin" || user?.role === "super_admin";
-  // 检查是否是访客
+  // Check whether the user is a guest
   const isGuest = user?.role === "guest";
 
-  // 从API获取消息数据
+  // Fetch messages from the API
   useEffect(() => {
     const fetchMessages = async () => {
       setLoading(true);
       try {
         const response = await messagesApi.getMessages();
-        // 转换后端数据格式为前端使用的格式
+        // Convert the backend data format to the frontend format
         interface Notification {
           id: number;
           type: string;
@@ -88,7 +88,7 @@ export function MessageCenterPage() {
           relatedType: notification.related_type,
           createdAt: notification.created_at,
           isRead: notification.is_read,
-          // 后端数据中可能没有sender信息，这里暂时为空
+          // The backend may not include sender info, so leave it empty for now
           sender: undefined,
         }));
         setMessages(formattedMessages);
@@ -102,7 +102,7 @@ export function MessageCenterPage() {
     fetchMessages();
   }, [t]);
 
-  // 根据标签筛选消息
+  // Filter messages by tab
   const filteredMessages = messages.filter((message) => {
     if (activeTab === "all") return true;
     if (activeTab === "unread") return !message.isRead;
@@ -114,11 +114,11 @@ export function MessageCenterPage() {
     return true;
   });
 
-  // 标记消息为已读
+  // Mark a message as read
   const markAsRead = async (id: string) => {
     try {
       await messagesApi.markAsRead(id);
-      // 更新本地状态
+      // Update the local state
       setMessages((prev) =>
         prev.map((message) =>
           message.id === id ? { ...message, isRead: true } : message,
@@ -129,11 +129,11 @@ export function MessageCenterPage() {
     }
   };
 
-  // 全部标记为已读
+  // Mark all as read
   const markAllAsRead = async () => {
     try {
       await messagesApi.markAllAsRead();
-      // 更新本地状态
+      // Update the local state
       setMessages((prev) =>
         prev.map((message) => ({ ...message, isRead: true })),
       );
@@ -142,18 +142,18 @@ export function MessageCenterPage() {
     }
   };
 
-  // 删除消息
+  // Delete a message
   const deleteMessage = async (id: string) => {
     try {
       await messagesApi.deleteMessage(id);
-      // 更新本地状态
+      // Update the local state
       setMessages((prev) => prev.filter((message) => message.id !== id));
     } catch (error) {
       console.error(t("errors.networkError"), error);
     }
   };
 
-  // 跳转到相关内容
+  // Navigate to the related content
   const navigateToRelated = (
     relatedId: string,
     relatedType: "post" | "comment",
@@ -161,12 +161,12 @@ export function MessageCenterPage() {
     if (relatedType === "post") {
       navigate(`/post/${relatedId}`);
     } else if (relatedType === "comment") {
-      // 跳转到文章页面并定位到评论
+      // Navigate to the post page and scroll to the comment
       navigate(`/post/123#comment-${relatedId}`);
     }
   };
 
-  // 获取消息状态图标
+  // Get the status icon for a message type
   const getStatusIcon = (type: MessageType) => {
     switch (type) {
       case "review":
@@ -324,7 +324,7 @@ export function MessageCenterPage() {
           )}
         </TabsContent>
 
-        {/* 其他标签内容 */}
+        {/* Other tab contents */}
         <TabsContent value="unread" className="space-y-4">
           {loading ? (
             <div className="flex items-center justify-center py-12">

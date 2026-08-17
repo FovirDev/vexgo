@@ -146,13 +146,13 @@ export function ProfilePage() {
       setSuccess(response.data.message);
       setNewEmail("");
       if (response.data.pending) {
-        // 如果返回 pending: true，表示需要验证邮件，等待用户点击链接
-        // 不需要更新本地用户信息，等验证后再更新
+        // If pending: true is returned, email verification is required; wait for the user to click the link
+        // No need to update the local user; it will be updated after verification
       } else if (response.data.user) {
-        // 如果直接更新成功（SMTP未启用），更新本地用户信息
+        // If the update succeeded directly (SMTP disabled), update the local user
         updateUser(response.data.user);
       } else {
-        // 如果pending状态，更新本地邮箱显示（等待验证）
+        // When pending, update the displayed local email (awaiting verification)
         if (user) {
           updateUser({ ...user, email: newEmail });
         }
@@ -188,10 +188,10 @@ export function ProfilePage() {
     setShowCropper(false);
 
     try {
-      // 使用现有的上传API
+      // Use the existing upload API
       const uploadResponse = await uploadApi.uploadFile(croppedFile);
       if (uploadResponse.data.file && uploadResponse.data.file.url) {
-        // 更新用户头像
+        // Update the user avatar
         const updateResponse = await authApi.updateProfile({
           avatar: uploadResponse.data.file.url,
         });
@@ -512,7 +512,7 @@ export function ProfilePage() {
         </CardContent>
       </Card>
 
-      {/* 邮箱修改确认对话框 */}
+      {/* Email change confirmation dialog */}
       <AlertDialog open={showEmailDialog} onOpenChange={setShowEmailDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -567,7 +567,7 @@ export function ProfilePage() {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* 头像裁剪 */}
+      {/* Avatar cropping */}
       {showCropper && selectedAvatarFile && (
         <ImageCropper
           file={selectedAvatarFile}
