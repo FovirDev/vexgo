@@ -1,4 +1,5 @@
-// backend/middleware/auth.go
+// Package middleware provides HTTP middleware for authentication,
+// authorization and request logging.
 package middleware
 
 import (
@@ -13,15 +14,20 @@ import (
 	"gorm.io/gorm"
 )
 
-// Global database connection, needs to be set during initialization
-var db *gorm.DB
-
-// SetDB sets database connection
-func SetDB(database *gorm.DB) {
-	db = database
+// Auth holds the database connection used to validate tokens against the
+// current user state (password version, last login).
+type Auth struct {
+	db *gorm.DB
 }
 
-func JWTAuth() gin.HandlerFunc {
+// NewAuth creates the authentication middleware with the given database.
+func NewAuth(db *gorm.DB) *Auth {
+	return &Auth{db: db}
+}
+
+// JWTAuth authenticates requests via a Bearer JWT and writes the user info
+// into the gin context.
+func (a *Auth) JWTAuth() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		authHeader := c.GetHeader("Authorization")
 		if authHeader == "" {
@@ -53,9 +59,9 @@ func JWTAuth() gin.HandlerFunc {
 
 		// Verify password version and get latest role
 		var dbRole string
-		if db != nil {
+		if a.db != nil {
 			var user model.User
-			if err := db.First(&user, userID).Error; err == nil {
+			if err := a.db.First(&user, userID).Error; err == nil {
 				// Check if password version in token matches current user's password version
 				if tokenPasswordVersion, ok := claims["password_version"].(float64); ok {
 					if int(tokenPasswordVersion) != user.PasswordVersion {
@@ -100,7 +106,7 @@ func JWTAuth() gin.HandlerFunc {
 
 // OptionalJWTAuth attempts to parse JWT from Authorization header and write user info to context,
 // If not provided or parsing fails, do not block the request (used for public endpoints that can sense logged-in user but don't require authentication).
-func OptionalJWTAuth() gin.HandlerFunc {
+func (a *Auth) OptionalJWTAuth() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		authHeader := c.GetHeader("Authorization")
 		if authHeader == "" {
@@ -133,11 +139,11 @@ func OptionalJWTAuth() gin.HandlerFunc {
 
 		// Verify password version and get latest role
 		var dbRole string
-		if db != nil {
+		if a.db != nil {
 			if uid, ok := claims["user_id"].(float64); ok {
 				userID = uint(uid)
 				var user model.User
-				if err := db.First(&user, userID).Error; err == nil {
+				if err := a.db.First(&user, userID).Error; err == nil {
 					// Check if password version in token matches current user's password version
 					if tokenPasswordVersion, ok := claims["password_version"].(float64); ok {
 						if int(tokenPasswordVersion) != user.PasswordVersion {

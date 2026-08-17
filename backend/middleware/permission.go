@@ -8,8 +8,8 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// PermissionMiddleware checks if user has required role
-func PermissionMiddleware(requiredRoles ...string) gin.HandlerFunc {
+// Permission checks if the authenticated user has one of the required roles.
+func (a *Auth) Permission(requiredRoles ...string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// Get user ID from context
 		userIDInterface, exists := c.Get("userID")
@@ -22,7 +22,7 @@ func PermissionMiddleware(requiredRoles ...string) gin.HandlerFunc {
 
 		// Query user information
 		var user model.User
-		if err := db.First(&user, userID).Error; err != nil {
+		if err := a.db.First(&user, userID).Error; err != nil {
 		}
 
 		// Check if user role meets requirements

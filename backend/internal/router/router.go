@@ -15,10 +15,12 @@ import (
 	"vexgo/backend/middleware"
 
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
 // Deps aggregates the dependencies of every domain package.
 type Deps struct {
+	DB           *gorm.DB
 	Message      message.Deps
 	Comment      comment.Deps
 	Post         post.Deps
@@ -32,14 +34,10 @@ type Deps struct {
 }
 
 // RegisterAPIRoutes registers all routes under /api.
-//
-// During the incremental migration the legacy handler package still owns most
-// routes; migrated domains register their own. Once the handler package is
-// emptied it is removed from this function.
 func RegisterAPIRoutes(r *gin.Engine, deps Deps) {
 	api := r.Group("/api")
 	api.Use(middleware.RequestLogger())
-	api.Use(middleware.OptionalJWTAuth())
+	api.Use(middleware.NewAuth(deps.DB).OptionalJWTAuth())
 
 	message.NewHandler(deps.Message).RegisterRoutes(api)
 	comment.NewHandler(deps.Comment).RegisterRoutes(api)

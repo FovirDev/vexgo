@@ -1,8 +1,6 @@
 package verification
 
 import (
-	"vexgo/backend/middleware"
-
 	"github.com/gin-gonic/gin"
 )
 
@@ -16,5 +14,5 @@ func (h *Handler) RegisterRoutes(api *gin.RouterGroup) {
 	api.POST("/captcha/verify", h.VerifyCaptcha)
 
 	auth := api.Group("/auth")
-	auth.GET("/verification-status", middleware.JWTAuth(), h.GetVerificationStatus)
+	auth.GET("/verification-status", h.mw.JWTAuth(), h.GetVerificationStatus)
 }

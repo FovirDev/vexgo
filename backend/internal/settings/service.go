@@ -15,8 +15,8 @@ import (
 	"strings"
 	"time"
 
+	"vexgo/backend/internal/public"
 	"vexgo/backend/model"
-	"vexgo/backend/public"
 
 	"gorm.io/gorm"
 )
@@ -44,17 +44,19 @@ var (
 
 // Deps holds the dependencies required by the settings domain.
 type Deps struct {
-	DB *gorm.DB
+	DB     *gorm.DB
+	Themes *public.Renderer
 }
 
 // Service contains the business logic of the settings domain.
 type Service struct {
-	db *gorm.DB
+	db     *gorm.DB
+	themes *public.Renderer
 }
 
 // NewService creates a settings service with the given dependencies.
 func NewService(deps Deps) *Service {
-	return &Service{db: deps.DB}
+	return &Service{db: deps.DB, themes: deps.Themes}
 }
 
 // SMTPConfigRequest carries the fields accepted when updating the SMTP config.
@@ -686,18 +688,18 @@ func checkModelExists(modelsURL, apiKey, modelName string) (bool, error) {
 
 // GetThemes returns all available themes.
 func (s *Service) GetThemes() []public.ThemeInfo {
-	return public.GetAvailableThemes()
+	return s.themes.GetAvailableThemes()
 }
 
 // ThemePreview resolves the preview image path for a theme.
 func (s *Service) ThemePreview(themeID string) (string, error) {
 	// Check if theme exists
-	if !public.ThemeExists(themeID) {
+	if !s.themes.ThemeExists(themeID) {
 		return "", ErrThemeNotFound
 	}
 
 	// Read theme metadata
-	metaPath := filepath.Join(public.DataDir, public.ThemesDir, themeID, public.ThemeMetaFile)
+	metaPath := filepath.Join(s.themes.DataDir(), public.ThemesDir, themeID, public.ThemeMetaFile)
 	content, err := os.ReadFile(metaPath)
 	if err != nil {
 		return "", fmt.Errorf("Failed to read theme metadata: %w", err)
@@ -714,7 +716,7 @@ func (s *Service) ThemePreview(themeID string) (string, error) {
 	}
 
 	// Build preview image path
-	previewPath := filepath.Join(public.DataDir, public.ThemesDir, themeID, themeInfo.Preview)
+	previewPath := filepath.Join(s.themes.DataDir(), public.ThemesDir, themeID, themeInfo.Preview)
 
 	// Check if preview image exists
 	if _, err := os.Stat(previewPath); os.IsNotExist(err) {
@@ -744,7 +746,7 @@ func (s *Service) GetThemeConfig() (string, error) {
 // UpdateThemeConfig sets the globally active theme in the database.
 func (s *Service) UpdateThemeConfig(activeTheme string) (string, error) {
 	// Validate that the requested theme actually exists
-	if !public.ThemeExists(activeTheme) {
+	if !s.themes.ThemeExists(activeTheme) {
 		return "", ErrThemeNotFound
 	}
 
@@ -766,19 +768,4 @@ func (s *Service) UpdateThemeConfig(activeTheme string) (string, error) {
 	}
 
 	return config.ActiveTheme, nil
-}
-
-// SetupThemeProvider injects a DB-backed theme provider into the public
-// package. It must be called after the database is initialized.
-func SetupThemeProvider(db *gorm.DB) {
-	public.ActiveThemeProvider = func() string {
-		var config model.ThemeConfig
-		if err := db.First(&config).Error; err != nil {
-			return public.DefaultTheme
-		}
-		if config.ActiveTheme == "" {
-			return public.DefaultTheme
-		}
-		return config.ActiveTheme
-	}
 }

@@ -10,19 +10,22 @@ import (
 	"path/filepath"
 	"strings"
 
-	"vexgo/backend/public"
+	"vexgo/backend/internal/public"
+	"vexgo/backend/middleware"
 
 	"github.com/gin-gonic/gin"
 )
 
 // Handler exposes the settings domain over HTTP.
 type Handler struct {
-	svc *Service
+	svc    *Service
+	themes *public.Renderer
+	mw     *middleware.Auth
 }
 
 // NewHandler creates a settings HTTP handler with the given dependencies.
 func NewHandler(deps Deps) *Handler {
-	return &Handler{svc: NewService(deps)}
+	return &Handler{svc: NewService(deps), mw: middleware.NewAuth(deps.DB), themes: deps.Themes}
 }
 
 // GetSMTPConfig gets SMTP configuration
@@ -463,7 +466,7 @@ func (h *Handler) UploadTheme(c *gin.Context) {
 	}
 
 	// Create the theme directory in data/theme
-	targetThemeDir := filepath.Join(public.DataDir, public.ThemesDir, themeDir)
+	targetThemeDir := filepath.Join(h.themes.DataDir(), public.ThemesDir, themeDir)
 
 	// Remove existing theme directory if it exists
 	if err := os.RemoveAll(targetThemeDir); err != nil {

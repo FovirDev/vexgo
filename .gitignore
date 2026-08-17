@@ -8,7 +8,7 @@ backend/blog.exe
 backend/vexgo
 backend/blog.db
 backend/data/
-backend/public/dist/
+backend/internal/public/dist/
 data/
 .env
 result

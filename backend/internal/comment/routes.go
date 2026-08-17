@@ -1,8 +1,6 @@
 package comment
 
 import (
-	"vexgo/backend/middleware"
-
 	"github.com/gin-gonic/gin"
 )
 
@@ -11,15 +9,15 @@ import (
 // in the legacy handler package.
 func (h *Handler) RegisterRoutes(api *gin.RouterGroup) {
 	api.GET("/comments/post/:id", h.GetComments)
-	api.POST("/comments", middleware.JWTAuth(), h.CreateComment)
-	api.DELETE("/comments/:id", middleware.JWTAuth(), h.DeleteComment)
+	api.POST("/comments", h.mw.JWTAuth(), h.CreateComment)
+	api.DELETE("/comments/:id", h.mw.JWTAuth(), h.DeleteComment)
 
-	admin := middleware.PermissionMiddleware("admin", "super_admin")
-	api.GET("/moderation/comments/pending", middleware.JWTAuth(), admin, h.GetPendingComments)
-	api.GET("/moderation/comments/approved", middleware.JWTAuth(), admin, h.GetApprovedComments)
-	api.GET("/moderation/comments/rejected", middleware.JWTAuth(), admin, h.GetRejectedComments)
-	api.PUT("/moderation/comments/approve/:id", middleware.JWTAuth(), admin, h.ApproveComment)
-	api.PUT("/moderation/comments/reject/:id", middleware.JWTAuth(), admin, h.RejectComment)
-	api.GET("/moderation/comments/config", middleware.JWTAuth(), admin, h.GetCommentModerationConfig)
-	api.PUT("/moderation/comments/config", middleware.JWTAuth(), admin, h.UpdateCommentModerationConfig)
+	admin := h.mw.Permission("admin", "super_admin")
+	api.GET("/moderation/comments/pending", h.mw.JWTAuth(), admin, h.GetPendingComments)
+	api.GET("/moderation/comments/approved", h.mw.JWTAuth(), admin, h.GetApprovedComments)
+	api.GET("/moderation/comments/rejected", h.mw.JWTAuth(), admin, h.GetRejectedComments)
+	api.PUT("/moderation/comments/approve/:id", h.mw.JWTAuth(), admin, h.ApproveComment)
+	api.PUT("/moderation/comments/reject/:id", h.mw.JWTAuth(), admin, h.RejectComment)
+	api.GET("/moderation/comments/config", h.mw.JWTAuth(), admin, h.GetCommentModerationConfig)
+	api.PUT("/moderation/comments/config", h.mw.JWTAuth(), admin, h.UpdateCommentModerationConfig)
 }

@@ -1,8 +1,6 @@
 package auth
 
 import (
-	"vexgo/backend/middleware"
-
 	"github.com/gin-gonic/gin"
 )
 
@@ -14,12 +12,12 @@ func (h *Handler) RegisterRoutes(api *gin.RouterGroup) {
 	{
 		auth.POST("/register", h.Register)
 		auth.POST("/login", h.Login)
-		auth.GET("/me", middleware.JWTAuth(), h.GetCurrentUser)
-		auth.GET("/user", middleware.JWTAuth(), h.GetCurrentUser)
-		auth.PUT("/profile", middleware.JWTAuth(), h.UpdateProfile)
-		auth.PUT("/password", middleware.JWTAuth(), h.ChangePassword)
-		auth.PUT("/email", middleware.JWTAuth(), h.UpdateEmail)
-		auth.PUT("/settings", middleware.JWTAuth(), h.UpdateSettings)
+		auth.GET("/me", h.mw.JWTAuth(), h.GetCurrentUser)
+		auth.GET("/user", h.mw.JWTAuth(), h.GetCurrentUser)
+		auth.PUT("/profile", h.mw.JWTAuth(), h.UpdateProfile)
+		auth.PUT("/password", h.mw.JWTAuth(), h.ChangePassword)
+		auth.PUT("/email", h.mw.JWTAuth(), h.UpdateEmail)
+		auth.PUT("/settings", h.mw.JWTAuth(), h.UpdateSettings)
 		auth.POST("/request-password-reset", h.RequestPasswordReset)
 		auth.POST("/reset-password", h.ResetPassword)
 	}

@@ -4,6 +4,7 @@ import (
 	"errors"
 	"testing"
 
+	"vexgo/backend/internal/public"
 	"vexgo/backend/model"
 
 	"github.com/glebarez/sqlite"
@@ -29,7 +30,9 @@ func newTestDB(t *testing.T) *gorm.DB {
 
 func newTestService(t *testing.T) *Service {
 	t.Helper()
-	return NewService(Deps{DB: newTestDB(t)})
+	db := newTestDB(t)
+	renderer := public.NewRenderer(db, "http://localhost", t.TempDir())
+	return NewService(Deps{DB: db, Themes: renderer})
 }
 
 func TestGetSMTPConfig_Default(t *testing.T) {

@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"vexgo/backend/middleware"
 	"vexgo/backend/model"
 
 	"github.com/gin-gonic/gin"
@@ -13,11 +14,12 @@ import (
 // Handler exposes the user domain over HTTP.
 type Handler struct {
 	svc *Service
+	mw  *middleware.Auth
 }
 
 // NewHandler creates a user HTTP handler with the given dependencies.
 func NewHandler(deps Deps) *Handler {
-	return &Handler{svc: NewService(deps)}
+	return &Handler{svc: NewService(deps), mw: middleware.NewAuth(deps.DB)}
 }
 
 // currentUser extracts the acting user from the JWT context.

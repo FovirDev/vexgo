@@ -1,8 +1,6 @@
 package post
 
 import (
-	"vexgo/backend/middleware"
-
 	"github.com/gin-gonic/gin"
 )
 
@@ -22,22 +20,22 @@ func (h *Handler) RegisterRoutes(api *gin.RouterGroup) {
 	api.GET("/likes/:postId", h.GetLikeStatus)
 	api.GET("/posts/user/:id", h.GetUserPosts)
 
-	api.POST("/posts", middleware.JWTAuth(), h.CreatePost)
-	api.GET("/posts/user/my-posts", middleware.JWTAuth(), h.GetMyPosts)
-	api.GET("/posts/drafts", middleware.JWTAuth(), h.GetDraftPosts)
-	api.PUT("/posts/:id", middleware.JWTAuth(), h.UpdatePost)
-	api.DELETE("/posts/:id", middleware.JWTAuth(), h.DeletePost)
+	api.POST("/posts", h.mw.JWTAuth(), h.CreatePost)
+	api.GET("/posts/user/my-posts", h.mw.JWTAuth(), h.GetMyPosts)
+	api.GET("/posts/drafts", h.mw.JWTAuth(), h.GetDraftPosts)
+	api.PUT("/posts/:id", h.mw.JWTAuth(), h.UpdatePost)
+	api.DELETE("/posts/:id", h.mw.JWTAuth(), h.DeletePost)
 
-	api.POST("/categories", middleware.JWTAuth(), h.CreateCategory)
-	api.POST("/tags", middleware.JWTAuth(), h.CreateTag)
+	api.POST("/categories", h.mw.JWTAuth(), h.CreateCategory)
+	api.POST("/tags", h.mw.JWTAuth(), h.CreateTag)
 
-	api.POST("/likes/:postId", middleware.JWTAuth(), h.ToggleLike)
+	api.POST("/likes/:postId", h.mw.JWTAuth(), h.ToggleLike)
 
-	admin := middleware.PermissionMiddleware("admin", "super_admin")
-	api.GET("/moderation/pending", middleware.JWTAuth(), admin, h.GetPendingPosts)
-	api.GET("/moderation/approved", middleware.JWTAuth(), admin, h.GetApprovedPosts)
-	api.GET("/moderation/rejected", middleware.JWTAuth(), admin, h.GetRejectedPosts)
-	api.PUT("/moderation/approve/:id", middleware.JWTAuth(), admin, h.ApprovePost)
-	api.PUT("/moderation/reject/:id", middleware.JWTAuth(), admin, h.RejectPost)
-	api.PUT("/moderation/resubmit/:id", middleware.JWTAuth(), admin, h.ResubmitPost)
+	admin := h.mw.Permission("admin", "super_admin")
+	api.GET("/moderation/pending", h.mw.JWTAuth(), admin, h.GetPendingPosts)
+	api.GET("/moderation/approved", h.mw.JWTAuth(), admin, h.GetApprovedPosts)
+	api.GET("/moderation/rejected", h.mw.JWTAuth(), admin, h.GetRejectedPosts)
+	api.PUT("/moderation/approve/:id", h.mw.JWTAuth(), admin, h.ApprovePost)
+	api.PUT("/moderation/reject/:id", h.mw.JWTAuth(), admin, h.RejectPost)
+	api.PUT("/moderation/resubmit/:id", h.mw.JWTAuth(), admin, h.ResubmitPost)
 }

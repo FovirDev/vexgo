@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"strings"
-	"vexgo/backend/handler"
 	"vexgo/backend/internal/auth"
 	"vexgo/backend/internal/comment"
 	"vexgo/backend/internal/config"
@@ -11,14 +10,13 @@ import (
 	"vexgo/backend/internal/home"
 	"vexgo/backend/internal/message"
 	"vexgo/backend/internal/post"
+	"vexgo/backend/internal/public"
 	"vexgo/backend/internal/router"
 	"vexgo/backend/internal/settings"
 	"vexgo/backend/internal/sso"
 	"vexgo/backend/internal/upload"
 	"vexgo/backend/internal/user"
 	"vexgo/backend/internal/verification"
-	"vexgo/backend/middleware"
-	"vexgo/backend/public"
 
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
@@ -73,20 +71,13 @@ func main() {
 	db := database.Open(cfg, cfg.DataDir)
 	database.AutoMigrate(db)
 	database.Seed(db)
-	// Set database connection to authentication middleware
-	middleware.SetDB(db)
-	// Set database connection to handler package
-	handler.SetDB(db)
-	// Set up the theme provider so the public package can read the active theme from DB
-	settings.SetupThemeProvider(db)
 
 	// 6. Create Gin engine instance (includes Logger and Recovery middleware by default)
 	r := gin.Default()
 
-	// 6.1 Set BaseURL and DBProvider for SSR
-	public.BaseURL = fmt.Sprintf("http://%s", cfg.GetListenAddr())
-	public.DBProvider = handler.DB
-	logrus.WithField("baseURL", public.BaseURL).Info("Base URL and DB provider set for server-side rendering")
+	// 6.1 Create the SSR renderer with the injected database, base URL and data dir
+	renderer := public.NewRenderer(db, fmt.Sprintf("http://%s", cfg.GetListenAddr()), cfg.DataDir)
+	logrus.WithField("baseURL", renderer.BaseURL()).Info("Base URL set for server-side rendering")
 
 	// Configure trusted proxies based on environment/configuration
 	// If BEHIND_REVERSE_PROXY=true, use TRUSTED_PROXIES list or common defaults
@@ -118,6 +109,7 @@ func main() {
 	// ===================== Core API routing group (all endpoints under /api) =====================
 	// All API routing definitions have been moved to router.RegisterAPIRoutes to avoid cluttering main.go.
 	router.RegisterAPIRoutes(r, router.Deps{
+		DB:      db,
 		Message: message.Deps{DB: db},
 		Comment: comment.Deps{
 			DB:       db,
@@ -154,13 +146,14 @@ func main() {
 			DB: db,
 		},
 		Settings: settings.Deps{
-			DB: db,
+			DB:     db,
+			Themes: renderer,
 		},
 	})
 
 	// ===================== Static file hosting =====================
-	// Register all static routes (assets, uploads, SPA fallback) in the public package
-	public.RegisterStaticRoutes(r, cfg.DataDir, cfg.S3Enabled)
+	// Register all static routes (assets, uploads, SPA fallback) via the renderer
+	renderer.RegisterStaticRoutes(r, cfg.S3Enabled)
 
 	// 7. Start the server
 	logrus.WithField("address", cfg.GetListenAddr()).Info("Starting server")

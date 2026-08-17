@@ -4,6 +4,8 @@ import (
 	"errors"
 	"net/http"
 
+	"vexgo/backend/middleware"
+
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
 )
@@ -11,11 +13,12 @@ import (
 // Handler exposes the verification domain over HTTP.
 type Handler struct {
 	svc *Service
+	mw  *middleware.Auth
 }
 
 // NewHandler creates a verification HTTP handler with the given dependencies.
 func NewHandler(deps Deps) *Handler {
-	return &Handler{svc: NewService(deps)}
+	return &Handler{svc: NewService(deps), mw: middleware.NewAuth(deps.DB)}
 }
 
 // VerifyEmail verifies email (supports initial verification and email change)

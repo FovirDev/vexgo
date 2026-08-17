@@ -7,6 +7,8 @@ import (
 
 	"vexgo/backend/model"
 
+	"vexgo/backend/middleware"
+
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 )
@@ -14,11 +16,12 @@ import (
 // Handler exposes the upload domain over HTTP.
 type Handler struct {
 	svc *Service
+	mw  *middleware.Auth
 }
 
 // NewHandler creates an upload HTTP handler with the given dependencies.
 func NewHandler(deps Deps) *Handler {
-	return &Handler{svc: NewService(deps)}
+	return &Handler{svc: NewService(deps), mw: middleware.NewAuth(deps.DB)}
 }
 
 // getFileExtension returns the extension of a filename (including the dot).
