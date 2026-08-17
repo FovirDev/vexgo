@@ -41,7 +41,7 @@ func (a *Auth) JWTAuth() gin.HandlerFunc {
 			return
 		}
 
-		token, err := jwt.Parse(parts[1], func(token *jwt.Token) (interface{}, error) {
+		token, err := jwt.Parse(parts[1], func(token *jwt.Token) (any, error) {
 			// Ensure using HS256 signing method
 			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 				return nil, jwt.ErrTokenUnverifiable
@@ -84,7 +84,7 @@ func (a *Auth) JWTAuth() gin.HandlerFunc {
 		c.Set("username", claims["username"].(string))
 
 		// Get complete user information and set in context
-		userInfo := map[string]interface{}{
+		userInfo := map[string]any{
 			"id":       userID,
 			"username": claims["username"].(string),
 		}
@@ -120,7 +120,7 @@ func (a *Auth) OptionalJWTAuth() gin.HandlerFunc {
 			return
 		}
 
-		token, err := jwt.Parse(parts[1], func(token *jwt.Token) (interface{}, error) {
+		token, err := jwt.Parse(parts[1], func(token *jwt.Token) (any, error) {
 			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 				return nil, jwt.ErrTokenUnverifiable
 			}
@@ -174,7 +174,7 @@ func (a *Auth) OptionalJWTAuth() gin.HandlerFunc {
 		if uname, ok := claims["username"].(string); ok {
 			c.Set("username", uname)
 		}
-		userInfo := map[string]interface{}{
+		userInfo := map[string]any{
 			"id":       uint(0),
 			"username": "",
 			"role":     "",

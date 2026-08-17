@@ -290,7 +290,7 @@ func (s *Service) exchangeGitHub(c *gin.Context, code, redirectURI string) (*sso
 		return nil, err
 	}
 
-	var data map[string]interface{}
+	var data map[string]any
 	if err := json.Unmarshal(body, &data); err != nil {
 		return nil, err
 	}
@@ -327,7 +327,7 @@ func (s *Service) exchangeGoogle(c *gin.Context, code, redirectURI string) (*sso
 		return nil, err
 	}
 
-	var data map[string]interface{}
+	var data map[string]any
 	if err := json.Unmarshal(body, &data); err != nil {
 		return nil, err
 	}
@@ -356,7 +356,7 @@ func (s *Service) exchangeOIDC(c *gin.Context, code, redirectURI string) (*ssoUs
 		return nil, fmt.Errorf("token exchange failed: %w", err)
 	}
 
-	var claims map[string]interface{}
+	var claims map[string]any
 
 	// Prefer id_token claims (avoids an extra round-trip to userinfo)
 	if rawIDToken, ok := tok.Extra("id_token").(string); ok {
@@ -402,13 +402,13 @@ func (s *Service) exchangeOIDC(c *gin.Context, code, redirectURI string) (*ssoUs
 }
 
 // isInAllowedGroups checks whether the groups claim contains at least one of the allowed groups.
-func isInAllowedGroups(claims map[string]interface{}, groupClaim string, allowed []string) bool {
+func isInAllowedGroups(claims map[string]any, groupClaim string, allowed []string) bool {
 	raw, ok := claims[groupClaim]
 	if !ok {
 		return false
 	}
-	// groups claim is typically []interface{} (JSON array of strings)
-	groups, ok := raw.([]interface{})
+	// groups claim is typically []any (JSON array of strings)
+	groups, ok := raw.([]any)
 	if !ok {
 		return false
 	}
@@ -429,7 +429,7 @@ func isInAllowedGroups(claims map[string]interface{}, groupClaim string, allowed
 // parseOIDCIDTokenClaims decodes the payload of the id_token without signature verification.
 // Signature verification is skipped here because the token was obtained directly via
 // a back-channel code exchange (not supplied by the user), so it is already trusted.
-func parseOIDCIDTokenClaims(rawIDToken string) (map[string]interface{}, error) {
+func parseOIDCIDTokenClaims(rawIDToken string) (map[string]any, error) {
 	parts := strings.Split(rawIDToken, ".")
 	if len(parts) < 2 {
 		return nil, errors.New("malformed id_token")
@@ -438,14 +438,14 @@ func parseOIDCIDTokenClaims(rawIDToken string) (map[string]interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
-	var claims map[string]interface{}
+	var claims map[string]any
 	if err := json.Unmarshal(payload, &claims); err != nil {
 		return nil, err
 	}
 	return claims, nil
 }
 
-func (s *Service) claimsToUserInfo(claims map[string]interface{}) *ssoUserInfo {
+func (s *Service) claimsToUserInfo(claims map[string]any) *ssoUserInfo {
 	cfg := s.sso.OIDC
 	info := &ssoUserInfo{}
 
@@ -594,7 +594,7 @@ func fetchGitHubPrimaryEmail(accessToken string) string {
 	if err != nil {
 		return ""
 	}
-	var emails []map[string]interface{}
+	var emails []map[string]any
 	if err := json.Unmarshal(body, &emails); err != nil {
 		return ""
 	}

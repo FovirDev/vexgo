@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"net/http"
+	"slices"
 
 	"vexgo/backend/internal/model"
 
@@ -28,13 +29,7 @@ func (a *Auth) Permission(requiredRoles ...string) gin.HandlerFunc {
 		}
 
 		// Check if user role meets requirements
-		hasPermission := false
-		for _, requiredRole := range requiredRoles {
-			if user.Role == requiredRole {
-				hasPermission = true
-				break
-			}
-		}
+		hasPermission := slices.Contains(requiredRoles, user.Role)
 
 		// Super admin has all permissions
 		if user.Role == model.RoleSuperAdmin {
@@ -47,7 +42,7 @@ func (a *Auth) Permission(requiredRoles ...string) gin.HandlerFunc {
 		}
 
 		// Store user information in context for later use
-		c.Set("user", map[string]interface{}{
+		c.Set("user", map[string]any{
 			"id":       user.ID,
 			"username": user.Username,
 			"role":     user.Role,

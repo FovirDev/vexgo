@@ -28,7 +28,7 @@ func currentUser(c *gin.Context) (model.User, bool) {
 	if !exists {
 		return model.User{}, false
 	}
-	userMap, ok := userContext.(map[string]interface{})
+	userMap, ok := userContext.(map[string]any)
 	if !ok {
 		return model.User{}, false
 	}
@@ -234,9 +234,9 @@ func (h *Handler) GetCreatorApplications(c *gin.Context) {
 	}
 
 	// Format response
-	var response []map[string]interface{}
+	var response []map[string]any
 	for _, app := range applications {
-		response = append(response, map[string]interface{}{
+		response = append(response, map[string]any{
 			"id":          app.ID,
 			"userId":      app.UserID,
 			"username":    app.User.Username,

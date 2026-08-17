@@ -599,7 +599,7 @@ func (s *Service) ResetPassword(token, password string) error {
 	}
 
 	// Update password and clear reset token
-	if err := s.db.Model(&user).Updates(map[string]interface{}{
+	if err := s.db.Model(&user).Updates(map[string]any{
 		"password":           string(hashed),
 		"verification_token": "",
 		"token_expires_at":   time.Time{},

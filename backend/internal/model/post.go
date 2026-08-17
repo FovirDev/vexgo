@@ -38,7 +38,7 @@ func (p Post) ToJSON() (string, error) {
 }
 
 // ToJSON converts a slice of Post to JSON string
-func ToJSON(v interface{}) (string, error) {
+func ToJSON(v any) (string, error) {
 	data, err := json.Marshal(v)
 	if err != nil {
 		return "", err

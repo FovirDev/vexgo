@@ -116,7 +116,7 @@ func TestTestSMTP_ValidationErrors(t *testing.T) {
 	}
 
 	// incomplete fields
-	if err := svc.db.Model(&model.SMTPConfig{}).Where("1 = 1").Updates(map[string]interface{}{"enabled": true, "host": "localhost", "port": 25, "username": "u", "password": "p", "from_email": "a@b.c"}).Error; err != nil {
+	if err := svc.db.Model(&model.SMTPConfig{}).Where("1 = 1").Updates(map[string]any{"enabled": true, "host": "localhost", "port": 25, "username": "u", "password": "p", "from_email": "a@b.c"}).Error; err != nil {
 		t.Fatalf("failed to update config: %v", err)
 	}
 

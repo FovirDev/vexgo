@@ -388,8 +388,8 @@ func moderateCommentAI(content string, config model.CommentModerationConfig) (bo
 
 	// Check blocked keywords
 	if config.BlockKeywords != "" {
-		keywords := strings.Split(config.BlockKeywords, ",")
-		for _, keyword := range keywords {
+		keywords := strings.SplitSeq(config.BlockKeywords, ",")
+		for keyword := range keywords {
 			keyword = strings.TrimSpace(keyword)
 			if keyword != "" && strings.Contains(strings.ToLower(content), strings.ToLower(keyword)) {
 				return false, "Contains blocked keyword: " + keyword, nil

@@ -66,7 +66,7 @@ func (h *Handler) GetVerificationStatus(c *gin.Context) {
 		return
 	}
 
-	if userMap, ok := userContext.(map[string]interface{}); ok {
+	if userMap, ok := userContext.(map[string]any); ok {
 		if userID, ok := userMap["id"].(uint); ok {
 			emailVerified, email, err := h.svc.VerificationStatus(userID)
 			if err != nil {
@@ -157,7 +157,7 @@ func (h *Handler) ResendVerificationEmail(c *gin.Context) {
 		return
 	}
 
-	if userMap, ok := userContext.(map[string]interface{}); ok {
+	if userMap, ok := userContext.(map[string]any); ok {
 		if userID, ok := userMap["id"].(uint); ok {
 			err := h.svc.ResendVerificationEmail(userID, c.Request.Host)
 			if err != nil {

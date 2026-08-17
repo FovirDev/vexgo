@@ -53,10 +53,10 @@ func (s *S3Config) GetURL(key string) string {
 	// Default S3 URL format
 	if s.ForcePath {
 		domain := s.Endpoint
-		if strings.HasPrefix(domain, "http://") {
-			domain = strings.TrimPrefix(domain, "http://")
-		} else if strings.HasPrefix(domain, "https://") {
-			domain = strings.TrimPrefix(domain, "https://")
+		if after, ok := strings.CutPrefix(domain, "http://"); ok {
+			domain = after
+		} else if after, ok := strings.CutPrefix(domain, "https://"); ok {
+			domain = after
 		}
 		return fmt.Sprintf("https://%s/%s/%s", domain, s.Bucket, key)
 	}

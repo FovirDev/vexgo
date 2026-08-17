@@ -178,7 +178,7 @@ func (s *Service) Get(id, currentUserRole string, currentUserID uint) (*model.Po
 type CreateRequest struct {
 	Title      string
 	Content    string
-	Category   interface{}
+	Category   any
 	Tags       []string
 	Excerpt    string
 	CoverImage string
@@ -248,7 +248,7 @@ func (s *Service) Create(userRole string, userID uint, req CreateRequest) (*mode
 type UpdateRequest struct {
 	Title      string
 	Content    string
-	Category   interface{}
+	Category   any
 	Tags       []string
 	Excerpt    string
 	CoverImage string
@@ -816,7 +816,7 @@ func extractImageURLs(content string) []string {
 		if len(match) >= 2 {
 			ref := strings.TrimSpace(match[1])
 			reDef := regexp.MustCompile(`^\s*\[` + regexp.QuoteMeta(ref) + `\]:\s*(\S+)`)
-			for _, line := range strings.Split(content, "\n") {
+			for line := range strings.SplitSeq(content, "\n") {
 				if defMatch := reDef.FindStringSubmatch(line); len(defMatch) >= 2 {
 					url := strings.TrimSpace(defMatch[1])
 					if url != "" {

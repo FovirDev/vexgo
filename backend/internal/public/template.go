@@ -82,7 +82,7 @@ func RenderPostHTML(post model.Post, baseURL string) ([]byte, error) {
 		return nil, err
 	}
 
-	data := map[string]interface{}{
+	data := map[string]any{
 		"Post":          post,
 		"Title":         post.Title,
 		"MetaDesc":      metaDesc,
@@ -181,7 +181,7 @@ func RenderIndexHTML(posts []model.Post, baseURL string) ([]byte, error) {
 		return nil, err
 	}
 
-	data := map[string]interface{}{
+	data := map[string]any{
 		"Posts":         posts,
 		"Title":         "博客首页",
 		"MetaDesc":      metaDesc,
