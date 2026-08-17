@@ -5,7 +5,6 @@ import (
 	"os"
 	"strconv"
 	"strings"
-	"vexgo/backend/cmd"
 )
 
 // SSOProviderConfig holds OAuth2 credentials for a single provider.
@@ -65,11 +64,11 @@ type ssoConfig struct {
 	AllowLocalLogin bool // ALLOW_LOCAL_LOGIN (default: true)
 }
 
-// LoadFromConfig loads SSO configuration from cmd.Config.
+// LoadFromConfig loads SSO configuration from Config.
 // Config file values take priority over environment variables.
-// This should be called after config.Init() in main.go to override
+// This should be called after Init() in main.go to override
 // environment variables with config file values.
-func LoadFromConfig(cfg *cmd.Config) {
+func LoadFromConfig(cfg *Config) {
 	// Only update fields that are set in the config (non-zero values)
 	// This preserves the priority: command line > config file > environment
 
@@ -229,9 +228,9 @@ var SSOConfig = ssoConfig{
 		TokenURL:      os.Getenv("OIDC_TOKEN_URL"),
 		UserInfoURL:   os.Getenv("OIDC_USERINFO_URL"),
 		Scopes:        parseScopes("OIDC_SCOPES", []string{"openid", "profile", "email"}),
-		EmailClaim:    getEnvOrDefault("OIDC_EMAIL_CLAIM", "email"),
-		NameClaim:     getEnvOrDefault("OIDC_NAME_CLAIM", "name"),
-		GroupClaim:    getEnvOrDefault("OIDC_GROUP_CLAIM", "groups"),
+		EmailClaim:    envDefault("OIDC_EMAIL_CLAIM", "email"),
+		NameClaim:     envDefault("OIDC_NAME_CLAIM", "name"),
+		GroupClaim:    envDefault("OIDC_GROUP_CLAIM", "groups"),
 		AllowedGroups: parseCommaSeparated("OIDC_ALLOWED_GROUPS"),
 		AutoRedirect:  parseBool("OIDC_AUTO_REDIRECT", false),
 		VerifyEmail:   parseBool("OIDC_VERIFY_EMAIL", false),
@@ -241,7 +240,7 @@ var SSOConfig = ssoConfig{
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 
-func getEnvOrDefault(key, defaultVal string) string {
+func envDefault(key, defaultVal string) string {
 	if v := os.Getenv(key); v != "" {
 		return v
 	}

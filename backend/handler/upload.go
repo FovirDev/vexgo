@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"vexgo/backend/config"
+	"vexgo/backend/internal/config"
 	"vexgo/backend/model"
 
 	"github.com/gin-gonic/gin"

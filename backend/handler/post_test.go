@@ -8,7 +8,8 @@ import (
 	"os"
 	"testing"
 
-	"vexgo/backend/cmd"
+	"vexgo/backend/internal/config"
+	"vexgo/backend/internal/database"
 	"vexgo/backend/model"
 
 	"github.com/gin-gonic/gin"
@@ -19,13 +20,15 @@ func resetDB(t *testing.T) {
 	// remove existing file
 	os.Remove("blog.db")
 	// Create a default config for testing
-	cfg := &cmd.Config{
+	cfg := &config.Config{
 		Addr:    "127.0.0.1",
 		Port:    3001,
 		DataDir: ".",
 		DBType:  "sqlite",
 	}
-	InitDB(cfg, ".")
+	db = database.Open(cfg, ".")
+	database.AutoMigrate(db)
+	database.Seed(db)
 }
 
 // add a simple user and return its ID

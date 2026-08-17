@@ -11,9 +11,9 @@ import (
 	"strings"
 	"time"
 
-	"vexgo/backend/config"
+	"vexgo/backend/internal/config"
+	"vexgo/backend/internal/mailer"
 	"vexgo/backend/model"
-	"vexgo/backend/utils"
 
 	"github.com/sirupsen/logrus"
 
@@ -168,7 +168,7 @@ func Login(c *gin.Context) {
 	}
 
 	// Check if SMTP is enabled, if so verify email status
-	mailer := utils.NewMailer(db)
+	mailer := mailer.NewMailer(db)
 	enabled, err := mailer.IsEmailEnabled()
 	if err == nil && enabled && !user.EmailVerified {
 		c.JSON(http.StatusForbidden, gin.H{
@@ -658,7 +658,7 @@ func UpdateEmail(c *gin.Context) {
 	}
 
 	// Check if SMTP is enabled
-	mailer := utils.NewMailer(db)
+	mailer := mailer.NewMailer(db)
 	enabled, err := mailer.IsEmailEnabled()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to check mail configuration"})
@@ -728,7 +728,7 @@ func RequestPasswordReset(c *gin.Context) {
 	}
 
 	// Check if SMTP is enabled
-	mailer := utils.NewMailer(db)
+	mailer := mailer.NewMailer(db)
 	enabled, err := mailer.IsEmailEnabled()
 	if err != nil || !enabled {
 		c.JSON(http.StatusOK, gin.H{"message": "If the email exists, reset link has been sent"})

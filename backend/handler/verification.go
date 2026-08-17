@@ -4,18 +4,18 @@ import (
 	"bytes"
 	"crypto/rand"
 	"encoding/base64"
+	"github.com/sirupsen/logrus"
 	"image"
 	"image/color"
 	"image/draw"
 	"image/png"
-	"github.com/sirupsen/logrus"
 	"math"
 	"net/http"
 	"strings"
 	"time"
 
+	"vexgo/backend/internal/mailer"
 	"vexgo/backend/model"
-	"vexgo/backend/utils"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -31,7 +31,7 @@ func VerifyEmail(c *gin.Context) {
 		return
 	}
 
-	mailer := utils.NewMailer(db)
+	mailer := mailer.NewMailer(db)
 
 	// Determine if token is for email verification or email change based on prefix
 	var err error
@@ -416,7 +416,7 @@ func ResendVerificationEmail(c *gin.Context) {
 				return
 			}
 
-			mailer := utils.NewMailer(db)
+			mailer := mailer.NewMailer(db)
 			enabled, err := mailer.IsEmailEnabled()
 			if err != nil || !enabled {
 				c.JSON(http.StatusServiceUnavailable, gin.H{"error": "Email service not enabled"})

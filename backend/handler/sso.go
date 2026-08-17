@@ -14,7 +14,7 @@ import (
 	"sync"
 	"time"
 
-	"vexgo/backend/config"
+	"vexgo/backend/internal/config"
 	"vexgo/backend/model"
 
 	"github.com/coreos/go-oidc"

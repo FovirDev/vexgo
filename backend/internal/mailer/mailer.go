@@ -1,4 +1,8 @@
-package utils
+// Package mailer sends transactional emails (verification, password reset,
+// email change) and manages the associated tokens. Mailer is the only concrete
+// implementation of MailSender; callers should depend on the interface so the
+// SMTP side effect can be mocked in tests.
+package mailer
 
 import (
 	"fmt"
@@ -12,10 +16,28 @@ import (
 	"gorm.io/gorm"
 )
 
+// MailSender is the external-dependency seam for email sending and token
+// management. It exists so domain packages can be tested without a real SMTP
+// server.
+type MailSender interface {
+	SendVerificationEmail(toEmail, toName, verificationLink string) error
+	GenerateVerificationToken(userID uint) (string, error)
+	VerifyEmail(token string) error
+	IsEmailEnabled() (bool, error)
+	SendPasswordResetEmail(toEmail, toName, resetLink string) error
+	GeneratePasswordResetToken(userID uint) (string, error)
+	GenerateEmailChangeToken(userID uint, newEmail string) (string, error)
+	SendEmailChangeEmail(toEmail, toName, newEmail, verificationLink string) error
+	ConfirmEmailChange(token string) error
+}
+
 // Mailer email sender
 type Mailer struct {
 	DB *gorm.DB
 }
+
+// compile-time check that Mailer satisfies MailSender
+var _ MailSender = (*Mailer)(nil)
 
 // NewMailer creates a new Mailer instance
 func NewMailer(db *gorm.DB) *Mailer {

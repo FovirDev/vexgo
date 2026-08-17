@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"vexgo/backend/config"
+	"vexgo/backend/internal/config"
 
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"

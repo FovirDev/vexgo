@@ -7,13 +7,11 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// RegisterAPIRoutes registers all HTTP routes under /api.
-// This keeps routing logic out of main.go and avoids import cycles.
-func RegisterAPIRoutes(r *gin.Engine) {
-	logrus.Debug("Registering API routes")
-	api := r.Group("/api")
-	api.Use(middleware.RequestLogger())
-	api.Use(middleware.OptionalJWTAuth())
+// RegisterAPIRoutes registers the legacy handler routes on the /api group.
+// During the incremental migration to internal/ domain packages, this function
+// shrinks as each domain moves to its own RegisterRoutes.
+func RegisterAPIRoutes(api *gin.RouterGroup) {
+	logrus.Debug("Registering legacy API routes")
 	{
 		// -------------------- Public API (no JWT authentication required) --------------------
 		logrus.Debug("Registering public API routes")
@@ -136,11 +134,5 @@ func RegisterAPIRoutes(r *gin.Engine) {
 		// Theme upload endpoint
 		api.POST("/themes/upload", middleware.JWTAuth(), middleware.PermissionMiddleware("admin", "super_admin"), UploadTheme)
 
-		// Messages related
-		api.GET("/messages", middleware.JWTAuth(), GetMessages)
-		api.GET("/messages/unread-count", middleware.JWTAuth(), GetUnreadCount)
-		api.PUT("/messages/:id/read", middleware.JWTAuth(), MarkAsRead)
-		api.PUT("/messages/read-all", middleware.JWTAuth(), MarkAllAsRead)
-		api.DELETE("/messages/:id", middleware.JWTAuth(), DeleteMessage)
 	}
 }

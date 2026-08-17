@@ -3,9 +3,11 @@ package main
 import (
 	"fmt"
 	"strings"
-	"vexgo/backend/cmd"
-	"vexgo/backend/config"
 	"vexgo/backend/handler"
+	"vexgo/backend/internal/config"
+	"vexgo/backend/internal/database"
+	"vexgo/backend/internal/message"
+	"vexgo/backend/internal/router"
 	"vexgo/backend/middleware"
 	"vexgo/backend/public"
 
@@ -15,7 +17,7 @@ import (
 
 func main() {
 	// 1. Parse command line arguments
-	cfg := cmd.ParseFlags()
+	cfg := config.ParseFlags()
 
 	// 2. Setup logging
 	setupLogging(cfg.LogLevel)
@@ -59,11 +61,15 @@ func main() {
 	}
 
 	// 5. Initialize database connection (ensure database driver and connection string are configured correctly)
-	handler.InitDB(cfg, cfg.DataDir)
+	db := database.Open(cfg, cfg.DataDir)
+	database.AutoMigrate(db)
+	database.Seed(db)
 	// Set database connection to authentication middleware
-	middleware.SetDB(handler.DB())
+	middleware.SetDB(db)
 	// Set database connection to handler package
-	handler.SetDB(handler.DB())
+	handler.SetDB(db)
+	// Set up the theme provider so the public package can read the active theme from DB
+	handler.SetupThemeProvider()
 
 	// 6. Create Gin engine instance (includes Logger and Recovery middleware by default)
 	r := gin.Default()
@@ -101,8 +107,10 @@ func main() {
 	}
 
 	// ===================== Core API routing group (all endpoints under /api) =====================
-	// All API routing definitions have been moved to handler.RegisterAPIRoutes to avoid cluttering main.go.
-	handler.RegisterAPIRoutes(r)
+	// All API routing definitions have been moved to router.RegisterAPIRoutes to avoid cluttering main.go.
+	router.RegisterAPIRoutes(r, router.Deps{
+		Message: message.Deps{DB: db},
+	})
 
 	// ===================== Static file hosting =====================
 	// Register all static routes (assets, uploads, SPA fallback) in the public package

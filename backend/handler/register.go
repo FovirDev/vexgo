@@ -8,8 +8,8 @@ import (
 
 	"github.com/sirupsen/logrus"
 
+	"vexgo/backend/internal/mailer"
 	"vexgo/backend/model"
-	"vexgo/backend/utils"
 
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
@@ -181,7 +181,7 @@ func Register(c *gin.Context) {
 	}).Info("User created successfully")
 
 	// Check if SMTP is enabled, if so send verification email
-	mailer := utils.NewMailer(db)
+	mailer := mailer.NewMailer(db)
 	enabled, err := mailer.IsEmailEnabled()
 	if err != nil {
 		logrus.WithField("email", newUser.Email).WithError(err).Warn("Failed to check if SMTP is enabled")
