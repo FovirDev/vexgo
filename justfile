@@ -1,6 +1,6 @@
 format:
     # Run formatter.
-    gofumpt -w .
+    gofumpt -w -extra .
     prettier --write "**/*.{js,jsx,ts,tsx,html,md}"
 
 lint:

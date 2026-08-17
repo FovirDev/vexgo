@@ -38,14 +38,14 @@ jobs:
 
       - name: Check Go formatting
         run: |
-          files="$(gofumpt -l .)"
+          files="$(gofumpt -l -extra .)"
 
           if [[ -n "$files" ]]; then
             echo "::error::unformatted files:"
             printf '%s\n' "$files"
 
             echo "::group::gofumpt diff"
-            gofumpt -d .
+            gofumpt -d -extra .
             echo "::endgroup::"
 
             exit 1
