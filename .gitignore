@@ -1,6 +1,7 @@
 .idea/
 .devbox/
 .direnv/
+.vscode/
 
 frontend/node_modules
 frontend/dist
