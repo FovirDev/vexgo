@@ -54,7 +54,8 @@ export function Layout({ children }: LayoutProps) {
         if (response.data.siteIcon) {
           setSiteIcon(response.data.siteIcon);
           // Update favicon link
-          let link = document.querySelector<HTMLLinkElement>("link[rel~='icon']");
+          let link =
+            document.querySelector<HTMLLinkElement>("link[rel~='icon']");
           if (!link) {
             link = document.createElement("link");
             link.rel = "icon";
@@ -181,11 +182,7 @@ export function Layout({ children }: LayoutProps) {
             {/* Logo */}
             <Link to="/" className="flex items-center gap-2 shrink-0">
               {siteIcon ? (
-                <img
-                  src={siteIcon}
-                  alt="Logo"
-                  className="w-8 h-8"
-                />
+                <img src={siteIcon} alt="Logo" className="w-8 h-8" />
               ) : (
                 <>
                   <img
@@ -385,11 +382,7 @@ export function Layout({ children }: LayoutProps) {
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
             <div className="flex items-center gap-2">
               {siteIcon ? (
-                <img
-                  src={siteIcon}
-                  alt="Logo"
-                  className="w-6 h-6"
-                />
+                <img src={siteIcon} alt="Logo" className="w-6 h-6" />
               ) : (
                 <>
                   <img

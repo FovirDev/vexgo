@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Button } from './button';
-import { RefreshCw, CheckCircle, X } from 'lucide-react';
-import { useTranslation } from '@/lib/I18nContext';
+import React, { useState, useEffect, useRef } from "react";
+import { Button } from "./button";
+import { RefreshCw, CheckCircle, X } from "lucide-react";
+import { useTranslation } from "@/lib/I18nContext";
 
 interface SliderCaptchaProps {
   isOpen: boolean;
@@ -10,7 +10,11 @@ interface SliderCaptchaProps {
   onVerify?: () => void;
 }
 
-export function SliderCaptcha({ isOpen, onClose, onSuccess }: SliderCaptchaProps) {
+export function SliderCaptcha({
+  isOpen,
+  onClose,
+  onSuccess,
+}: SliderCaptchaProps) {
   const { t } = useTranslation();
   const [captchaData, setCaptchaData] = useState<{
     id: string;
@@ -22,7 +26,7 @@ export function SliderCaptcha({ isOpen, onClose, onSuccess }: SliderCaptchaProps
   } | null>(null);
   const [isVerifying, setIsVerifying] = useState(false);
   const [isVerified, setIsVerified] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [isDragging, setIsDragging] = useState(false);
   const [sliderPosition, setSliderPosition] = useState(0);
   const canClose = useState(false);
@@ -43,19 +47,19 @@ export function SliderCaptcha({ isOpen, onClose, onSuccess }: SliderCaptchaProps
   const generateCaptcha = async () => {
     try {
       setIsVerifying(true);
-      setError('');
+      setError("");
       setSliderPosition(0);
       setIsVerified(false);
 
-      const response = await fetch('/api/captcha');
+      const response = await fetch("/api/captcha");
       if (!response.ok) {
-        throw new Error('获取验证码失败');
+        throw new Error("获取验证码失败");
       }
 
       const data = await response.json();
       setCaptchaData(data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : '获取验证码失败');
+      setError(err instanceof Error ? err.message : "获取验证码失败");
     } finally {
       setIsVerifying(false);
     }
@@ -69,66 +73,66 @@ export function SliderCaptcha({ isOpen, onClose, onSuccess }: SliderCaptchaProps
   }, [isOpen]);
 
   // 验证拼图
-    const verifyCaptcha = async (x: number) => {
-      if (!captchaData) return;
-  
-      try {
-        setIsVerifying(true);
-        setError('');
-  
-        // 计算拼图块左边缘的x坐标
-        // 滑块宽度40px，拼图块宽度60px
-        // 滑块中心 = x + 20，拼图块中心应该与滑块中心对齐
-        // 拼图块左边缘 = 滑块中心 - 30 = x + 20 - 30 = x - 10
-        const puzzleX = Math.round(x - 10);
-        console.log('滑块位置:', x, '拼图块左边缘:', puzzleX);
-  
-        // 调用后端验证接口
-        const response = await fetch('/api/captcha/verify', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            id: captchaData.id,
-            token: captchaData.token,
-            x: puzzleX,
-          }),
-        });
-  
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.error || '验证失败，请重试');
-        }
-  
-        const data = await response.json();
-        
-        if (data.success) {
-          // 验证成功
-          setIsVerified(true);
-          onSuccess({
-            id: captchaData.id,
-            token: captchaData.token,
-            x: puzzleX,
-          });
-          // 验证成功后关闭弹窗
-          setTimeout(() => {
-            onClose();
-          }, 500);
-        } else {
-          // 验证失败
-          throw new Error(data.message || '验证失败，请重试');
-        }
-      } catch (err) {
-        setError(err instanceof Error ? err.message : '验证失败，请重试');
-        // 验证失败后刷新验证码
-        setTimeout(() => {
-          generateCaptcha();
-        }, 1000);
-      } finally {
-        setIsVerifying(false);
+  const verifyCaptcha = async (x: number) => {
+    if (!captchaData) return;
+
+    try {
+      setIsVerifying(true);
+      setError("");
+
+      // 计算拼图块左边缘的x坐标
+      // 滑块宽度40px，拼图块宽度60px
+      // 滑块中心 = x + 20，拼图块中心应该与滑块中心对齐
+      // 拼图块左边缘 = 滑块中心 - 30 = x + 20 - 30 = x - 10
+      const puzzleX = Math.round(x - 10);
+      console.log("滑块位置:", x, "拼图块左边缘:", puzzleX);
+
+      // 调用后端验证接口
+      const response = await fetch("/api/captcha/verify", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          id: captchaData.id,
+          token: captchaData.token,
+          x: puzzleX,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "验证失败，请重试");
       }
-    };
+
+      const data = await response.json();
+
+      if (data.success) {
+        // 验证成功
+        setIsVerified(true);
+        onSuccess({
+          id: captchaData.id,
+          token: captchaData.token,
+          x: puzzleX,
+        });
+        // 验证成功后关闭弹窗
+        setTimeout(() => {
+          onClose();
+        }, 500);
+      } else {
+        // 验证失败
+        throw new Error(data.message || "验证失败，请重试");
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "验证失败，请重试");
+      // 验证失败后刷新验证码
+      setTimeout(() => {
+        generateCaptcha();
+      }, 1000);
+    } finally {
+      setIsVerifying(false);
+    }
+  };
 
   // 处理滑块拖动
   const handleMouseDown = (e: React.MouseEvent) => {
@@ -148,8 +152,11 @@ export function SliderCaptcha({ isOpen, onClose, onSuccess }: SliderCaptchaProps
       const deltaX = e.clientX - startXRef.current;
       let newPosition = currentXRef.current + deltaX;
 
-      newPosition = Math.max(0, Math.min(newPosition, trackWidth - sliderWidth));
-      
+      newPosition = Math.max(
+        0,
+        Math.min(newPosition, trackWidth - sliderWidth),
+      );
+
       setSliderPosition(newPosition);
     };
 
@@ -164,12 +171,12 @@ export function SliderCaptcha({ isOpen, onClose, onSuccess }: SliderCaptchaProps
     };
 
     if (isDragging) {
-      document.addEventListener('mousemove', handleMouseMove);
-      document.addEventListener('mouseup', handleMouseUp);
+      document.addEventListener("mousemove", handleMouseMove);
+      document.addEventListener("mouseup", handleMouseUp);
 
       return () => {
-        document.removeEventListener('mousemove', handleMouseMove);
-        document.removeEventListener('mouseup', handleMouseUp);
+        document.removeEventListener("mousemove", handleMouseMove);
+        document.removeEventListener("mouseup", handleMouseUp);
       };
     }
   }, [isDragging]);
@@ -186,7 +193,7 @@ export function SliderCaptcha({ isOpen, onClose, onSuccess }: SliderCaptchaProps
   useEffect(() => {
     const handleTouchMove = (e: TouchEvent) => {
       if (!isDraggingRef.current || !trackRef.current) return;
-      
+
       e.preventDefault();
 
       const trackWidth = trackRef.current.offsetWidth;
@@ -194,8 +201,11 @@ export function SliderCaptcha({ isOpen, onClose, onSuccess }: SliderCaptchaProps
       const deltaX = e.touches[0].clientX - startXRef.current;
       let newPosition = currentXRef.current + deltaX;
 
-      newPosition = Math.max(0, Math.min(newPosition, trackWidth - sliderWidth));
-      
+      newPosition = Math.max(
+        0,
+        Math.min(newPosition, trackWidth - sliderWidth),
+      );
+
       setSliderPosition(newPosition);
     };
 
@@ -210,12 +220,14 @@ export function SliderCaptcha({ isOpen, onClose, onSuccess }: SliderCaptchaProps
     };
 
     if (isDragging) {
-      document.addEventListener('touchmove', handleTouchMove, { passive: false });
-      document.addEventListener('touchend', handleTouchEnd);
+      document.addEventListener("touchmove", handleTouchMove, {
+        passive: false,
+      });
+      document.addEventListener("touchend", handleTouchEnd);
 
       return () => {
-        document.removeEventListener('touchmove', handleTouchMove);
-        document.removeEventListener('touchend', handleTouchEnd);
+        document.removeEventListener("touchmove", handleTouchMove);
+        document.removeEventListener("touchend", handleTouchEnd);
       };
     }
   }, [isDragging]);
@@ -227,7 +239,9 @@ export function SliderCaptcha({ isOpen, onClose, onSuccess }: SliderCaptchaProps
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-lg shadow-lg w-full max-w-md p-6">
         <div className="flex justify-between items-center mb-4">
-          <h3 className="text-lg font-medium text-gray-900">{t("sliderCaptcha.title")}</h3>
+          <h3 className="text-lg font-medium text-gray-900">
+            {t("sliderCaptcha.title")}
+          </h3>
           <Button
             variant="ghost"
             size="sm"
@@ -238,7 +252,11 @@ export function SliderCaptcha({ isOpen, onClose, onSuccess }: SliderCaptchaProps
             }}
             disabled={!canClose}
             className="h-8 w-8 p-0"
-            title={canClose ? t("sliderCaptcha.closeButton") : t("sliderCaptcha.closeButtonDisabled")}
+            title={
+              canClose
+                ? t("sliderCaptcha.closeButton")
+                : t("sliderCaptcha.closeButtonDisabled")
+            }
           >
             <X className="h-4 w-4" />
           </Button>
@@ -260,15 +278,21 @@ export function SliderCaptcha({ isOpen, onClose, onSuccess }: SliderCaptchaProps
         {captchaData && (
           <div className="space-y-4">
             {/* 拼图区域 */}
-            <div className="relative bg-gray-100 rounded overflow-hidden flex justify-center items-center" style={{ height: '160px' }}>
+            <div
+              className="relative bg-gray-100 rounded overflow-hidden flex justify-center items-center"
+              style={{ height: "160px" }}
+            >
               {/* 背景图片 */}
-              <div className="relative" style={{ width: '320px', height: '160px' }}>
+              <div
+                className="relative"
+                style={{ width: "320px", height: "160px" }}
+              >
                 <img
                   src={captchaData.bg_image}
                   alt={t("sliderCaptcha.backgroundAlt")}
                   className="w-full h-full"
                 />
-                
+
                 {/* 拼图块 - 与滑块中心对齐 */}
                 <div
                   className="absolute pointer-events-none"
@@ -284,7 +308,7 @@ export function SliderCaptcha({ isOpen, onClose, onSuccess }: SliderCaptchaProps
                   <img
                     src={captchaData.puzzle_img}
                     alt={t("sliderCaptcha.puzzleAlt")}
-                    style={{ width: '60px', height: '60px' }}
+                    style={{ width: "60px", height: "60px" }}
                   />
                 </div>
               </div>
@@ -300,13 +324,13 @@ export function SliderCaptcha({ isOpen, onClose, onSuccess }: SliderCaptchaProps
                 className="absolute top-0 left-0 h-full bg-blue-500 transition-all duration-75"
                 style={{ width: `${sliderPosition + 20}px` }}
               />
-              
+
               {/* 滑块 */}
               <div
                 ref={sliderRef}
                 className={`absolute top-1/2 w-10 h-10 bg-white rounded-full shadow-lg flex items-center justify-center cursor-pointer transform -translate-y-1/2 transition-all duration-75 ${
-                  isDragging ? 'scale-105 shadow-xl' : 'hover:scale-105'
-                } ${isVerified ? 'bg-green-500' : ''}`}
+                  isDragging ? "scale-105 shadow-xl" : "hover:scale-105"
+                } ${isVerified ? "bg-green-500" : ""}`}
                 style={{ left: `${sliderPosition}px` }}
                 onMouseDown={handleMouseDown}
                 onTouchStart={handleTouchStart}
@@ -314,9 +338,26 @@ export function SliderCaptcha({ isOpen, onClose, onSuccess }: SliderCaptchaProps
                 {isVerified ? (
                   <CheckCircle className="h-5 w-5 text-white" />
                 ) : (
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M5 12H19" stroke="#4B5563" strokeWidth="2" strokeLinecap="round"/>
-                    <path d="M12 5L19 12L12 19" stroke="#4B5563" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <svg
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      d="M5 12H19"
+                      stroke="#4B5563"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                    />
+                    <path
+                      d="M12 5L19 12L12 19"
+                      stroke="#4B5563"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
                   </svg>
                 )}
               </div>
@@ -325,7 +366,9 @@ export function SliderCaptcha({ isOpen, onClose, onSuccess }: SliderCaptchaProps
             {/* 提示文字 */}
             <div className="text-center text-sm text-gray-600">
               {isVerified ? (
-                <span className="text-green-600 font-medium">{t("sliderCaptcha.successHint")}</span>
+                <span className="text-green-600 font-medium">
+                  {t("sliderCaptcha.successHint")}
+                </span>
               ) : (
                 t("sliderCaptcha.dragHint")
               )}
@@ -340,7 +383,9 @@ export function SliderCaptcha({ isOpen, onClose, onSuccess }: SliderCaptchaProps
                 disabled={isVerifying}
                 className="text-sm"
               >
-                <RefreshCw className={`h-4 w-4 mr-1 ${isVerifying ? 'animate-spin' : ''}`} />
+                <RefreshCw
+                  className={`h-4 w-4 mr-1 ${isVerifying ? "animate-spin" : ""}`}
+                />
                 {t("sliderCaptcha.refreshButton")}
               </Button>
             </div>

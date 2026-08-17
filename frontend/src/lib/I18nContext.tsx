@@ -1,6 +1,6 @@
-import { createContext, useContext, useState, useCallback } from 'react';
-import type { ReactNode } from 'react';
-import { setLocale as setLocaleUtil, getLocale, t as translate } from './i18n';
+import { createContext, useContext, useState, useCallback } from "react";
+import type { ReactNode } from "react";
+import { setLocale as setLocaleUtil, getLocale, t as translate } from "./i18n";
 
 interface I18nContextType {
   locale: string;
@@ -17,25 +17,28 @@ interface I18nProviderProps {
 export function I18nProvider({ children }: I18nProviderProps) {
   const [locale, setLocaleState] = useState(() => {
     // 初始化时从 localStorage 读取
-    const savedLocale = localStorage.getItem('locale');
-    if (savedLocale === 'zh-CN' || savedLocale === 'en-US') {
+    const savedLocale = localStorage.getItem("locale");
+    if (savedLocale === "zh-CN" || savedLocale === "en-US") {
       return savedLocale;
     }
     return getLocale();
   });
 
   const setLocale = useCallback((newLocale: string) => {
-    if (newLocale === 'zh-CN' || newLocale === 'en-US') {
+    if (newLocale === "zh-CN" || newLocale === "en-US") {
       setLocaleState(newLocale);
       setLocaleUtil(newLocale);
       // 保存到 localStorage
-      localStorage.setItem('locale', newLocale);
+      localStorage.setItem("locale", newLocale);
     }
   }, []);
 
-  const t = useCallback((key: string, params?: Record<string, unknown>): string => {
-    return translate(key, params);
-  }, []);
+  const t = useCallback(
+    (key: string, params?: Record<string, unknown>): string => {
+      return translate(key, params);
+    },
+    [],
+  );
 
   return (
     <I18nContext.Provider value={{ locale, setLocale, t }}>
@@ -47,7 +50,7 @@ export function I18nProvider({ children }: I18nProviderProps) {
 export function useTranslation() {
   const context = useContext(I18nContext);
   if (context === undefined) {
-    throw new Error('useTranslation must be used within an I18nProvider');
+    throw new Error("useTranslation must be used within an I18nProvider");
   }
   return context;
 }

@@ -1,15 +1,21 @@
-import { useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useTranslation } from '@/lib/I18nContext';
-import { configApi, uploadApi } from '@/lib/api';
-import type { GeneralSettings } from '@/types';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
-import { Switch } from '@/components/ui/switch';
-import { Button } from '@/components/ui/button';
-import { ArrowLeft, Settings, Save, Upload, Trash2 } from 'lucide-react';
-import { toast } from 'sonner';
+import { useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useTranslation } from "@/lib/I18nContext";
+import { configApi, uploadApi } from "@/lib/api";
+import type { GeneralSettings } from "@/types";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
+import { Button } from "@/components/ui/button";
+import { ArrowLeft, Settings, Save, Upload, Trash2 } from "lucide-react";
+import { toast } from "sonner";
 
 export function GeneralSettingsPage() {
   const navigate = useNavigate();
@@ -17,16 +23,16 @@ export function GeneralSettingsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [config, setConfig] = useState<GeneralSettings>({
-    id: '',
+    id: "",
     captchaEnabled: false,
     registrationEnabled: true,
     allowGuestViewPosts: true,
-    siteName: t('common.siteName') || 'VexGo',
-    siteDescription: '',
-    siteIcon: '',
+    siteName: t("common.siteName") || "VexGo",
+    siteDescription: "",
+    siteIcon: "",
     itemsPerPage: 20,
-    createdAt: '',
-    updatedAt: ''
+    createdAt: "",
+    updatedAt: "",
   });
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -39,8 +45,8 @@ export function GeneralSettingsPage() {
       const response = await configApi.getGeneralSettings();
       setConfig(response.data);
     } catch (error) {
-      console.error('加载通用设置失败:', error);
-      toast.error(t('generalSettings.loadFailed'));
+      console.error("加载通用设置失败:", error);
+      toast.error(t("generalSettings.loadFailed"));
     } finally {
       setLoading(false);
     }
@@ -48,22 +54,26 @@ export function GeneralSettingsPage() {
 
   const handleSave = async () => {
     if (!config.siteName.trim()) {
-      toast.error(t('generalSettings.siteNameRequired'));
+      toast.error(t("generalSettings.siteNameRequired"));
       return;
     }
     if (config.itemsPerPage <= 0 || config.itemsPerPage > 100) {
-      toast.error(t('generalSettings.itemsPerPageInvalid'));
+      toast.error(t("generalSettings.itemsPerPageInvalid"));
       return;
     }
 
     setSaving(true);
     try {
       await configApi.updateGeneralSettings(config);
-      toast.success(t('generalSettings.saveSuccess'));
+      toast.success(t("generalSettings.saveSuccess"));
     } catch (error) {
-      console.error('保存通用设置失败:', error);
+      console.error("保存通用设置失败:", error);
       const err = error as { response?: { data?: { error?: string } } };
-      toast.error(t('generalSettings.saveFailed') + ': ' + (err.response?.data?.error || t('common.unknownError')));
+      toast.error(
+        t("generalSettings.saveFailed") +
+          ": " +
+          (err.response?.data?.error || t("common.unknownError")),
+      );
     } finally {
       setSaving(false);
     }
@@ -73,8 +83,8 @@ export function GeneralSettingsPage() {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (!file.type.startsWith('image/')) {
-      toast.error(t('generalSettings.iconInvalidType'));
+    if (!file.type.startsWith("image/")) {
+      toast.error(t("generalSettings.iconInvalidType"));
       return;
     }
 
@@ -83,19 +93,19 @@ export function GeneralSettingsPage() {
       if (response.data.file?.url) {
         setConfig({ ...config, siteIcon: response.data.file.url });
       }
-      toast.success(t('generalSettings.iconUploadSuccess'));
+      toast.success(t("generalSettings.iconUploadSuccess"));
     } catch (error) {
-      console.error('上传图标失败:', error);
-      toast.error(t('generalSettings.iconUploadFailed'));
+      console.error("上传图标失败:", error);
+      toast.error(t("generalSettings.iconUploadFailed"));
     }
 
     if (fileInputRef.current) {
-      fileInputRef.current.value = '';
+      fileInputRef.current.value = "";
     }
   };
 
   const handleRemoveIcon = () => {
-    setConfig({ ...config, siteIcon: '' });
+    setConfig({ ...config, siteIcon: "" });
   };
 
   if (loading) {
@@ -123,54 +133,60 @@ export function GeneralSettingsPage() {
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => navigate('/admin')}
+          onClick={() => navigate("/admin")}
           className="mb-4"
         >
           <ArrowLeft className="w-4 h-4 mr-2" />
-          {t('generalSettings.backToAdmin')}
+          {t("generalSettings.backToAdmin")}
         </Button>
         <h1 className="text-3xl font-bold flex items-center gap-2">
           <Settings className="w-8 h-8" />
-          {t('generalSettings.title')}
+          {t("generalSettings.title")}
         </h1>
         <p className="text-muted-foreground mt-2">
-          {t('generalSettings.description')}
+          {t("generalSettings.description")}
         </p>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>{t('generalSettings.basicSettings')}</CardTitle>
+          <CardTitle>{t("generalSettings.basicSettings")}</CardTitle>
           <CardDescription>
-            {t('generalSettings.basicSettingsDesc')}
+            {t("generalSettings.basicSettingsDesc")}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           {/* 网站名称 */}
           <div className="space-y-2">
-            <Label htmlFor="siteName">{t('generalSettings.siteName')}</Label>
+            <Label htmlFor="siteName">{t("generalSettings.siteName")}</Label>
             <Input
               id="siteName"
               value={config.siteName}
-              onChange={(e) => setConfig({ ...config, siteName: e.target.value })}
-              placeholder={t('generalSettings.siteNamePlaceholder')}
+              onChange={(e) =>
+                setConfig({ ...config, siteName: e.target.value })
+              }
+              placeholder={t("generalSettings.siteNamePlaceholder")}
             />
           </div>
 
           {/* 网站描述 */}
           <div className="space-y-2">
-            <Label htmlFor="siteDescription">{t('generalSettings.siteDescription')}</Label>
+            <Label htmlFor="siteDescription">
+              {t("generalSettings.siteDescription")}
+            </Label>
             <Input
               id="siteDescription"
               value={config.siteDescription}
-              onChange={(e) => setConfig({ ...config, siteDescription: e.target.value })}
-              placeholder={t('generalSettings.siteDescriptionPlaceholder')}
+              onChange={(e) =>
+                setConfig({ ...config, siteDescription: e.target.value })
+              }
+              placeholder={t("generalSettings.siteDescriptionPlaceholder")}
             />
           </div>
 
           {/* 网站图标 */}
           <div className="space-y-2">
-            <Label>{t('generalSettings.siteIcon')}</Label>
+            <Label>{t("generalSettings.siteIcon")}</Label>
             <div className="flex items-center gap-4">
               {config.siteIcon ? (
                 <div className="relative w-16 h-16 rounded-lg border overflow-hidden">
@@ -200,10 +216,10 @@ export function GeneralSettingsPage() {
                   onClick={() => fileInputRef.current?.click()}
                 >
                   <Upload className="w-4 h-4 mr-2" />
-                  {t('generalSettings.iconUpload')}
+                  {t("generalSettings.iconUpload")}
                 </Button>
                 <p className="text-xs text-muted-foreground mt-1">
-                  {t('generalSettings.iconDesc')}
+                  {t("generalSettings.iconDesc")}
                 </p>
                 <input
                   ref={fileInputRef}
@@ -218,63 +234,82 @@ export function GeneralSettingsPage() {
 
           {/* 每页显示数量 */}
           <div className="space-y-2">
-            <Label htmlFor="itemsPerPage">{t('generalSettings.itemsPerPage')}</Label>
+            <Label htmlFor="itemsPerPage">
+              {t("generalSettings.itemsPerPage")}
+            </Label>
             <Input
               id="itemsPerPage"
               type="number"
               min={1}
               max={100}
               value={config.itemsPerPage}
-              onChange={(e) => setConfig({ ...config, itemsPerPage: parseInt(e.target.value) || 20 })}
-              placeholder={t('generalSettings.itemsPerPagePlaceholder')}
+              onChange={(e) =>
+                setConfig({
+                  ...config,
+                  itemsPerPage: parseInt(e.target.value) || 20,
+                })
+              }
+              placeholder={t("generalSettings.itemsPerPagePlaceholder")}
             />
             <p className="text-xs text-muted-foreground">
-              {t('generalSettings.itemsPerPageDesc')}
+              {t("generalSettings.itemsPerPageDesc")}
             </p>
           </div>
 
           {/* 启用滑块验证 */}
           <div className="flex items-center justify-between rounded-lg border p-4">
             <div className="space-y-0.5">
-              <Label htmlFor="captchaEnabled">{t('generalSettings.captcha')}</Label>
+              <Label htmlFor="captchaEnabled">
+                {t("generalSettings.captcha")}
+              </Label>
               <p className="text-sm text-muted-foreground">
-                {t('generalSettings.captchaDesc')}
+                {t("generalSettings.captchaDesc")}
               </p>
             </div>
             <Switch
               id="captchaEnabled"
               checked={config.captchaEnabled}
-              onCheckedChange={(checked) => setConfig({ ...config, captchaEnabled: checked })}
+              onCheckedChange={(checked) =>
+                setConfig({ ...config, captchaEnabled: checked })
+              }
             />
           </div>
 
           {/* 允许注册 */}
           <div className="flex items-center justify-between rounded-lg border p-4">
             <div className="space-y-0.5">
-              <Label htmlFor="registrationEnabled">{t('generalSettings.registration')}</Label>
+              <Label htmlFor="registrationEnabled">
+                {t("generalSettings.registration")}
+              </Label>
               <p className="text-sm text-muted-foreground">
-                {t('generalSettings.registrationDesc')}
+                {t("generalSettings.registrationDesc")}
               </p>
             </div>
             <Switch
               id="registrationEnabled"
               checked={config.registrationEnabled}
-              onCheckedChange={(checked) => setConfig({ ...config, registrationEnabled: checked })}
+              onCheckedChange={(checked) =>
+                setConfig({ ...config, registrationEnabled: checked })
+              }
             />
           </div>
 
           {/* 允许访客浏览文章 */}
           <div className="flex items-center justify-between rounded-lg border p-4">
             <div className="space-y-0.5">
-              <Label htmlFor="allowGuestViewPosts">{t('generalSettings.allowGuestViewPosts')}</Label>
+              <Label htmlFor="allowGuestViewPosts">
+                {t("generalSettings.allowGuestViewPosts")}
+              </Label>
               <p className="text-sm text-muted-foreground">
-                {t('generalSettings.allowGuestViewPostsDesc')}
+                {t("generalSettings.allowGuestViewPostsDesc")}
               </p>
             </div>
             <Switch
               id="allowGuestViewPosts"
               checked={config.allowGuestViewPosts}
-              onCheckedChange={(checked) => setConfig({ ...config, allowGuestViewPosts: checked })}
+              onCheckedChange={(checked) =>
+                setConfig({ ...config, allowGuestViewPosts: checked })
+              }
             />
           </div>
         </CardContent>
@@ -284,11 +319,11 @@ export function GeneralSettingsPage() {
       <div className="mt-6 flex justify-end">
         <Button onClick={handleSave} disabled={saving} size="lg">
           {saving ? (
-            <>{t('generalSettings.saving')}</>
+            <>{t("generalSettings.saving")}</>
           ) : (
             <>
               <Save className="w-4 h-4 mr-2" />
-              {t('generalSettings.saveSettings')}
+              {t("generalSettings.saveSettings")}
             </>
           )}
         </Button>

@@ -1,2 +1,2 @@
-* [home](/)
-* [api](api.md)
+- [home](/)
+- [api](api.md)

@@ -1,42 +1,48 @@
-import { useState, useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
-import { authApi } from '@/lib/api';
-import { useTranslation } from '@/lib/I18nContext';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2, Mail, Lock, ArrowLeft } from 'lucide-react';
+import { useState, useEffect } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { authApi } from "@/lib/api";
+import { useTranslation } from "@/lib/I18nContext";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Loader2, Mail, Lock, ArrowLeft } from "lucide-react";
 
 export function ResetPasswordPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const token = searchParams.get('token');
+  const token = searchParams.get("token");
 
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
-  const [step, setStep] = useState<'request' | 'reset'>('request');
+  const [step, setStep] = useState<"request" | "reset">("request");
 
   // 如果 URL 中有 token，直接进入重置密码步骤
   useEffect(() => {
     if (token) {
-      setStep('reset');
+      setStep("reset");
     }
   }, [token]);
 
   const handleRequestReset = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
+    setError("");
 
     if (!email) {
-      setError(t('resetPasswordPage.emailRequired'));
+      setError(t("resetPasswordPage.emailRequired"));
       return;
     }
 
@@ -45,9 +51,11 @@ export function ResetPasswordPage() {
     try {
       await authApi.requestPasswordReset({ email });
       setSuccess(true);
-      setError('');
+      setError("");
     } catch (err: any) {
-      setError(err.response?.data?.error || t('resetPasswordPage.requestFailed'));
+      setError(
+        err.response?.data?.error || t("resetPasswordPage.requestFailed"),
+      );
     } finally {
       setLoading(false);
     }
@@ -55,20 +63,20 @@ export function ResetPasswordPage() {
 
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
+    setError("");
 
     if (!token) {
-      setError(t('resetPasswordPage.missingToken'));
+      setError(t("resetPasswordPage.missingToken"));
       return;
     }
 
     if (password.length < 6) {
-      setError(t('resetPasswordPage.passwordTooShort'));
+      setError(t("resetPasswordPage.passwordTooShort"));
       return;
     }
 
     if (password !== confirmPassword) {
-      setError(t('resetPasswordPage.passwordMismatch'));
+      setError(t("resetPasswordPage.passwordMismatch"));
       return;
     }
 
@@ -77,13 +85,13 @@ export function ResetPasswordPage() {
     try {
       await authApi.resetPassword({ token, password });
       setSuccess(true);
-      setError('');
+      setError("");
       // 3秒后跳转到登录页
       setTimeout(() => {
-        navigate('/login');
+        navigate("/login");
       }, 3000);
     } catch (err: any) {
-      setError(err.response?.data?.error || t('resetPasswordPage.resetFailed'));
+      setError(err.response?.data?.error || t("resetPasswordPage.resetFailed"));
     } finally {
       setLoading(false);
     }
@@ -94,12 +102,14 @@ export function ResetPasswordPage() {
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl">
-            {step === 'request' ? t('resetPasswordPage.findPassword') : t('resetPasswordPage.resetPassword')}
+            {step === "request"
+              ? t("resetPasswordPage.findPassword")
+              : t("resetPasswordPage.resetPassword")}
           </CardTitle>
           <CardDescription>
-            {step === 'request'
-              ? t('resetPasswordPage.resetInstruction')
-              : t('resetPasswordPage.newPasswordInstruction')}
+            {step === "request"
+              ? t("resetPasswordPage.resetInstruction")
+              : t("resetPasswordPage.newPasswordInstruction")}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -112,24 +122,31 @@ export function ResetPasswordPage() {
           {success && (
             <Alert variant="default" className="mb-4">
               <AlertDescription>
-                {step === 'request'
-                  ? t('resetPasswordPage.resetLinkSent')
-                  : t('resetPasswordPage.resetSuccess')}
+                {step === "request"
+                  ? t("resetPasswordPage.resetLinkSent")
+                  : t("resetPasswordPage.resetSuccess")}
               </AlertDescription>
             </Alert>
           )}
 
           {!success && (
-            <form onSubmit={step === 'request' ? handleRequestReset : handleResetPassword} className="space-y-4">
-              {step === 'request' ? (
+            <form
+              onSubmit={
+                step === "request" ? handleRequestReset : handleResetPassword
+              }
+              className="space-y-4"
+            >
+              {step === "request" ? (
                 <div className="space-y-2">
-                  <Label htmlFor="email">{t('resetPasswordPage.emailLabel')}</Label>
+                  <Label htmlFor="email">
+                    {t("resetPasswordPage.emailLabel")}
+                  </Label>
                   <div className="relative">
                     <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                     <Input
                       id="email"
                       type="email"
-                      placeholder={t('resetPasswordPage.emailPlaceholder')}
+                      placeholder={t("resetPasswordPage.emailPlaceholder")}
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       className="pl-10"
@@ -140,13 +157,15 @@ export function ResetPasswordPage() {
               ) : (
                 <>
                   <div className="space-y-2">
-                    <Label htmlFor="password">{t('resetPasswordPage.newPassword')}</Label>
+                    <Label htmlFor="password">
+                      {t("resetPasswordPage.newPassword")}
+                    </Label>
                     <div className="relative">
                       <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                       <Input
                         id="password"
-                        type={showPassword ? 'text' : 'password'}
-                        placeholder={t('resetPasswordPage.passwordPlaceholder')}
+                        type={showPassword ? "text" : "password"}
+                        placeholder={t("resetPasswordPage.passwordPlaceholder")}
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         className="pl-10 pr-10"
@@ -159,22 +178,24 @@ export function ResetPasswordPage() {
                         className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                       >
                         {showPassword ? (
-                          <span className="text-sm">{t('common.hide')}</span>
+                          <span className="text-sm">{t("common.hide")}</span>
                         ) : (
-                          <span className="text-sm">{t('common.show')}</span>
+                          <span className="text-sm">{t("common.show")}</span>
                         )}
                       </button>
                     </div>
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="confirmPassword">{t('resetPasswordPage.confirmPassword')}</Label>
+                    <Label htmlFor="confirmPassword">
+                      {t("resetPasswordPage.confirmPassword")}
+                    </Label>
                     <div className="relative">
                       <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                       <Input
                         id="confirmPassword"
-                        type={showPassword ? 'text' : 'password'}
-                        placeholder={t('resetPasswordPage.confirmPlaceholder')}
+                        type={showPassword ? "text" : "password"}
+                        placeholder={t("resetPasswordPage.confirmPlaceholder")}
                         value={confirmPassword}
                         onChange={(e) => setConfirmPassword(e.target.value)}
                         className="pl-10"
@@ -190,10 +211,14 @@ export function ResetPasswordPage() {
                 {loading ? (
                   <>
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    {step === 'request' ? t('resetPasswordPage.sending') : t('resetPasswordPage.resetting')}
+                    {step === "request"
+                      ? t("resetPasswordPage.sending")
+                      : t("resetPasswordPage.resetting")}
                   </>
+                ) : step === "request" ? (
+                  t("resetPasswordPage.sendResetLink")
                 ) : (
-                  step === 'request' ? t('resetPasswordPage.sendResetLink') : t('resetPasswordPage.resetPasswordButton')
+                  t("resetPasswordPage.resetPasswordButton")
                 )}
               </Button>
             </form>
@@ -202,11 +227,11 @@ export function ResetPasswordPage() {
           <div className="mt-6 text-center text-sm">
             <button
               type="button"
-              onClick={() => navigate('/login')}
+              onClick={() => navigate("/login")}
               className="text-primary hover:underline focus:outline-none flex items-center justify-center mx-auto"
             >
               <ArrowLeft className="w-4 h-4 mr-1" />
-              {t('resetPasswordPage.backToLogin')}
+              {t("resetPasswordPage.backToLogin")}
             </button>
           </div>
         </CardContent>

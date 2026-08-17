@@ -107,7 +107,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (requires_verification && !email_verified) {
         setUser(user);
-        const error = new Error(response.data.message || "请先验证您的邮箱地址");
+        const error = new Error(
+          response.data.message || "请先验证您的邮箱地址",
+        );
         (error as any).requiresVerification = true;
         (error as any).email = email;
         throw error;
@@ -122,7 +124,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     } catch (error: any) {
       // Extract error message from response
-      const errorMessage = error.response?.data?.error || error.message || "注册失败";
+      const errorMessage =
+        error.response?.data?.error || error.message || "注册失败";
       throw new Error(errorMessage);
     }
   };

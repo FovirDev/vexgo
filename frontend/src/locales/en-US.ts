@@ -69,13 +69,16 @@ export const enUS = {
     currentPasswordIncorrect: "Current password is incorrect",
     emailChange: "Change Email",
     emailChangeSuccess: "Email changed successfully",
-    emailChangePending: "Verification email sent. Please check your inbox and click the link to complete the email change.",
+    emailChangePending:
+      "Verification email sent. Please check your inbox and click the link to complete the email change.",
     emailSameAsCurrent: "New email cannot be the same as current email",
     emailAlreadyUsed: "This email is already in use by another account",
     emailChangeConfirm: "Confirm Email Change",
     enterNewEmail: "Enter new email address",
-    smtpEnabled: "Since email verification is enabled, a confirmation email will be sent to your new email. Please click the link in the email to complete the verification.",
-    smtpDisabled: "Since SMTP is not enabled, your email will be updated directly.",
+    smtpEnabled:
+      "Since email verification is enabled, a confirmation email will be sent to your new email. Please click the link in the email to complete the verification.",
+    smtpDisabled:
+      "Since SMTP is not enabled, your email will be updated directly.",
   },
 
   // Verify Email
@@ -84,8 +87,10 @@ export const enUS = {
     verifying: "Verifying your email...",
     success: "Verification Complete",
     failed: "Verification Failed",
-    emailVerificationSuccess: "Email verified successfully! You can now log in.",
-    emailChangeSuccess: "Email changed successfully! Your new email is now active.",
+    emailVerificationSuccess:
+      "Email verified successfully! You can now log in.",
+    emailChangeSuccess:
+      "Email changed successfully! Your new email is now active.",
     invalidToken: "Invalid verification token",
     tokenExpired: "Verification token has expired",
     goToLogin: "Go to Login",
@@ -104,7 +109,8 @@ export const enUS = {
     system: "System",
     language: "Language",
     privacySettings: "Privacy Settings",
-    privacySettingsDesc: "Manage the visibility of your profile and personal information",
+    privacySettingsDesc:
+      "Manage the visibility of your profile and personal information",
     profileVisibility: "Profile Visibility",
     public: "Public",
     private: "Private",
@@ -137,7 +143,8 @@ export const enUS = {
     page: "Page {page} of {totalPages}",
     delete: "Delete",
     deleteConfirmation: "Confirm Delete",
-    deleteDescription: "Are you sure you want to delete user {username}? This action will delete all the user's posts, comments and related data, and cannot be undone.",
+    deleteDescription:
+      "Are you sure you want to delete user {username}? This action will delete all the user's posts, comments and related data, and cannot be undone.",
     searchPlaceholder: "Search users...",
   },
 
@@ -151,13 +158,17 @@ export const enUS = {
     saveFailed: "Failed to save configuration",
     loadFailed: "Failed to load configuration",
     basicSettings: "Basic Settings",
-    basicSettingsDesc: "Configure comment moderation toggle and basic parameters",
+    basicSettingsDesc:
+      "Configure comment moderation toggle and basic parameters",
     enableAIModeration: "Enable AI Comment Moderation",
-    enableAIModerationDesc: "When enabled, new comments will be moderated by AI before being displayed",
+    enableAIModerationDesc:
+      "When enabled, new comments will be moderated by AI before being displayed",
     autoApproveLowRisk: "Auto-approve low-risk comments",
-    autoApproveLowRiskDesc: "When enabled, comments with risk scores below threshold will be automatically approved",
+    autoApproveLowRiskDesc:
+      "When enabled, comments with risk scores below threshold will be automatically approved",
     minScoreThreshold: "Minimum Score Threshold",
-    minScoreThresholdDesc: "Comments with scores below this threshold will be rejected (0-1)",
+    minScoreThresholdDesc:
+      "Comments with scores below this threshold will be rejected (0-1)",
     apiConfig: "API Configuration",
     apiConfigDesc: "Configure API key and endpoint for AI service provider",
     modelProvider: "Model Provider",
@@ -175,16 +186,19 @@ export const enUS = {
     placeholderHint: "Use '{{content}}' placeholder for comment content",
     blockKeywords: "Blocked Keywords",
     blockKeywordsPlaceholder: "Enter keywords to block, separated by commas",
-    blockKeywordsDesc: "Comments containing these keywords will be automatically rejected",
+    blockKeywordsDesc:
+      "Comments containing these keywords will be automatically rejected",
   },
 
   // SMTP Settings Page
   smtpSettings: {
     title: "SMTP Email Settings",
-    description: "Configure email server for registration verification and other email functions",
+    description:
+      "Configure email server for registration verification and other email functions",
     backToAdmin: "Back to Admin",
     serverConfig: "Email Server Configuration",
-    serverConfigDesc: "Fill in your SMTP server information to enable email sending",
+    serverConfigDesc:
+      "Fill in your SMTP server information to enable email sending",
     enableSMTP: "Enable SMTP",
     enableSMTPDesc: "When enabled, the system will use SMTP to send emails",
     smtpHost: "SMTP Server Address",
@@ -195,7 +209,8 @@ export const enUS = {
     emailAccount: "Email Account",
     emailPassword: "Email Password or Authorization Code",
     passwordRequired: "Password required when SMTP is enabled",
-    passwordNote: "Note: Some email services require authorization code instead of login password",
+    passwordNote:
+      "Note: Some email services require authorization code instead of login password",
     fromEmail: "From Email",
     fromName: "From Name",
     testEmail: "Test Email Recipient",
@@ -209,8 +224,10 @@ export const enUS = {
     testFailed: "Test failed",
     commonExamples: "Common Email Service Configuration Examples",
     gmailExample: "Gmail: smtp.gmail.com:587 (TLS) or 465 (SSL)",
-    qqExample: "QQ Mail: smtp.qq.com:587 (TLS) or 465 (SSL), authorization code required",
-    neteaseExample: "163 Mail: smtp.163.com:465 (SSL), authorization code required",
+    qqExample:
+      "QQ Mail: smtp.qq.com:587 (TLS) or 465 (SSL), authorization code required",
+    neteaseExample:
+      "163 Mail: smtp.163.com:465 (SSL), authorization code required",
     outlookExample: "Outlook/Hotmail: smtp.office365.com:587 (TLS)",
   },
 
@@ -223,7 +240,8 @@ export const enUS = {
   // Theme Page
   themePage: {
     title: "Theme Management",
-    description: "Select and apply website themes, changes take effect immediately for all visitors",
+    description:
+      "Select and apply website themes, changes take effect immediately for all visitors",
     noThemesFound: "No themes found",
     author: "Author",
     version: "Version",
@@ -235,15 +253,18 @@ export const enUS = {
     applying: "Applying...",
     applyFailed: "Failed to apply theme",
     loadFailed: "Failed to load theme data",
-    applySuccess: 'Theme "{themeName}" has been applied successfully, taking effect for all users',
+    applySuccess:
+      'Theme "{themeName}" has been applied successfully, taking effect for all users',
     installationInstructions: "Theme Installation Instructions",
     instruction1: "Create a theme folder in the",
     instruction2: "directory",
     instruction3: "Create a",
     instruction4: "metadata file in the theme root directory",
     instruction5: "Place the",
-    instruction6: "folder (containing compiled static assets) in the theme directory",
-    instruction7: "Refresh this page to see new themes. After application, changes take effect immediately for all users",
+    instruction6:
+      "folder (containing compiled static assets) in the theme directory",
+    instruction7:
+      "Refresh this page to see new themes. After application, changes take effect immediately for all users",
     uploadTheme: "Upload Theme",
     uploadSuccess: "Theme uploaded successfully",
     uploadFailed: "Failed to upload theme",
@@ -253,7 +274,8 @@ export const enUS = {
       title: "Method 1: Upload Theme Package",
       step1: '1. Click the "Upload Theme" button above',
       step2: "2. Select a zip file containing the theme",
-      step3: "3. Wait for the upload to complete, the system will automatically extract and load the theme",
+      step3:
+        "3. Wait for the upload to complete, the system will automatically extract and load the theme",
     },
     method2: {
       title: "Method 2: Manual Installation",
@@ -263,7 +285,8 @@ export const enUS = {
   // General Settings Page
   generalSettings: {
     title: "General Settings",
-    description: "Manage system basic configuration including verification, registration, display settings",
+    description:
+      "Manage system basic configuration including verification, registration, display settings",
     backToAdmin: "Back to Admin",
     basicSettings: "Basic Settings",
     basicSettingsDesc: "Configure basic system parameters",
@@ -285,7 +308,8 @@ export const enUS = {
     registration: "Allow Registration",
     registrationDesc: "Allow new users to register accounts",
     allowGuestViewPosts: "Allow Guests to View Posts",
-    allowGuestViewPostsDesc: "When enabled, unlogged users can view post content",
+    allowGuestViewPostsDesc:
+      "When enabled, unlogged users can view post content",
     saveSettings: "Save Settings",
     saving: "Saving...",
     saveSuccess: "Settings saved",
@@ -513,14 +537,16 @@ export const enUS = {
     backToAdmin: "Back to Admin",
     baseSettings: "Basic Settings",
     enableAI: "Enable AI Assistant",
-    enableAIDesc: "When enabled, the system will use AI for content moderation and analysis",
+    enableAIDesc:
+      "When enabled, the system will use AI for content moderation and analysis",
     provider: "Service Provider",
     selectProvider: "Select AI service provider",
     apiEndpoint: "API Endpoint",
     apiEndpointPlaceholder: "e.g. https://api.openai.com/v1",
     apiKey: "API Key",
     apiKeyPlaceholder: "Enter your API key",
-    apiKeyNote: "Note: API key is only used for authentication, please keep it safe",
+    apiKeyNote:
+      "Note: API key is only used for authentication, please keep it safe",
     apiBaseUrlExample: "OpenAI official Base Url: https://api.openai.com/v1",
     supportedProviders: "Currently supports OpenAI and compatible interfaces",
     modelName: "Model Name",
@@ -563,7 +589,8 @@ export const enUS = {
     manageThemes: "Manage website themes",
     configEmail: "Configure mail server and enable registration verification",
     configAI: "Configure AI large model API and enable intelligent features",
-    configGeneralSettings: "Manage system basic configuration and verification settings",
+    configGeneralSettings:
+      "Manage system basic configuration and verification settings",
   },
 
   // Layout Component
@@ -595,7 +622,8 @@ export const enUS = {
     captchaCompleted: "Verification completed",
     emailNotVerified: "Email not verified",
     resendVerification: "Resend Verification Email",
-    verificationSent: "Verification email has been resent, please check your inbox",
+    verificationSent:
+      "Verification email has been resent, please check your inbox",
     loginFailed: "Login failed, please check your email and password",
     securityVerification: "Security Verification",
     completeSlider: "Please complete the slider verification",
@@ -639,7 +667,8 @@ export const enUS = {
     confirmPasswordLabel: "Confirm Password",
     confirmPasswordPlaceholder: "Re-enter password",
     passwordMismatch: "Passwords do not match",
-    registrationDisabled: "Registration is disabled. Please contact the administrator",
+    registrationDisabled:
+      "Registration is disabled. Please contact the administrator",
     completeCaptcha: "Please complete the slider verification first",
     captchaCompleted: "Verification completed",
     verifiedBadge: "Verified",
@@ -668,7 +697,8 @@ export const enUS = {
     popularTags: "Popular Tags",
     categories: "Categories",
     aboutVexgo: "About VexGo",
-    aboutVexgoDesc: "VexGo is a modern blog platform that supports rich text editing, image and video uploads, comment interactions, and more. Share your story now!",
+    aboutVexgoDesc:
+      "VexGo is a modern blog platform that supports rich text editing, image and video uploads, comment interactions, and more. Share your story now!",
     comments: "Comments",
     views: "Views",
     prevPage: "Previous",
@@ -686,7 +716,8 @@ export const enUS = {
     pending: "Pending",
     rejected: "Rejected",
     confirmDelete: "Confirm delete article?",
-    cannotUndo: "This action cannot be undone. The article and all its comments will be permanently deleted.",
+    cannotUndo:
+      "This action cannot be undone. The article and all its comments will be permanently deleted.",
     cancel: "Cancel",
     delete: "Delete",
   },
@@ -701,7 +732,8 @@ export const enUS = {
     edit: "Edit",
     delete: "Delete",
     confirmDelete: "Confirm delete article?",
-    cannotUndo: "This action cannot be undone. The article and all its comments will be permanently deleted.",
+    cannotUndo:
+      "This action cannot be undone. The article and all its comments will be permanently deleted.",
     cancel: "Cancel",
     deleteButton: "Delete",
     comments: "Comments",
@@ -742,7 +774,8 @@ export const enUS = {
     emailChangeSuccess: "Email changed successfully",
     emailChangeFailed: "Email change failed",
     changeEmailDialog: "Change Email",
-    changeEmailDescription: "Please enter your new email address. {smtpEnabled}",
+    changeEmailDescription:
+      "Please enter your new email address. {smtpEnabled}",
     newEmail: "New Email Address",
     enterNewEmail: "Enter new email address",
     emailSameAsCurrent: "New email cannot be the same as current email",
@@ -756,8 +789,10 @@ export const enUS = {
     successMessage: "Operation successful",
     uploadAvatar: "Upload Avatar",
     bioPlaceholder: "Enter your bio",
-    smtpEnabled: "Since email verification is enabled, a confirmation email will be sent to your new email. Please click the link in the email to complete the verification.",
-    smtpDisabled: "Since SMTP is not enabled, your email will be updated directly.",
+    smtpEnabled:
+      "Since email verification is enabled, a confirmation email will be sent to your new email. Please click the link in the email to complete the verification.",
+    smtpDisabled:
+      "Since SMTP is not enabled, your email will be updated directly.",
     confirmChange: "Confirm Change",
   },
 
@@ -765,7 +800,8 @@ export const enUS = {
   resetPasswordPage: {
     findPassword: "Find Password",
     resetPassword: "Reset Password",
-    resetInstruction: "Enter your email address, we will send you a password reset link",
+    resetInstruction:
+      "Enter your email address, we will send you a password reset link",
     newPasswordInstruction: "Please enter your new password",
     emailLabel: "Email",
     emailPlaceholder: "your@email.com",
@@ -785,8 +821,10 @@ export const enUS = {
     backToLogin: "Back to Login",
     requestFailed: "Request failed, please try again",
     resetFailed: "Password reset failed, please try again",
-    resetLinkSent: "If the email exists, a reset link has been sent. Please check your inbox.",
-    resetSuccess: "Password reset successful! You will be redirected to the login page in 3 seconds.",
+    resetLinkSent:
+      "If the email exists, a reset link has been sent. Please check your inbox.",
+    resetSuccess:
+      "Password reset successful! You will be redirected to the login page in 3 seconds.",
   },
 
   // User Posts Page Extended
@@ -855,13 +893,17 @@ export const enUS = {
       noUnreadMessages: "No unread messages",
       allRead: "All messages have been read",
       noCommentMessages: "No comment messages",
-      noCommentMessagesDesc: "You will receive notifications when someone comments on your posts",
+      noCommentMessagesDesc:
+        "You will receive notifications when someone comments on your posts",
       noLikeMessages: "No like messages",
-      noLikeMessagesDesc: "You will receive notifications when someone likes your posts",
+      noLikeMessagesDesc:
+        "You will receive notifications when someone likes your posts",
       noReviewMessages: "No review messages",
-      noReviewMessagesDesc: "You will receive notifications when your post review status changes",
+      noReviewMessagesDesc:
+        "You will receive notifications when your post review status changes",
       noRoleMessages: "No role messages",
-      noRoleMessagesDesc: "You will receive notifications when your role changes",
+      noRoleMessagesDesc:
+        "You will receive notifications when your role changes",
     },
   },
 
@@ -870,14 +912,17 @@ export const enUS = {
     applyButton: "Apply to Become Creator",
     reviewApplications: "Review Creator Applications",
     title: "Apply to Become Creator",
-    description: "After becoming a creator, you will be able to publish articles and participate in more community activities.",
+    description:
+      "After becoming a creator, you will be able to publish articles and participate in more community activities.",
     currentRole: "Current Role",
     reasonLabel: "Application Reason",
-    reasonPlaceholder: "Please briefly explain your reasons for applying to become a creator...",
+    reasonPlaceholder:
+      "Please briefly explain your reasons for applying to become a creator...",
     submit: "Submit Application",
     submitting: "Submitting...",
     confirmTitle: "Confirm Application",
-    confirmDescription: "Are you sure you want to submit the creator application? Administrators will notify you of the result after review.",
+    confirmDescription:
+      "Are you sure you want to submit the creator application? Administrators will notify you of the result after review.",
     confirm: "Confirm Application",
     reviewTitle: "Creator Application Review",
     pendingApplications: "Pending Applications",
@@ -888,13 +933,16 @@ export const enUS = {
     approve: "Approve",
     reject: "Reject",
     approveConfirmTitle: "Approve Application",
-    approveConfirmDescription: "Are you sure you want to approve {username}'s creator application?",
+    approveConfirmDescription:
+      "Are you sure you want to approve {username}'s creator application?",
     confirmApprove: "Confirm Approval",
     rejectConfirmTitle: "Reject Application",
-    rejectConfirmDescription: "Are you sure you want to reject {username}'s creator application?",
+    rejectConfirmDescription:
+      "Are you sure you want to reject {username}'s creator application?",
     confirmReject: "Confirm Rejection",
     rejectReasonLabel: "Rejection Reason",
-    rejectReasonPlaceholder: "Please enter the reason for rejecting this application...",
+    rejectReasonPlaceholder:
+      "Please enter the reason for rejecting this application...",
     status: {
       pending: "Pending",
       approved: "Approved",

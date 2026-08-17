@@ -1,15 +1,21 @@
-import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useTranslation } from '@/lib/I18nContext';
-import { configApi } from '@/lib/api';
-import type { SMTPConfig } from '@/types';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
-import { Switch } from '@/components/ui/switch';
-import { Button } from '@/components/ui/button';
-import { ArrowLeft, Mail, Save, TestTube } from 'lucide-react';
-import { toast } from 'sonner';
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useTranslation } from "@/lib/I18nContext";
+import { configApi } from "@/lib/api";
+import type { SMTPConfig } from "@/types";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
+import { Button } from "@/components/ui/button";
+import { ArrowLeft, Mail, Save, TestTube } from "lucide-react";
+import { toast } from "sonner";
 
 export function SMTPSettingsPage() {
   const navigate = useNavigate();
@@ -18,17 +24,17 @@ export function SMTPSettingsPage() {
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
   const [config, setConfig] = useState<SMTPConfig>({
-    id: '',
+    id: "",
     enabled: false,
-    host: '',
+    host: "",
     port: 587,
-    username: '',
-    password: '',
-    fromEmail: '',
-    fromName: t('common.siteName') || 'VexGo',
-    testEmail: '',
-    createdAt: '',
-    updatedAt: ''
+    username: "",
+    password: "",
+    fromEmail: "",
+    fromName: t("common.siteName") || "VexGo",
+    testEmail: "",
+    createdAt: "",
+    updatedAt: "",
   });
 
   useEffect(() => {
@@ -40,8 +46,8 @@ export function SMTPSettingsPage() {
       const response = await configApi.getSMTPConfig();
       setConfig(response.data);
     } catch (error: any) {
-      console.error('加载 SMTP 配置失败:', error);
-      toast.error(t('commentConfig.loadFailed'));
+      console.error("加载 SMTP 配置失败:", error);
+      toast.error(t("commentConfig.loadFailed"));
     } finally {
       setLoading(false);
     }
@@ -49,33 +55,37 @@ export function SMTPSettingsPage() {
 
   const handleSave = async () => {
     if (!config.host.trim()) {
-      toast.error(t('smtpSettings.smtpHost') + t('common.required'));
+      toast.error(t("smtpSettings.smtpHost") + t("common.required"));
       return;
     }
     if (config.port <= 0 || config.port > 65535) {
-      toast.error(t('smtpSettings.smtpPort') + t('common.invalid'));
+      toast.error(t("smtpSettings.smtpPort") + t("common.invalid"));
       return;
     }
     if (!config.username.trim()) {
-      toast.error(t('smtpSettings.emailAccount') + t('common.required'));
+      toast.error(t("smtpSettings.emailAccount") + t("common.required"));
       return;
     }
     if (config.enabled && !config.password.trim()) {
-      toast.error(t('smtpSettings.passwordRequired'));
+      toast.error(t("smtpSettings.passwordRequired"));
       return;
     }
     if (!config.fromEmail.trim()) {
-      toast.error(t('smtpSettings.fromEmail') + t('common.required'));
+      toast.error(t("smtpSettings.fromEmail") + t("common.required"));
       return;
     }
 
     setSaving(true);
     try {
       await configApi.updateSMTPConfig(config);
-      toast.success(t('smtpSettings.saveSuccess'));
+      toast.success(t("smtpSettings.saveSuccess"));
     } catch (error: any) {
-      console.error('保存 SMTP 配置失败:', error);
-      toast.error(t('smtpSettings.saveFailed') + ': ' + (error.response?.data?.error || t('common.unknownError')));
+      console.error("保存 SMTP 配置失败:", error);
+      toast.error(
+        t("smtpSettings.saveFailed") +
+          ": " +
+          (error.response?.data?.error || t("common.unknownError")),
+      );
     } finally {
       setSaving(false);
     }
@@ -83,11 +93,11 @@ export function SMTPSettingsPage() {
 
   const handleTest = async () => {
     if (!config.enabled) {
-      toast.error(t('smtpSettings.testFirst'));
+      toast.error(t("smtpSettings.testFirst"));
       return;
     }
     if (!config.password.trim()) {
-      toast.error(t('smtpSettings.savePasswordFirst'));
+      toast.error(t("smtpSettings.savePasswordFirst"));
       return;
     }
 
@@ -96,8 +106,12 @@ export function SMTPSettingsPage() {
       const response = await configApi.testSMTP();
       toast.success(response.data.message);
     } catch (error: any) {
-      console.error('测试邮件失败:', error);
-      toast.error(t('smtpSettings.testFailed') + ': ' + (error.response?.data?.error || t('common.unknownError')));
+      console.error("测试邮件失败:", error);
+      toast.error(
+        t("smtpSettings.testFailed") +
+          ": " +
+          (error.response?.data?.error || t("common.unknownError")),
+      );
     } finally {
       setTesting(false);
     }
@@ -128,79 +142,85 @@ export function SMTPSettingsPage() {
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => navigate('/admin')}
+          onClick={() => navigate("/admin")}
           className="mb-4"
         >
           <ArrowLeft className="w-4 h-4 mr-2" />
-          {t('smtpSettings.backToAdmin')}
+          {t("smtpSettings.backToAdmin")}
         </Button>
         <h1 className="text-3xl font-bold flex items-center gap-2">
           <Mail className="w-8 h-8" />
-          {t('smtpSettings.title')}
+          {t("smtpSettings.title")}
         </h1>
         <p className="text-muted-foreground mt-2">
-          {t('smtpSettings.description')}
+          {t("smtpSettings.description")}
         </p>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>{t('smtpSettings.serverConfig')}</CardTitle>
+          <CardTitle>{t("smtpSettings.serverConfig")}</CardTitle>
           <CardDescription>
-            {t('smtpSettings.serverConfigDesc')}
+            {t("smtpSettings.serverConfigDesc")}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           {/* 启用开关 */}
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
-              <Label htmlFor="enabled">{t('smtpSettings.enableSMTP')}</Label>
+              <Label htmlFor="enabled">{t("smtpSettings.enableSMTP")}</Label>
               <p className="text-sm text-muted-foreground">
-                {t('smtpSettings.enableSMTPDesc')}
+                {t("smtpSettings.enableSMTPDesc")}
               </p>
             </div>
             <Switch
               id="enabled"
               checked={config.enabled}
-              onCheckedChange={(checked) => setConfig({ ...config, enabled: checked })}
+              onCheckedChange={(checked) =>
+                setConfig({ ...config, enabled: checked })
+              }
             />
           </div>
 
           {/* SMTP 服务器地址 */}
           <div className="space-y-2">
-            <Label htmlFor="host">{t('smtpSettings.smtpHost')}</Label>
+            <Label htmlFor="host">{t("smtpSettings.smtpHost")}</Label>
             <Input
               id="host"
               value={config.host}
               onChange={(e) => setConfig({ ...config, host: e.target.value })}
-              placeholder={t('smtpSettings.smtpHostPlaceholder')}
+              placeholder={t("smtpSettings.smtpHostPlaceholder")}
               disabled={saving}
             />
           </div>
 
           {/* 端口 */}
           <div className="space-y-2">
-            <Label htmlFor="port">{t('smtpSettings.smtpPort')}</Label>
+            <Label htmlFor="port">{t("smtpSettings.smtpPort")}</Label>
             <Input
               id="port"
               type="number"
               value={config.port}
-              onChange={(e) => setConfig({ ...config, port: parseInt(e.target.value) || 587 })}
-              placeholder={t('smtpSettings.smtpPortPlaceholder')}
+              onChange={(e) =>
+                setConfig({ ...config, port: parseInt(e.target.value) || 587 })
+              }
+              placeholder={t("smtpSettings.smtpPortPlaceholder")}
               disabled={saving}
             />
             <p className="text-xs text-muted-foreground">
-              {t('smtpSettings.commonPorts')}
+              {t("smtpSettings.commonPorts")}
             </p>
           </div>
 
           {/* 邮箱账号 */}
           <div className="space-y-2">
-            <Label htmlFor="username">{t('smtpSettings.emailAccount')}</Label>
+            <Label htmlFor="username">{t("smtpSettings.emailAccount")}</Label>
             <Input
               id="username"
               value={config.username}
-              onChange={(e) => setConfig({ ...config, username: e.target.value })}
+              onChange={(e) =>
+                setConfig({ ...config, username: e.target.value })
+              }
               placeholder="your-email@example.com"
               disabled={saving}
             />
@@ -209,29 +229,38 @@ export function SMTPSettingsPage() {
           {/* 邮箱密码/授权码 */}
           <div className="space-y-2">
             <Label htmlFor="password">
-              {t('smtpSettings.emailPassword')} {config.enabled && <span className="text-red-500">*</span>}
+              {t("smtpSettings.emailPassword")}{" "}
+              {config.enabled && <span className="text-red-500">*</span>}
             </Label>
             <Input
               id="password"
               type="password"
               value={config.password}
-              onChange={(e) => setConfig({ ...config, password: e.target.value })}
-              placeholder={config.enabled ? t('smtpSettings.passwordRequired') : t('smtpSettings.apiKeyPlaceholder')}
+              onChange={(e) =>
+                setConfig({ ...config, password: e.target.value })
+              }
+              placeholder={
+                config.enabled
+                  ? t("smtpSettings.passwordRequired")
+                  : t("smtpSettings.apiKeyPlaceholder")
+              }
               disabled={saving}
             />
             <p className="text-xs text-muted-foreground">
-              {t('smtpSettings.passwordNote')}
+              {t("smtpSettings.passwordNote")}
             </p>
           </div>
 
           {/* 发件人邮箱 */}
           <div className="space-y-2">
-            <Label htmlFor="fromEmail">{t('smtpSettings.fromEmail')}</Label>
+            <Label htmlFor="fromEmail">{t("smtpSettings.fromEmail")}</Label>
             <Input
               id="fromEmail"
               type="email"
               value={config.fromEmail}
-              onChange={(e) => setConfig({ ...config, fromEmail: e.target.value })}
+              onChange={(e) =>
+                setConfig({ ...config, fromEmail: e.target.value })
+              }
               placeholder="noreply@yourblog.com"
               disabled={saving}
             />
@@ -239,41 +268,41 @@ export function SMTPSettingsPage() {
 
           {/* 发件人名称 */}
           <div className="space-y-2">
-            <Label htmlFor="fromName">{t('smtpSettings.fromName')}</Label>
+            <Label htmlFor="fromName">{t("smtpSettings.fromName")}</Label>
             <Input
               id="fromName"
               value={config.fromName}
-              onChange={(e) => setConfig({ ...config, fromName: e.target.value })}
-              placeholder={t('common.siteName')}
+              onChange={(e) =>
+                setConfig({ ...config, fromName: e.target.value })
+              }
+              placeholder={t("common.siteName")}
               disabled={saving}
             />
           </div>
 
           {/* 测试邮箱 */}
           <div className="space-y-2">
-            <Label htmlFor="testEmail">{t('smtpSettings.testEmail')}</Label>
+            <Label htmlFor="testEmail">{t("smtpSettings.testEmail")}</Label>
             <Input
               id="testEmail"
               type="email"
               value={config.testEmail}
-              onChange={(e) => setConfig({ ...config, testEmail: e.target.value })}
-              placeholder={t('smtpSettings.testEmailPlaceholder')}
+              onChange={(e) =>
+                setConfig({ ...config, testEmail: e.target.value })
+              }
+              placeholder={t("smtpSettings.testEmailPlaceholder")}
               disabled={saving}
             />
             <p className="text-xs text-muted-foreground">
-              {t('smtpSettings.testEmailDesc')}
+              {t("smtpSettings.testEmailDesc")}
             </p>
           </div>
 
           {/* 操作按钮 */}
           <div className="flex gap-3 pt-4 border-t">
-            <Button
-              onClick={handleSave}
-              disabled={saving}
-              className="flex-1"
-            >
+            <Button onClick={handleSave} disabled={saving} className="flex-1">
               <Save className="w-4 h-4 mr-2" />
-              {saving ? t('smtpSettings.saving') : t('smtpSettings.saveConfig')}
+              {saving ? t("smtpSettings.saving") : t("smtpSettings.saveConfig")}
             </Button>
             <Button
               variant="outline"
@@ -282,7 +311,9 @@ export function SMTPSettingsPage() {
               className="flex-1"
             >
               <TestTube className="w-4 h-4 mr-2" />
-              {testing ? t('smtpSettings.testing') : t('smtpSettings.sendTestEmail')}
+              {testing
+                ? t("smtpSettings.testing")
+                : t("smtpSettings.sendTestEmail")}
             </Button>
           </div>
         </CardContent>
@@ -291,20 +322,22 @@ export function SMTPSettingsPage() {
       {/* 帮助信息 */}
       <Card className="mt-6">
         <CardHeader>
-          <CardTitle className="text-base">{t('smtpSettings.commonExamples')}</CardTitle>
+          <CardTitle className="text-base">
+            {t("smtpSettings.commonExamples")}
+          </CardTitle>
         </CardHeader>
         <CardContent className="text-sm space-y-2">
           <div>
-            <strong>{t('smtpSettings.gmailExample')}</strong>
+            <strong>{t("smtpSettings.gmailExample")}</strong>
           </div>
           <div>
-            <strong>{t('smtpSettings.qqExample')}</strong>
+            <strong>{t("smtpSettings.qqExample")}</strong>
           </div>
           <div>
-            <strong>{t('smtpSettings.neteaseExample')}</strong>
+            <strong>{t("smtpSettings.neteaseExample")}</strong>
           </div>
           <div>
-            <strong>{t('smtpSettings.outlookExample')}</strong>
+            <strong>{t("smtpSettings.outlookExample")}</strong>
           </div>
         </CardContent>
       </Card>

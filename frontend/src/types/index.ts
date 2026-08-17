@@ -3,14 +3,14 @@ export interface User {
   id: string;
   username: string;
   email: string;
-  role: 'super_admin' | 'admin' | 'author' | 'contributor' | 'guest';
+  role: "super_admin" | "admin" | "author" | "contributor" | "guest";
   avatar: string | null;
   emailVerified?: boolean;
   createdAt?: string;
   birthday?: string;
   bio?: string;
   // 隐私设置
-  profile_visibility?: 'public' | 'private';
+  profile_visibility?: "public" | "private";
   hide_email?: boolean;
   hide_birthday?: boolean;
   hide_bio?: boolean;
@@ -34,13 +34,13 @@ export interface SMTPConfig {
 // 通用设置类型
 export interface GeneralSettings {
   id: string;
-  captchaEnabled: boolean;      // 是否启用滑块验证
+  captchaEnabled: boolean; // 是否启用滑块验证
   registrationEnabled: boolean; // 是否允许注册
   allowGuestViewPosts: boolean; // 是否允许访客浏览文章
-  siteName: string;             // 网站名称
-  siteDescription: string;      // 网站描述
-  siteIcon: string;             // 网站图标URL
-  itemsPerPage: number;         // 每页显示数量
+  siteName: string; // 网站名称
+  siteDescription: string; // 网站描述
+  siteIcon: string; // 网站图标URL
+  itemsPerPage: number; // 每页显示数量
   createdAt: string;
   updatedAt: string;
 }
@@ -55,7 +55,7 @@ export interface Post {
   categoryInfo?: Category;
   tags: string[];
   coverImage: string | null;
-  status: 'published' | 'draft' | 'pending' | 'rejected';
+  status: "published" | "draft" | "pending" | "rejected";
   authorId: string;
   author?: User;
   createdAt: string;
@@ -122,10 +122,10 @@ export interface AIModel {
 export interface AIConfig {
   id: string;
   enabled: boolean;
-  provider: string;       // 提供商 (openai, azure, etc.)
-  apiEndpoint: string;    // API端点URL
-  apiKey: string;         // API密钥（仅用于设置，获取时不返回）
-  modelName: string;      // 模型名称
+  provider: string; // 提供商 (openai, azure, etc.)
+  apiEndpoint: string; // API端点URL
+  apiKey: string; // API密钥（仅用于设置，获取时不返回）
+  modelName: string; // 模型名称
   createdAt: string;
   updatedAt: string;
 }
@@ -134,7 +134,7 @@ export interface AIConfig {
 export interface MediaFile {
   id: string;
   url: string;
-  type: 'image' | 'video';
+  type: "image" | "video";
   size: number;
   createdAt?: string;
 }

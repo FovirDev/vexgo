@@ -243,7 +243,7 @@ pip install docker-compose
 Create a file named `docker-compose.yml`:
 
 ```yaml
-version: '3.8'
+version: "3.8"
 
 services:
   vexgo:
@@ -409,7 +409,7 @@ Add VexGo to your `flake.nix`:
 
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
-    
+
     vexgo = {
       url = "github:vexgo-org/vexgo";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -441,7 +441,7 @@ Create `vexgo.nix`:
 { config, pkgs, inputs, ... }:
 {
   nixpkgs.overlays = [ inputs.vexgo.overlays.default ];
-  
+
   services.vexgo = {
     enable = true;
     settings = {
@@ -450,7 +450,7 @@ Create `vexgo.nix`:
       data = "/var/lib/vexgo";
       jwt_secret = "your-secret-key-change-this-in-production";
       log_level = "info";
-      
+
       # Database configuration
       db_type = "sqlite";
       # db_type = "postgres";
@@ -461,7 +461,7 @@ Create `vexgo.nix`:
       # db_name = "vexgo";
     };
   };
-  
+
   # Optional: Configure PostgreSQL
   services.postgresql = {
     enable = true;
@@ -473,7 +473,7 @@ Create `vexgo.nix`:
       }
     ];
   };
-  
+
   # Open firewall port
   networking.firewall.allowedTCPPorts = [ 3001 ];
 }
@@ -631,7 +631,6 @@ Or if running on a remote server:
 
 http://your-server-ip:3001
 
-
 ### Default Credentials
 
 The default super admin account:
@@ -770,12 +769,14 @@ sudo systemctl cat vexgo
 If VexGo is running slowly:
 
 1. **Check system resources**:
+
    ```bash
    htop
    df -h
    ```
 
 2. **Optimize database**:
+
    ```bash
    # For PostgreSQL
    sudo docker exec -it vexgo-postgres psql -U vexgo -d vexgo_db -c "VACUUM ANALYZE;"
@@ -804,6 +805,7 @@ If you encounter issues not covered here:
 ---
 
 **Note**: This documentation is maintained with the latest version of VexGo. For version-specific instructions, please refer to the release notes.
+
 - Review the [main README](https://github.com/vexgo-org/vexgo)
 - Join the community discussions
 

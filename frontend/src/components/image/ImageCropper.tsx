@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from "react";
 
 type Props = {
   file: File;
@@ -10,11 +10,19 @@ type Props = {
   circle?: boolean; // 是否使用圆形裁剪
 };
 
-export const ImageCropper: React.FC<Props> = ({ file, aspect = 1200 / 630, onCancel, onCrop, outputWidth = 1200, outputHeight = 630, circle = false }) => {
+export const ImageCropper: React.FC<Props> = ({
+  file,
+  aspect = 1200 / 630,
+  onCancel,
+  onCrop,
+  outputWidth = 1200,
+  outputHeight = 630,
+  circle = false,
+}) => {
   const imgRef = useRef<HTMLImageElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const cropBoxRef = useRef<HTMLDivElement | null>(null);
-  const [src, setSrc] = useState<string>('');
+  const [src, setSrc] = useState<string>("");
   const [dragging, setDragging] = useState(false);
   const [pos, setPos] = useState({ x: 0, y: 0 });
   const [start, setStart] = useState<{ x: number; y: number } | null>(null);
@@ -48,7 +56,7 @@ export const ImageCropper: React.FC<Props> = ({ file, aspect = 1200 / 630, onCan
   const handleWheel = (e: React.WheelEvent) => {
     e.preventDefault();
     const delta = -e.deltaY / 500;
-    setScale((s) => Math.max(0.2, Math.min(5, +((s + delta).toFixed(2)))));
+    setScale((s) => Math.max(0.2, Math.min(5, +(s + delta).toFixed(2))));
   };
 
   const doCrop = async () => {
@@ -84,14 +92,14 @@ export const ImageCropper: React.FC<Props> = ({ file, aspect = 1200 / 630, onCan
     if (sw <= 0 || sh <= 0) return;
 
     // Create canvas with target output size so uploaded image has consistent dimensions
-    const canvas = document.createElement('canvas');
+    const canvas = document.createElement("canvas");
     canvas.width = outputWidth;
     canvas.height = outputHeight;
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
     const image = new Image();
-    image.crossOrigin = 'anonymous';
+    image.crossOrigin = "anonymous";
     image.src = src;
     await new Promise((res, rej) => {
       image.onload = res;
@@ -103,7 +111,7 @@ export const ImageCropper: React.FC<Props> = ({ file, aspect = 1200 / 630, onCan
       const centerX = outputWidth / 2;
       const centerY = outputHeight / 2;
       const radius = Math.min(outputWidth, outputHeight) / 2;
-      
+
       ctx.beginPath();
       ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
       ctx.clip();
@@ -113,21 +121,33 @@ export const ImageCropper: React.FC<Props> = ({ file, aspect = 1200 / 630, onCan
     ctx.drawImage(image, sx, sy, sw, sh, 0, 0, outputWidth, outputHeight);
 
     return new Promise<void>((resolve, reject) => {
-      const mime = file.type || 'image/jpeg';
+      const mime = file.type || "image/jpeg";
       // For lossy formats (jpeg, webp) pass quality=1 to avoid additional compression
       const isLossy = /(jpeg|jpg|webp)/i.test(mime);
       const quality = isLossy ? 1.0 : undefined;
-      canvas.toBlob((blob) => {
-        if (!blob) {
-          reject(new Error('裁剪失败'));
-          return;
-        }
-        const ext = /png/i.test(mime) ? 'png' : /webp/i.test(mime) ? 'webp' : 'jpg';
-        const suffix = circle ? '-avatar' : '-cover';
-        const newFile = new File([blob], file.name.replace(/\.[^.]+$/, '' ) + suffix + '.' + ext, { type: blob.type });
-        onCrop(newFile);
-        resolve();
-      }, mime, quality as any);
+      canvas.toBlob(
+        (blob) => {
+          if (!blob) {
+            reject(new Error("裁剪失败"));
+            return;
+          }
+          const ext = /png/i.test(mime)
+            ? "png"
+            : /webp/i.test(mime)
+              ? "webp"
+              : "jpg";
+          const suffix = circle ? "-avatar" : "-cover";
+          const newFile = new File(
+            [blob],
+            file.name.replace(/\.[^.]+$/, "") + suffix + "." + ext,
+            { type: blob.type },
+          );
+          onCrop(newFile);
+          resolve();
+        },
+        mime,
+        quality as any,
+      );
     });
   };
 
@@ -135,24 +155,33 @@ export const ImageCropper: React.FC<Props> = ({ file, aspect = 1200 / 630, onCan
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
       <div className="bg-white rounded shadow-lg p-4 max-w-4xl w-full flex flex-col max-h-[90vh]">
         <div className="flex items-center justify-between mb-3 shrink-0">
-          <h3 className="text-lg font-medium">{circle ? '裁剪头像（圆形）' : '裁剪封面（保持比例）'}</h3>
+          <h3 className="text-lg font-medium">
+            {circle ? "裁剪头像（圆形）" : "裁剪封面（保持比例）"}
+          </h3>
           <div className="flex gap-2">
-            <button className="btn" onClick={onCancel}>取消</button>
-            <button className="btn btn-primary" onClick={() => doCrop()}>{circle ? '确定并上传头像' : '确定并上传'}</button>
+            <button className="btn" onClick={onCancel}>
+              取消
+            </button>
+            <button className="btn btn-primary" onClick={() => doCrop()}>
+              {circle ? "确定并上传头像" : "确定并上传"}
+            </button>
           </div>
         </div>
 
-        <div className="w-full overflow-hidden touch-none flex-1 flex flex-col min-h-0" onWheel={handleWheel}>
+        <div
+          className="w-full overflow-hidden touch-none flex-1 flex flex-col min-h-0"
+          onWheel={handleWheel}
+        >
           <div
             ref={containerRef}
             className="flex-1 relative bg-gray-50 rounded"
             style={{
-              width: '100%',
-              minHeight: '360px',
-              height: '60vh',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
+              width: "100%",
+              minHeight: "360px",
+              height: "60vh",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
             }}
           >
             <div
@@ -161,12 +190,12 @@ export const ImageCropper: React.FC<Props> = ({ file, aspect = 1200 / 630, onCan
               onMouseUp={onMouseUp}
               onMouseLeave={onMouseUp}
               style={{
-                cursor: dragging ? 'grabbing' : 'grab',
-                overflow: 'hidden',
-                width: '100%',
-                height: '100%',
-                position: 'absolute',
-                inset: 0
+                cursor: dragging ? "grabbing" : "grab",
+                overflow: "hidden",
+                width: "100%",
+                height: "100%",
+                position: "absolute",
+                inset: 0,
               }}
             >
               <img
@@ -175,10 +204,10 @@ export const ImageCropper: React.FC<Props> = ({ file, aspect = 1200 / 630, onCan
                 alt="to-crop"
                 style={{
                   transform: `translate(${pos.x}px, ${pos.y}px) scale(${scale})`,
-                  transformOrigin: 'center center',
-                  userSelect: 'none',
-                  display: 'block',
-                  maxWidth: 'none',
+                  transformOrigin: "center center",
+                  userSelect: "none",
+                  display: "block",
+                  maxWidth: "none",
                 }}
                 draggable={false}
                 onLoad={(e) => {
@@ -191,7 +220,7 @@ export const ImageCropper: React.FC<Props> = ({ file, aspect = 1200 / 630, onCan
                     const contW = container.clientWidth;
                     const ratio = contW / imgEl.naturalWidth;
                     imgEl.style.width = `${Math.round(imgEl.naturalWidth * ratio)}px`;
-                    imgEl.style.height = 'auto';
+                    imgEl.style.height = "auto";
                   }
                 }}
               />
@@ -199,16 +228,16 @@ export const ImageCropper: React.FC<Props> = ({ file, aspect = 1200 / 630, onCan
               {/* crop box overlay */}
               <div
                 style={{
-                  position: 'absolute',
-                  left: '50%',
-                  top: '50%',
-                  transform: 'translate(-50%, -50%)',
-                  width: circle ? '60%' : '90%',
+                  position: "absolute",
+                  left: "50%",
+                  top: "50%",
+                  transform: "translate(-50%, -50%)",
+                  width: circle ? "60%" : "90%",
                   maxWidth: circle ? 300 : 600,
-                  aspectRatio: circle ? '1' : `${aspect}`,
-                  border: '2px dashed rgba(255,255,255,0.9)',
-                  boxShadow: '0 0 0 9999px rgba(0,0,0,0.4)',
-                  borderRadius: circle ? '50%' : '0'
+                  aspectRatio: circle ? "1" : `${aspect}`,
+                  border: "2px dashed rgba(255,255,255,0.9)",
+                  boxShadow: "0 0 0 9999px rgba(0,0,0,0.4)",
+                  borderRadius: circle ? "50%" : "0",
                 }}
                 ref={cropBoxRef}
               />
@@ -217,8 +246,17 @@ export const ImageCropper: React.FC<Props> = ({ file, aspect = 1200 / 630, onCan
 
           <div className="mt-3 flex items-center gap-3 shrink-0">
             <label className="text-sm">缩放：</label>
-            <input type="range" min={0.2} max={5} step={0.01} value={scale} onChange={(e) => setScale(Number(e.target.value))} />
-            <span className="text-xs text-gray-500">拖动图片以移动，滚轮缩放</span>
+            <input
+              type="range"
+              min={0.2}
+              max={5}
+              step={0.01}
+              value={scale}
+              onChange={(e) => setScale(Number(e.target.value))}
+            />
+            <span className="text-xs text-gray-500">
+              拖动图片以移动，滚轮缩放
+            </span>
           </div>
         </div>
       </div>

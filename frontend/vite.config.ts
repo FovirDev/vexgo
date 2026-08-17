@@ -1,11 +1,11 @@
-import path from "path"
-import react from "@vitejs/plugin-react"
-import { defineConfig } from "vite"
-import { inspectAttr } from 'kimi-plugin-inspect-react'
+import path from "path";
+import react from "@vitejs/plugin-react";
+import { defineConfig } from "vite";
+import { inspectAttr } from "kimi-plugin-inspect-react";
 
 // https://vite.dev/config/
 export default defineConfig({
-  base: '/',
+  base: "/",
   plugins: [inspectAttr(), react()],
   resolve: {
     alias: {
@@ -13,7 +13,7 @@ export default defineConfig({
     },
   },
   build: {
-    outDir: '../backend/internal/public/dist',
+    outDir: "../backend/internal/public/dist",
     // outDir 位于项目根之外，vite 默认不会清空旧产物。
     // 不清空会导致 dist 里堆积多次构建的文件，
     // 后端 buildAssetManifest 按字母序取同名资源时会选中旧 bundle，
@@ -23,11 +23,17 @@ export default defineConfig({
       output: {
         manualChunks: {
           // 将 React 相关库单独打包
-          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+          "react-vendor": ["react", "react-dom", "react-router-dom"],
           // 将 UI 组件库单独打包
-          'ui-vendor': ['@radix-ui/react-slot', 'class-variance-authority', 'clsx', 'tailwind-merge', 'lucide-react'],
+          "ui-vendor": [
+            "@radix-ui/react-slot",
+            "class-variance-authority",
+            "clsx",
+            "tailwind-merge",
+            "lucide-react",
+          ],
           // 将状态管理和工具库单独打包
-          'utils-vendor': [ 'axios', 'date-fns'],
+          "utils-vendor": ["axios", "date-fns"],
         },
       },
     },

@@ -1,28 +1,34 @@
-import { useEffect, useState } from 'react';
-import { Link, useSearchParams, useNavigate } from 'react-router-dom';
-import { postsApi, categoriesApi, statsApi, likesApi } from '@/lib/api';
-import type { Post, Category } from '@/types';
-import { useTranslation } from '@/lib/I18nContext';
-import { getLocale } from '@/lib/i18n';
-import { useAuth } from '@/hooks/useAuth';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Skeleton } from '@/components/ui/skeleton';
+import { useEffect, useState } from "react";
+import { Link, useSearchParams, useNavigate } from "react-router-dom";
+import { postsApi, categoriesApi, statsApi, likesApi } from "@/lib/api";
+import type { Post, Category } from "@/types";
+import { useTranslation } from "@/lib/I18nContext";
+import { getLocale } from "@/lib/i18n";
+import { useAuth } from "@/hooks/useAuth";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Pagination,
   PaginationContent,
   PaginationItem,
   PaginationLink,
   PaginationNext,
-  PaginationPrevious
-} from '@/components/ui/pagination';
+  PaginationPrevious,
+} from "@/components/ui/pagination";
 import {
-  Heart, MessageCircle, Calendar,
-  TrendingUp, Clock, Tag, SearchX, Eye
-} from 'lucide-react';
-import { normalizeTagsArray } from '@/lib/utils';
+  Heart,
+  MessageCircle,
+  Calendar,
+  TrendingUp,
+  Clock,
+  Tag,
+  SearchX,
+  Eye,
+} from "lucide-react";
+import { normalizeTagsArray } from "@/lib/utils";
 
 export function HomePage() {
   const { t } = useTranslation();
@@ -32,20 +38,20 @@ export function HomePage() {
   const [posts, setPosts] = useState<Post[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [popularPosts, setPopularPosts] = useState<Post[]>([]);
-  const [popularTags, setPopularTags] = useState<{ name: string; count: number }[]>([]);
+  const [popularTags, setPopularTags] = useState<
+    { name: string; count: number }[]
+  >([]);
   const [loading, setLoading] = useState(true);
   const [pagination, setPagination] = useState({
     total: 0,
     page: 1,
     totalPages: 1,
-    limit: 10
+    limit: 10,
   });
 
-  const currentPage = parseInt(searchParams.get('page') || '1');
-  const searchQuery = searchParams.get('search') || '';
-  const selectedCategory = searchParams.get('category') || '';
-
-
+  const currentPage = parseInt(searchParams.get("page") || "1");
+  const searchQuery = searchParams.get("search") || "";
+  const selectedCategory = searchParams.get("category") || "";
 
   useEffect(() => {
     loadCategories();
@@ -56,26 +62,45 @@ export function HomePage() {
       try {
         const d = e.detail || {};
         const postId = String(d.postId);
-        setPosts((prev) => prev.map((p) => p.id === postId ? { ...p, isLiked: d.isLiked, likesCount: d.likesCount } : p));
-        setPopularPosts((prev) => prev.map((p) => p.id === postId ? { ...p, isLiked: d.isLiked, likesCount: d.likesCount } : p));
+        setPosts((prev) =>
+          prev.map((p) =>
+            p.id === postId
+              ? { ...p, isLiked: d.isLiked, likesCount: d.likesCount }
+              : p,
+          ),
+        );
+        setPopularPosts((prev) =>
+          prev.map((p) =>
+            p.id === postId
+              ? { ...p, isLiked: d.isLiked, likesCount: d.likesCount }
+              : p,
+          ),
+        );
       } catch (err) {
         // ignore
       }
     };
-    window.addEventListener('like-changed', handler as EventListener);
+    window.addEventListener("like-changed", handler as EventListener);
 
     const commentHandler = (e: any) => {
       try {
         const d = e.detail || {};
         const postId = String(d.postId);
-        setPosts((prev) => prev.map((p) => p.id === postId ? { ...p, commentsCount: d.commentsCount } : p));
+        setPosts((prev) =>
+          prev.map((p) =>
+            p.id === postId ? { ...p, commentsCount: d.commentsCount } : p,
+          ),
+        );
       } catch (err) {}
     };
-    window.addEventListener('comment-changed', commentHandler as EventListener);
+    window.addEventListener("comment-changed", commentHandler as EventListener);
 
     return () => {
-      window.removeEventListener('like-changed', handler as EventListener);
-      window.removeEventListener('comment-changed', commentHandler as EventListener);
+      window.removeEventListener("like-changed", handler as EventListener);
+      window.removeEventListener(
+        "comment-changed",
+        commentHandler as EventListener,
+      );
     };
   }, []);
 
@@ -85,9 +110,16 @@ export function HomePage() {
     return {
       ...raw,
       id: String(raw.id),
-      authorId: raw.authorId !== undefined && raw.authorId !== null ? String(raw.authorId) : raw.authorId,
-      createdAt: raw.createdAt ? new Date(raw.createdAt).toISOString() : raw.createdAt,
-      updatedAt: raw.updatedAt ? new Date(raw.updatedAt).toISOString() : raw.updatedAt,
+      authorId:
+        raw.authorId !== undefined && raw.authorId !== null
+          ? String(raw.authorId)
+          : raw.authorId,
+      createdAt: raw.createdAt
+        ? new Date(raw.createdAt).toISOString()
+        : raw.createdAt,
+      updatedAt: raw.updatedAt
+        ? new Date(raw.updatedAt).toISOString()
+        : raw.updatedAt,
       tags: normalizeTagsArray(raw.tags),
     } as Post;
   };
@@ -101,7 +133,7 @@ export function HomePage() {
       const response = await categoriesApi.getCategories();
       setCategories(response.data.categories);
     } catch (error) {
-      console.error('加载分类失败:', error);
+      console.error("加载分类失败:", error);
     }
   };
 
@@ -110,7 +142,7 @@ export function HomePage() {
       const response = await statsApi.getPopularPosts(5);
       setPopularPosts(response.data.posts.map((p: any) => normalizePost(p)));
     } catch (error) {
-      console.error('加载热门文章失败:', error);
+      console.error("加载热门文章失败:", error);
     }
   };
 
@@ -138,7 +170,7 @@ export function HomePage() {
 
       setPopularTags(sortedTags);
     } catch (error) {
-      console.error('加载热门标签失败:', error);
+      console.error("加载热门标签失败:", error);
     }
   };
 
@@ -148,14 +180,31 @@ export function HomePage() {
       if (searchQuery && searchQuery.trim()) {
         // 优先使用后端的标题搜索结果（分页友好），同时在客户端拉取一定数量的文章做标签匹配备援
         const [respSearch, respBulk] = await Promise.all([
-          postsApi.getPosts({ page: currentPage, limit: 10, search: searchQuery, category: selectedCategory || undefined }),
+          postsApi.getPosts({
+            page: currentPage,
+            limit: 10,
+            search: searchQuery,
+            category: selectedCategory || undefined,
+          }),
           // 拉取更多文章用于在客户端按标签匹配（后端可能不支持按标签搜索）
-          postsApi.getPosts({ page: 1, limit: 200, category: selectedCategory || undefined })
+          postsApi.getPosts({
+            page: 1,
+            limit: 200,
+            category: selectedCategory || undefined,
+          }),
         ]);
-        const titleMatches = (respSearch.data.posts || []).map((p: any) => normalizePost(p));
-        const bulk = (respBulk.data.posts || []).map((p: any) => normalizePost(p));
+        const titleMatches = (respSearch.data.posts || []).map((p: any) =>
+          normalizePost(p),
+        );
+        const bulk = (respBulk.data.posts || []).map((p: any) =>
+          normalizePost(p),
+        );
         const q = searchQuery.trim().toLowerCase();
-        const tagMatches = bulk.filter((p) => (p.tags || []).some((t: string) => String(t).toLowerCase().includes(q)));
+        const tagMatches = bulk.filter((p) =>
+          (p.tags || []).some((t: string) =>
+            String(t).toLowerCase().includes(q),
+          ),
+        );
         const combinedMap = new Map<string, Post>();
         titleMatches.forEach((p) => combinedMap.set(p.id, p));
         tagMatches.forEach((p) => combinedMap.set(p.id, p));
@@ -164,13 +213,17 @@ export function HomePage() {
         // 使用标题搜索的分页信息作为页面分页参考
         setPagination(respSearch.data.pagination);
       } else {
-        const response = await postsApi.getPosts({ page: currentPage, limit: 10, category: selectedCategory || undefined });
+        const response = await postsApi.getPosts({
+          page: currentPage,
+          limit: 10,
+          category: selectedCategory || undefined,
+        });
         const all = response.data.posts.map((p: any) => normalizePost(p));
         setPosts(all);
         setPagination(response.data.pagination);
       }
     } catch (error) {
-      console.error('加载文章失败:', error);
+      console.error("加载文章失败:", error);
     } finally {
       setLoading(false);
     }
@@ -179,42 +232,42 @@ export function HomePage() {
   const handlePageChange = (page: number) => {
     const newParams = new URLSearchParams(searchParams);
     if (page === 1) {
-      newParams.delete('page');
+      newParams.delete("page");
     } else {
-      newParams.set('page', page.toString());
+      newParams.set("page", page.toString());
     }
     setSearchParams(newParams);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const handleCategoryClick = (categoryName: string) => {
     const newParams = new URLSearchParams(searchParams);
     if (selectedCategory === categoryName) {
-      newParams.delete('category');
+      newParams.delete("category");
     } else {
-      newParams.set('category', categoryName);
+      newParams.set("category", categoryName);
     }
-    newParams.delete('page');
+    newParams.delete("page");
     setSearchParams(newParams);
   };
 
   const handleTagClick = (tagName: string) => {
     if (!isAuthenticated) {
-      navigate('/login');
+      navigate("/login");
       return;
     }
     const newParams = new URLSearchParams(searchParams);
-    newParams.set('search', tagName);
-    newParams.delete('page');
+    newParams.set("search", tagName);
+    newParams.delete("page");
     setSearchParams(newParams);
   };
 
   const formatDate = (dateString: string) => {
     const locale = getLocale();
     return new Date(dateString).toLocaleDateString(locale, {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
+      year: "numeric",
+      month: "short",
+      day: "numeric",
     });
   };
 
@@ -222,10 +275,14 @@ export function HomePage() {
     try {
       const response = await likesApi.toggleLike(postId);
       const { isLiked, likesCount } = response.data;
-      setPosts((prev) => prev.map((p) => p.id === postId ? { ...p, isLiked, likesCount } : p));
-      setPopularPosts((prev) => prev.map((p) => p.id === postId ? { ...p, isLiked, likesCount } : p));
+      setPosts((prev) =>
+        prev.map((p) => (p.id === postId ? { ...p, isLiked, likesCount } : p)),
+      );
+      setPopularPosts((prev) =>
+        prev.map((p) => (p.id === postId ? { ...p, isLiked, likesCount } : p)),
+      );
     } catch (error) {
-      console.error('切换点赞失败:', error);
+      console.error("切换点赞失败:", error);
     }
   };
 
@@ -260,18 +317,18 @@ export function HomePage() {
         <div className="mb-6 flex items-center gap-2">
           <SearchX className="w-5 h-5 text-muted-foreground" />
           <span className="text-muted-foreground">
-            {t('homePage.searchResultsFor', { query: searchQuery })}
+            {t("homePage.searchResultsFor", { query: searchQuery })}
           </span>
           <Button
             variant="ghost"
             size="sm"
             onClick={() => {
               const newParams = new URLSearchParams(searchParams);
-              newParams.delete('search');
+              newParams.delete("search");
               setSearchParams(newParams);
             }}
           >
-            {t('homePage.clearSearch')}
+            {t("homePage.clearSearch")}
           </Button>
         </div>
       )}
@@ -285,9 +342,13 @@ export function HomePage() {
                 <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
                   <SearchX className="w-8 h-8 text-muted-foreground" />
                 </div>
-                <h3 className="text-lg font-semibold mb-2">{t('homePage.noPostsFound')}</h3>
+                <h3 className="text-lg font-semibold mb-2">
+                  {t("homePage.noPostsFound")}
+                </h3>
                 <p className="text-muted-foreground">
-                  {searchQuery ? t('homePage.tryDifferentKeywords') : t('homePage.noPostsAvailable')}
+                  {searchQuery
+                    ? t("homePage.tryDifferentKeywords")
+                    : t("homePage.noPostsAvailable")}
                 </p>
               </CardContent>
             </Card>
@@ -295,22 +356,24 @@ export function HomePage() {
             <>
               <div className="space-y-6">
                 {posts.map((post) => (
-                  <Card key={post.id} className="group hover:shadow-lg transition-shadow p-0 gap-0 overflow-hidden">
-                      {/* 封面图（直接放在 Card 顶部以便与卡片边缘贴合） */}
-                      {post.coverImage && (
-                        <Link to={`/post/${post.id}`} className="block">
-                          <div className="w-full overflow-hidden rounded-t-xl">
-                            <img
-                              src={post.coverImage}
-                              alt={post.title}
-                              className="w-full h-auto object-contain group-hover:scale-105 transition-transform duration-300"
-                            />
-                          </div>
-                        </Link>
-                      )}
+                  <Card
+                    key={post.id}
+                    className="group hover:shadow-lg transition-shadow p-0 gap-0 overflow-hidden"
+                  >
+                    {/* 封面图（直接放在 Card 顶部以便与卡片边缘贴合） */}
+                    {post.coverImage && (
+                      <Link to={`/post/${post.id}`} className="block">
+                        <div className="w-full overflow-hidden rounded-t-xl">
+                          <img
+                            src={post.coverImage}
+                            alt={post.title}
+                            className="w-full h-auto object-contain group-hover:scale-105 transition-transform duration-300"
+                          />
+                        </div>
+                      </Link>
+                    )}
 
                     <CardContent className="p-6">
-
                       {/* 分类和标签 */}
                       <div className="flex flex-wrap items-center gap-2 mb-3">
                         {post.categoryInfo && (
@@ -319,7 +382,11 @@ export function HomePage() {
                           </Badge>
                         )}
                         {post.tags?.slice(0, 3).map((tag) => (
-                          <Badge key={tag} variant="outline" className="text-xs">
+                          <Badge
+                            key={tag}
+                            variant="outline"
+                            className="text-xs"
+                          >
                             {tag}
                           </Badge>
                         ))}
@@ -339,10 +406,17 @@ export function HomePage() {
 
                       {/* 作者和统计 */}
                       <div className="flex flex-col gap-2">
-                        <Link to={`/user/${post.author?.id}`} className="flex items-center gap-3 hover:no-underline">
+                        <Link
+                          to={`/user/${post.author?.id}`}
+                          className="flex items-center gap-3 hover:no-underline"
+                        >
                           <Avatar className="w-8 h-8">
                             {post.author?.avatar ? (
-                              <img src={post.author.avatar} alt="Avatar" className="w-full h-full object-cover" />
+                              <img
+                                src={post.author.avatar}
+                                alt="Avatar"
+                                className="w-full h-full object-cover"
+                              />
                             ) : (
                               <AvatarFallback className="bg-primary/10 text-primary text-sm">
                                 {post.author?.username?.charAt(0).toUpperCase()}
@@ -351,7 +425,9 @@ export function HomePage() {
                           </Avatar>
                           <div className="flex flex-col gap-1">
                             <div className="flex items-center gap-2 text-sm">
-                              <span className="text-muted-foreground hover:text-primary transition-colors">{post.author?.username}</span>
+                              <span className="text-muted-foreground hover:text-primary transition-colors">
+                                {post.author?.username}
+                              </span>
                               <span className="text-muted-foreground">·</span>
                               <span className="flex items-center gap-1 text-muted-foreground">
                                 <Calendar className="w-3 h-3" />
@@ -360,18 +436,24 @@ export function HomePage() {
                             </div>
                             {/* 生日和个性签名 */}
                             <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                              {post.author?.birthday && !JSON.parse(localStorage.getItem('userSettings') || '{}').hideBirthday && (
-                                <span className="flex items-center gap-1">
-                                  <Calendar className="w-2.5 h-2.5" />
-                                  {new Date(post.author.birthday).toLocaleDateString(getLocale(), {
-                                    month: 'short',
-                                    day: 'numeric'
-                                  })}
-                                </span>
-                              )}
-                              {post.author?.bio && !JSON.parse(localStorage.getItem('userSettings') || '{}').hideBio && (
-                                <span>{post.author.bio}</span>
-                              )}
+                              {post.author?.birthday &&
+                                !JSON.parse(
+                                  localStorage.getItem("userSettings") || "{}",
+                                ).hideBirthday && (
+                                  <span className="flex items-center gap-1">
+                                    <Calendar className="w-2.5 h-2.5" />
+                                    {new Date(
+                                      post.author.birthday,
+                                    ).toLocaleDateString(getLocale(), {
+                                      month: "short",
+                                      day: "numeric",
+                                    })}
+                                  </span>
+                                )}
+                              {post.author?.bio &&
+                                !JSON.parse(
+                                  localStorage.getItem("userSettings") || "{}",
+                                ).hideBio && <span>{post.author.bio}</span>}
                             </div>
                           </div>
                         </Link>
@@ -379,9 +461,11 @@ export function HomePage() {
                         <div className="flex items-center gap-4 text-sm">
                           <button
                             onClick={() => handleToggleLike(post.id)}
-                            className={`flex items-center gap-1 ${post.isLiked ? 'text-red-500' : 'text-muted-foreground'}`}
+                            className={`flex items-center gap-1 ${post.isLiked ? "text-red-500" : "text-muted-foreground"}`}
                           >
-                            <Heart className={`w-4 h-4 ${post.isLiked ? 'fill-current' : ''}`} />
+                            <Heart
+                              className={`w-4 h-4 ${post.isLiked ? "fill-current" : ""}`}
+                            />
                             <span>{post.likesCount || 0}</span>
                           </button>
                           <span className="flex items-center gap-1 text-muted-foreground">
@@ -406,20 +490,30 @@ export function HomePage() {
                     <PaginationItem>
                       <PaginationPrevious
                         onClick={() => handlePageChange(currentPage - 1)}
-                        className={currentPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                        className={
+                          currentPage === 1
+                            ? "pointer-events-none opacity-50"
+                            : "cursor-pointer"
+                        }
                       />
                     </PaginationItem>
 
-                    {Array.from({ length: pagination.totalPages }, (_, i) => i + 1)
-                      .filter(page =>
-                        page === 1 ||
-                        page === pagination.totalPages ||
-                        Math.abs(page - currentPage) <= 1
+                    {Array.from(
+                      { length: pagination.totalPages },
+                      (_, i) => i + 1,
+                    )
+                      .filter(
+                        (page) =>
+                          page === 1 ||
+                          page === pagination.totalPages ||
+                          Math.abs(page - currentPage) <= 1,
                       )
                       .map((page, index, array) => (
                         <div key={page} className="flex items-center">
                           {index > 0 && array[index - 1] !== page - 1 && (
-                            <span className="px-2 text-muted-foreground">...</span>
+                            <span className="px-2 text-muted-foreground">
+                              ...
+                            </span>
                           )}
                           <PaginationItem>
                             <PaginationLink
@@ -435,7 +529,11 @@ export function HomePage() {
                     <PaginationItem>
                       <PaginationNext
                         onClick={() => handlePageChange(currentPage + 1)}
-                        className={currentPage === pagination.totalPages ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                        className={
+                          currentPage === pagination.totalPages
+                            ? "pointer-events-none opacity-50"
+                            : "cursor-pointer"
+                        }
                       />
                     </PaginationItem>
                   </PaginationContent>
@@ -452,7 +550,7 @@ export function HomePage() {
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
                 <Tag className="w-4 h-4" />
-                {t('homePage.categories')}
+                {t("homePage.categories")}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -460,7 +558,11 @@ export function HomePage() {
                 {categories.map((category) => (
                   <Badge
                     key={category.id}
-                    variant={selectedCategory === category.name ? 'default' : 'secondary'}
+                    variant={
+                      selectedCategory === category.name
+                        ? "default"
+                        : "secondary"
+                    }
                     className="cursor-pointer"
                     onClick={() => handleCategoryClick(category.name)}
                   >
@@ -476,7 +578,7 @@ export function HomePage() {
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
                 <Tag className="w-4 h-4" />
-                {t('homePage.popularTags')}
+                {t("homePage.popularTags")}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -500,7 +602,7 @@ export function HomePage() {
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
                 <TrendingUp className="w-4 h-4" />
-                {t('homePage.popularPosts')}
+                {t("homePage.popularPosts")}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -540,12 +642,12 @@ export function HomePage() {
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
                 <Clock className="w-4 h-4" />
-                {t('homePage.aboutVexgo')}
+                {t("homePage.aboutVexgo")}
               </CardTitle>
             </CardHeader>
             <CardContent>
               <p className="text-sm text-muted-foreground">
-                {t('homePage.aboutVexgoDesc')}
+                {t("homePage.aboutVexgoDesc")}
               </p>
             </CardContent>
           </Card>

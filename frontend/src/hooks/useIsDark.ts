@@ -5,8 +5,8 @@ import { useState, useEffect } from "react";
  * and keeps the value in sync via a MutationObserver.
  */
 export function useIsDark(): boolean {
-  const [isDark, setIsDark] = useState(
-    () => document.documentElement.classList.contains("dark"),
+  const [isDark, setIsDark] = useState(() =>
+    document.documentElement.classList.contains("dark"),
   );
 
   useEffect(() => {

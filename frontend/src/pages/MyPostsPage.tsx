@@ -1,14 +1,14 @@
-import { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '@/hooks/useAuth';
-import { postsApi } from '@/lib/api';
-import type { Post } from '@/types';
-import { useTranslation } from '@/lib/I18nContext';
-import { getLocale } from '@/lib/i18n';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Skeleton } from '@/components/ui/skeleton';
+import { useEffect, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
+import { postsApi } from "@/lib/api";
+import type { Post } from "@/types";
+import { useTranslation } from "@/lib/I18nContext";
+import { getLocale } from "@/lib/i18n";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -19,20 +19,28 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from '@/components/ui/alert-dialog';
+} from "@/components/ui/alert-dialog";
 import {
   Pagination,
   PaginationContent,
   PaginationItem,
   PaginationLink,
   PaginationNext,
-  PaginationPrevious
-} from '@/components/ui/pagination';
+  PaginationPrevious,
+} from "@/components/ui/pagination";
 import {
-  PenLine, Edit, Trash2, Eye, Clock,
-  FileX, Plus, CheckCircle, XCircle, AlertCircle
-} from 'lucide-react';
-import { normalizeTagsArray } from '@/lib/utils';
+  PenLine,
+  Edit,
+  Trash2,
+  Eye,
+  Clock,
+  FileX,
+  Plus,
+  CheckCircle,
+  XCircle,
+  AlertCircle,
+} from "lucide-react";
+import { normalizeTagsArray } from "@/lib/utils";
 
 export function MyPostsPage() {
   const { t } = useTranslation();
@@ -45,13 +53,13 @@ export function MyPostsPage() {
     total: 0,
     page: 1,
     totalPages: 1,
-    limit: 10
+    limit: 10,
   });
 
   // Check if user is guest
   useEffect(() => {
-    if (isAuthenticated && user?.role === 'guest') {
-      navigate('/');
+    if (isAuthenticated && user?.role === "guest") {
+      navigate("/");
     }
   }, [isAuthenticated, user, navigate]);
 
@@ -64,12 +72,17 @@ export function MyPostsPage() {
     try {
       const response = await postsApi.getMyPosts({
         page: currentPage,
-        limit: 10
+        limit: 10,
       });
-      setPosts(response.data.posts.map((p: any) => ({ ...p, tags: normalizeTagsArray(p.tags) })));
+      setPosts(
+        response.data.posts.map((p: any) => ({
+          ...p,
+          tags: normalizeTagsArray(p.tags),
+        })),
+      );
       setPagination(response.data.pagination);
     } catch (error) {
-      console.error('加载文章失败:', error);
+      console.error("加载文章失败:", error);
     } finally {
       setLoading(false);
     }
@@ -80,60 +93,60 @@ export function MyPostsPage() {
       await postsApi.deletePost(postId);
       loadPosts();
     } catch (error) {
-      console.error('删除文章失败:', error);
+      console.error("删除文章失败:", error);
     }
   };
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const formatDate = (dateString: string) => {
     const locale = getLocale();
     return new Date(dateString).toLocaleDateString(locale, {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
+      year: "numeric",
+      month: "short",
+      day: "numeric",
     });
   };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case 'published':
+      case "published":
         return {
-          variant: 'default' as const,
-          label: t('myPostsPage.published'),
+          variant: "default" as const,
+          label: t("myPostsPage.published"),
           icon: CheckCircle,
-          className: 'bg-green-600 hover:bg-green-700'
+          className: "bg-green-600 hover:bg-green-700",
         };
-      case 'draft':
+      case "draft":
         return {
-          variant: 'secondary' as const,
-          label: t('myPostsPage.draft'),
+          variant: "secondary" as const,
+          label: t("myPostsPage.draft"),
           icon: FileX,
-          className: ''
+          className: "",
         };
-      case 'pending':
+      case "pending":
         return {
-          variant: 'outline' as const,
-          label: t('myPostsPage.pending'),
+          variant: "outline" as const,
+          label: t("myPostsPage.pending"),
           icon: Clock,
-          className: 'text-yellow-600 border-yellow-600'
+          className: "text-yellow-600 border-yellow-600",
         };
-      case 'rejected':
+      case "rejected":
         return {
-          variant: 'destructive' as const,
-          label: t('myPostsPage.rejected'),
+          variant: "destructive" as const,
+          label: t("myPostsPage.rejected"),
           icon: XCircle,
-          className: ''
+          className: "",
         };
       default:
         return {
-          variant: 'secondary' as const,
+          variant: "secondary" as const,
           label: status,
           icon: AlertCircle,
-          className: ''
+          className: "",
         };
     }
   };
@@ -163,13 +176,13 @@ export function MyPostsPage() {
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold flex items-center gap-2">
           <PenLine className="w-6 h-6" />
-          {t('myPostsPage.myPosts')}
+          {t("myPostsPage.myPosts")}
         </h1>
-        {user?.role !== 'guest' && (
+        {user?.role !== "guest" && (
           <Button asChild>
             <Link to="/write">
               <Plus className="w-4 h-4 mr-2" />
-              {t('myPostsPage.writePost')}
+              {t("myPostsPage.writePost")}
             </Link>
           </Button>
         )}
@@ -182,13 +195,17 @@ export function MyPostsPage() {
             <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
               <FileX className="w-8 h-8 text-muted-foreground" />
             </div>
-            <h3 className="text-lg font-semibold mb-2">{t('myPostsPage.noPosts')}</h3>
-            <p className="text-muted-foreground mb-4">{t('myPostsPage.noPostsDesc')}</p>
-            {user?.role !== 'guest' && (
+            <h3 className="text-lg font-semibold mb-2">
+              {t("myPostsPage.noPosts")}
+            </h3>
+            <p className="text-muted-foreground mb-4">
+              {t("myPostsPage.noPostsDesc")}
+            </p>
+            {user?.role !== "guest" && (
               <Button asChild>
                 <Link to="/write">
                   <Plus className="w-4 h-4 mr-2" />
-                  {t('myPostsPage.writePost')}
+                  {t("myPostsPage.writePost")}
                 </Link>
               </Button>
             )}
@@ -208,7 +225,10 @@ export function MyPostsPage() {
                           const status = getStatusBadge(post.status);
                           const IconComponent = status.icon;
                           return (
-                            <Badge variant={status.variant} className={status.className}>
+                            <Badge
+                              variant={status.variant}
+                              className={status.className}
+                            >
                               <IconComponent className="w-3 h-3 mr-1" />
                               {status.label}
                             </Badge>
@@ -236,7 +256,11 @@ export function MyPostsPage() {
                       {post.tags && post.tags.length > 0 && (
                         <div className="flex flex-wrap gap-1">
                           {post.tags.slice(0, 3).map((tag) => (
-                            <Badge key={tag} variant="outline" className="text-xs">
+                            <Badge
+                              key={tag}
+                              variant="outline"
+                              className="text-xs"
+                            >
                               {tag}
                             </Badge>
                           ))}
@@ -264,18 +288,22 @@ export function MyPostsPage() {
                         </AlertDialogTrigger>
                         <AlertDialogContent>
                           <AlertDialogHeader>
-                            <AlertDialogTitle>{t('myPostsPage.confirmDelete')}</AlertDialogTitle>
+                            <AlertDialogTitle>
+                              {t("myPostsPage.confirmDelete")}
+                            </AlertDialogTitle>
                             <AlertDialogDescription>
-                              {t('myPostsPage.cannotUndo')}
+                              {t("myPostsPage.cannotUndo")}
                             </AlertDialogDescription>
                           </AlertDialogHeader>
                           <AlertDialogFooter>
-                            <AlertDialogCancel>{t('myPostsPage.cancel')}</AlertDialogCancel>
+                            <AlertDialogCancel>
+                              {t("myPostsPage.cancel")}
+                            </AlertDialogCancel>
                             <AlertDialogAction
                               onClick={() => handleDeletePost(post.id)}
                               className="bg-destructive"
                             >
-                              {t('myPostsPage.delete')}
+                              {t("myPostsPage.delete")}
                             </AlertDialogAction>
                           </AlertDialogFooter>
                         </AlertDialogContent>
@@ -294,15 +322,20 @@ export function MyPostsPage() {
                 <PaginationItem>
                   <PaginationPrevious
                     onClick={() => handlePageChange(currentPage - 1)}
-                    className={currentPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                    className={
+                      currentPage === 1
+                        ? "pointer-events-none opacity-50"
+                        : "cursor-pointer"
+                    }
                   />
                 </PaginationItem>
 
                 {Array.from({ length: pagination.totalPages }, (_, i) => i + 1)
-                  .filter(page =>
-                    page === 1 ||
-                    page === pagination.totalPages ||
-                    Math.abs(page - currentPage) <= 1
+                  .filter(
+                    (page) =>
+                      page === 1 ||
+                      page === pagination.totalPages ||
+                      Math.abs(page - currentPage) <= 1,
                   )
                   .map((page, index, array) => (
                     <div key={page} className="flex items-center">
@@ -323,7 +356,11 @@ export function MyPostsPage() {
                 <PaginationItem>
                   <PaginationNext
                     onClick={() => handlePageChange(currentPage + 1)}
-                    className={currentPage === pagination.totalPages ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                    className={
+                      currentPage === pagination.totalPages
+                        ? "pointer-events-none opacity-50"
+                        : "cursor-pointer"
+                    }
                   />
                 </PaginationItem>
               </PaginationContent>

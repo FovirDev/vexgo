@@ -149,7 +149,9 @@ export function UserPostsPage() {
                         <Calendar className="w-3 h-3" />
                         <span>
                           {t("profilePage.birthday")}:{" "}
-                          {new Date(user.birthday).toLocaleDateString(getLocale())}
+                          {new Date(user.birthday).toLocaleDateString(
+                            getLocale(),
+                          )}
                         </span>
                       </div>
                     )}

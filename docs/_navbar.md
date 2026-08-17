@@ -1,3 +1,3 @@
-* Language
-  * [English](/)
-  * [简体中文](/zh-cn/)
+- Language
+  - [English](/)
+  - [简体中文](/zh-cn/)

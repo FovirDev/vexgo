@@ -53,7 +53,7 @@ export function ThemePage() {
 
   useEffect(() => {
     window.scrollTo(0, 0);
-    
+
     if (user && user.role !== "admin" && user.role !== "super_admin") {
       navigate("/");
       return;

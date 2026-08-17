@@ -1,16 +1,16 @@
-import { useEffect, useState } from 'react';
-import { Link, useParams, useNavigate } from 'react-router-dom';
-import { postsApi, commentsApi, likesApi } from '@/lib/api';
-import type { Post, Comment } from '@/types';
-import { useAuth } from '@/hooks/useAuth';
-import { useTranslation } from '@/lib/I18nContext';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { useEffect, useState } from "react";
+import { Link, useParams, useNavigate } from "react-router-dom";
+import { postsApi, commentsApi, likesApi } from "@/lib/api";
+import type { Post, Comment } from "@/types";
+import { useAuth } from "@/hooks/useAuth";
+import { useTranslation } from "@/lib/I18nContext";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
-import { Textarea } from '@/components/ui/textarea';
-import { Skeleton } from '@/components/ui/skeleton';
+import { Textarea } from "@/components/ui/textarea";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -21,15 +21,23 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from '@/components/ui/alert-dialog';
+} from "@/components/ui/alert-dialog";
 import {
-  Heart, MessageCircle, Calendar,
-  ArrowLeft, Share2, Edit, Trash2, Send,
-  Clock, Eye, XCircle
-} from 'lucide-react';
-import { normalizeTagsArray } from '@/lib/utils';
-import { MarkdownRenderer } from '@/components/MarkdownRenderer';
-import { getLocale } from '@/lib/i18n';
+  Heart,
+  MessageCircle,
+  Calendar,
+  ArrowLeft,
+  Share2,
+  Edit,
+  Trash2,
+  Send,
+  Clock,
+  Eye,
+  XCircle,
+} from "lucide-react";
+import { normalizeTagsArray } from "@/lib/utils";
+import { MarkdownRenderer } from "@/components/MarkdownRenderer";
+import { getLocale } from "@/lib/i18n";
 
 export function PostDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -38,21 +46,25 @@ export function PostDetailPage() {
   const { t } = useTranslation();
   // 检查是否有初始数据
   const initialData = (window as any).__INITIAL_DATA__;
-  
+
   // 处理初始数据中的标签标准化
-  const processedInitialData = initialData?.post ? {
-    ...initialData.post,
-    tags: normalizeTagsArray(initialData.post.tags)
-  } : null;
-  
+  const processedInitialData = initialData?.post
+    ? {
+        ...initialData.post,
+        tags: normalizeTagsArray(initialData.post.tags),
+      }
+    : null;
+
   // 初始状态使用处理后的initialData，确保客户端渲染与服务器端一致
   const [post, setPost] = useState<Post | null>(processedInitialData || null);
   const [comments, setComments] = useState<Comment[]>([]);
   // SSR 已提供文章数据时无需等待 API 加载，直接渲染；否则进入加载态
   const [loading, setLoading] = useState(!processedInitialData);
-  const [commentContent, setCommentContent] = useState('');
+  const [commentContent, setCommentContent] = useState("");
   const [isLiked, setIsLiked] = useState(false);
-  const [likesCount, setLikesCount] = useState(initialData?.post?.likesCount || 0);
+  const [likesCount, setLikesCount] = useState(
+    initialData?.post?.likesCount || 0,
+  );
   const [submittingComment, setSubmittingComment] = useState(false);
   const [shareSuccess, setShareSuccess] = useState(false);
 
@@ -63,7 +75,7 @@ export function PostDetailPage() {
           // 加载评论和点赞状态
           await loadComments();
           await loadLikeStatus();
-          
+
           // 如果没有初始数据，从API加载
           if (!initialData?.post) {
             setLoading(true);
@@ -71,37 +83,37 @@ export function PostDetailPage() {
             setLoading(false);
           }
         } catch (error) {
-          console.error('加载数据失败:', error);
+          console.error("加载数据失败:", error);
           if (!initialData?.post) {
             setLoading(false);
           }
         }
       }
     };
-    
+
     loadData();
   }, [id]);
 
   const loadPost = async () => {
     try {
-      console.log('正在加载文章，ID:', id);
+      console.log("正在加载文章，ID:", id);
       const response = await postsApi.getPost(id!);
-      console.log('文章加载成功:', response.data);
+      console.log("文章加载成功:", response.data);
       const p = response.data.post;
       p.tags = normalizeTagsArray(p.tags);
       setPost(p);
       setLikesCount(response.data.post.likesCount || 0);
     } catch (error: any) {
-      console.error('加载文章失败:', error);
-      console.error('错误详情:', {
+      console.error("加载文章失败:", error);
+      console.error("错误详情:", {
         message: error.message,
         response: error.response,
         status: error.response?.status,
-        data: error.response?.data
+        data: error.response?.data,
       });
       // Only redirect back to the homepage if you truly cannot find the article.
       if (error.response?.status === 404) {
-        navigate('/');
+        navigate("/");
       }
       // For other errors, still set loading to false so that users can see the error message.
     } finally {
@@ -115,7 +127,7 @@ export function PostDetailPage() {
       setComments(response.data.comments);
       return response.data.comments;
     } catch (error) {
-      console.error('加载评论失败:', error);
+      console.error("加载评论失败:", error);
       return [] as Comment[];
     }
   };
@@ -126,13 +138,13 @@ export function PostDetailPage() {
       setIsLiked(response.data.isLiked);
       setLikesCount(response.data.likesCount);
     } catch (error) {
-      console.error('加载点赞状态失败:', error);
+      console.error("加载点赞状态失败:", error);
     }
   };
 
   const handleLike = async () => {
     if (!isAuthenticated) {
-      navigate('/login');
+      navigate("/login");
       return;
     }
 
@@ -142,18 +154,26 @@ export function PostDetailPage() {
       setLikesCount(response.data.likesCount);
       // 通知其他页面（例如首页）更新对应文章的点赞状态
       try {
-        window.dispatchEvent(new CustomEvent('like-changed', { detail: { postId: id, isLiked: response.data.isLiked, likesCount: response.data.likesCount } }));
+        window.dispatchEvent(
+          new CustomEvent("like-changed", {
+            detail: {
+              postId: id,
+              isLiked: response.data.isLiked,
+              likesCount: response.data.likesCount,
+            },
+          }),
+        );
       } catch (e) {
         // ignore
       }
     } catch (error) {
-      console.error('点赞失败:', error);
+      console.error("点赞失败:", error);
     }
   };
 
   const handleSubmitComment = async () => {
     if (!isAuthenticated) {
-      navigate('/login');
+      navigate("/login");
       return;
     }
 
@@ -163,19 +183,23 @@ export function PostDetailPage() {
     try {
       const response = await commentsApi.createComment({
         postId: id!,
-        content: commentContent.trim()
+        content: commentContent.trim(),
       });
-      setCommentContent('');
+      setCommentContent("");
       await loadComments();
       // 使用后端返回的 commentsCount 同步首页
-      const newCount = response.data.commentsCount ?? (comments.length + 1);
+      const newCount = response.data.commentsCount ?? comments.length + 1;
       try {
-        window.dispatchEvent(new CustomEvent('comment-changed', { detail: { postId: id, commentsCount: newCount } }));
+        window.dispatchEvent(
+          new CustomEvent("comment-changed", {
+            detail: { postId: id, commentsCount: newCount },
+          }),
+        );
       } catch (e) {
         // ignore
       }
     } catch (error) {
-      console.error('发表评论失败:', error);
+      console.error("发表评论失败:", error);
     } finally {
       setSubmittingComment(false);
     }
@@ -184,9 +208,9 @@ export function PostDetailPage() {
   const handleDeletePost = async () => {
     try {
       await postsApi.deletePost(id!);
-      navigate('/');
+      navigate("/");
     } catch (error) {
-      console.error('删除文章失败:', error);
+      console.error("删除文章失败:", error);
     }
   };
 
@@ -194,12 +218,18 @@ export function PostDetailPage() {
     try {
       const response = await commentsApi.deleteComment(commentId);
       await loadComments();
-      const newCount = response.data.commentsCount ?? (comments.length > 0 ? comments.length - 1 : 0);
+      const newCount =
+        response.data.commentsCount ??
+        (comments.length > 0 ? comments.length - 1 : 0);
       try {
-        window.dispatchEvent(new CustomEvent('comment-changed', { detail: { postId: id, commentsCount: newCount } }));
+        window.dispatchEvent(
+          new CustomEvent("comment-changed", {
+            detail: { postId: id, commentsCount: newCount },
+          }),
+        );
       } catch (e) {}
     } catch (error) {
-      console.error('删除评论失败:', error);
+      console.error("删除评论失败:", error);
     }
   };
 
@@ -213,23 +243,33 @@ export function PostDetailPage() {
         setShareSuccess(false);
       }, 3000);
     } catch (error) {
-      console.error('复制链接失败:', error);
+      console.error("复制链接失败:", error);
     }
   };
 
   const formatDate = (dateString: string) => {
     const locale = getLocale();
     return new Date(dateString).toLocaleDateString(locale, {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
     });
   };
 
-  const canEditPost = user && post && (user.id === post.authorId || user.role === 'admin' || user.role === 'super_admin');
-  const canDeletePost = user && post && (user.id === post.authorId || user.role === 'admin' || user.role === 'super_admin');
+  const canEditPost =
+    user &&
+    post &&
+    (user.id === post.authorId ||
+      user.role === "admin" ||
+      user.role === "super_admin");
+  const canDeletePost =
+    user &&
+    post &&
+    (user.id === post.authorId ||
+      user.role === "admin" ||
+      user.role === "super_admin");
 
   if (loading || !post) {
     return (
@@ -250,22 +290,25 @@ export function PostDetailPage() {
       <Button variant="ghost" size="sm" asChild className="mb-6">
         <Link to="/" className="flex items-center gap-2">
           <ArrowLeft className="w-4 h-4" />
-          {t('postDetailPage.backToHome')}
+          {t("postDetailPage.backToHome")}
         </Link>
       </Button>
 
       {/* 文章头部 */}
       <div className="mb-8">
         {/* 文章状态和拒绝原因 */}
-        {post.status === 'rejected' && (
+        {post.status === "rejected" && (
           <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md">
             <div className="flex items-center gap-2 mb-1">
               <XCircle className="w-5 h-5 text-red-500" />
-              <span className="font-medium text-red-800">{t('postDetailPage.rejectedArticle')}</span>
+              <span className="font-medium text-red-800">
+                {t("postDetailPage.rejectedArticle")}
+              </span>
             </div>
             {post.rejectionReason && (
               <p className="text-sm text-red-700">
-                {t('postDetailPage.rejectionReason')}{post.rejectionReason}
+                {t("postDetailPage.rejectionReason")}
+                {post.rejectionReason}
               </p>
             )}
           </div>
@@ -274,9 +317,7 @@ export function PostDetailPage() {
         {/* 分类和标签 */}
         <div className="flex flex-wrap items-center gap-2 mb-4">
           {post.categoryInfo && (
-            <Badge variant="secondary">
-              {post.categoryInfo.name}
-            </Badge>
+            <Badge variant="secondary">{post.categoryInfo.name}</Badge>
           )}
           {post.tags?.map((tag) => (
             <Badge key={tag} variant="outline">
@@ -286,16 +327,21 @@ export function PostDetailPage() {
         </div>
 
         {/* 标题 */}
-        <h1 className="text-3xl md:text-4xl font-bold mb-6">
-          {post.title}
-        </h1>
+        <h1 className="text-3xl md:text-4xl font-bold mb-6">{post.title}</h1>
 
         {/* 作者信息 */}
         <div className="flex items-center justify-between flex-wrap gap-4">
-          <Link to={`/user/${post.author?.id}`} className="flex items-center gap-4 hover:no-underline">
+          <Link
+            to={`/user/${post.author?.id}`}
+            className="flex items-center gap-4 hover:no-underline"
+          >
             <Avatar className="w-12 h-12">
               {post.author?.avatar ? (
-                <img src={post.author.avatar} alt="Avatar" className="w-full h-full object-cover" />
+                <img
+                  src={post.author.avatar}
+                  alt="Avatar"
+                  className="w-full h-full object-cover"
+                />
               ) : (
                 <AvatarFallback className="bg-primary/10 text-primary text-lg">
                   {post.author?.username?.charAt(0).toUpperCase()}
@@ -303,7 +349,9 @@ export function PostDetailPage() {
               )}
             </Avatar>
             <div>
-              <p className="font-medium hover:text-primary transition-colors">{post.author?.username}</p>
+              <p className="font-medium hover:text-primary transition-colors">
+                {post.author?.username}
+              </p>
               <div className="flex items-center gap-3 text-sm text-muted-foreground">
                 <span className="flex items-center gap-1">
                   <Calendar className="w-4 h-4" />
@@ -312,7 +360,7 @@ export function PostDetailPage() {
                 {post.updatedAt !== post.createdAt && (
                   <span className="flex items-center gap-1">
                     <Clock className="w-4 h-4" />
-                    {t('postDetailPage.updatedAt')} {formatDate(post.updatedAt)}
+                    {t("postDetailPage.updatedAt")} {formatDate(post.updatedAt)}
                   </span>
                 )}
               </div>
@@ -325,7 +373,7 @@ export function PostDetailPage() {
               <Button variant="outline" size="sm" asChild>
                 <Link to={`/edit-post/${post.id}`}>
                   <Edit className="w-4 h-4 mr-1" />
-                  {t('postDetailPage.edit')}
+                  {t("postDetailPage.edit")}
                 </Link>
               </Button>
             )}
@@ -334,20 +382,27 @@ export function PostDetailPage() {
                 <AlertDialogTrigger asChild>
                   <Button variant="destructive" size="sm">
                     <Trash2 className="w-4 h-4 mr-1" />
-                    {t('postDetailPage.delete')}
+                    {t("postDetailPage.delete")}
                   </Button>
                 </AlertDialogTrigger>
                 <AlertDialogContent>
                   <AlertDialogHeader>
-                    <AlertDialogTitle>{t('postDetailPage.confirmDelete')}</AlertDialogTitle>
+                    <AlertDialogTitle>
+                      {t("postDetailPage.confirmDelete")}
+                    </AlertDialogTitle>
                     <AlertDialogDescription>
-                      {t('postDetailPage.cannotUndo')}
+                      {t("postDetailPage.cannotUndo")}
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
-                    <AlertDialogCancel>{t('postDetailPage.cancel')}</AlertDialogCancel>
-                    <AlertDialogAction onClick={handleDeletePost} className="bg-destructive">
-                      {t('postDetailPage.deleteButton')}
+                    <AlertDialogCancel>
+                      {t("postDetailPage.cancel")}
+                    </AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={handleDeletePost}
+                      className="bg-destructive"
+                    >
+                      {t("postDetailPage.deleteButton")}
                     </AlertDialogAction>
                   </AlertDialogFooter>
                 </AlertDialogContent>
@@ -377,22 +432,28 @@ export function PostDetailPage() {
       <div className="flex items-center justify-between py-6 border-y">
         <div className="flex items-center gap-4">
           <Button
-            variant={isLiked ? 'default' : 'outline'}
+            variant={isLiked ? "default" : "outline"}
             size="lg"
             onClick={handleLike}
             className="flex items-center gap-2"
           >
-            <Heart className={`w-5 h-5 ${isLiked ? 'fill-current' : ''}`} />
+            <Heart className={`w-5 h-5 ${isLiked ? "fill-current" : ""}`} />
             <span>{likesCount}</span>
           </Button>
           <Button
             variant="outline"
             size="lg"
             className="flex items-center gap-2"
-            onClick={() => document.getElementById('comments')?.scrollIntoView({ behavior: 'smooth' })}
+            onClick={() =>
+              document
+                .getElementById("comments")
+                ?.scrollIntoView({ behavior: "smooth" })
+            }
           >
             <MessageCircle className="w-5 h-5" />
-            <span>{t('postDetailPage.comments')} ({comments.length})</span>
+            <span>
+              {t("postDetailPage.comments")} ({comments.length})
+            </span>
           </Button>
           <div className="flex items-center gap-1 text-sm text-muted-foreground">
             <Eye className="w-5 h-5" />
@@ -405,7 +466,7 @@ export function PostDetailPage() {
           </Button>
           {shareSuccess && (
             <div className="absolute -bottom-6 left-1/2 transform -translate-x-1/2 text-[10px] text-muted-foreground bg-muted px-2 py-1 rounded whitespace-nowrap">
-              {t('postDetailPage.copyLink')}
+              {t("postDetailPage.copyLink")}
             </div>
           )}
         </div>
@@ -415,7 +476,7 @@ export function PostDetailPage() {
       <div id="comments" className="mt-12">
         <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
           <MessageCircle className="w-6 h-6" />
-          {t('postDetailPage.comments')} ({comments.length})
+          {t("postDetailPage.comments")} ({comments.length})
         </h2>
 
         {/* 发表评论 */}
@@ -424,7 +485,7 @@ export function PostDetailPage() {
             <CardContent className="p-4">
               <div className="relative">
                 <Textarea
-                  placeholder={t('postDetailPage.commentPlaceholder')}
+                  placeholder={t("postDetailPage.commentPlaceholder")}
                   value={commentContent}
                   onChange={(e) => setCommentContent(e.target.value)}
                   className="mb-4 min-h-[100px]"
@@ -440,7 +501,9 @@ export function PostDetailPage() {
                   disabled={!commentContent.trim() || submittingComment}
                 >
                   <Send className="w-4 h-4 mr-2" />
-                  {submittingComment ? t('postDetailPage.submitting') : t('postDetailPage.submitComment')}
+                  {submittingComment
+                    ? t("postDetailPage.submitting")
+                    : t("postDetailPage.submitComment")}
                 </Button>
               </div>
             </CardContent>
@@ -448,9 +511,11 @@ export function PostDetailPage() {
         ) : (
           <Card className="mb-8">
             <CardContent className="p-6 text-center">
-              <p className="text-muted-foreground mb-4">{t('postDetailPage.loginToComment')}</p>
+              <p className="text-muted-foreground mb-4">
+                {t("postDetailPage.loginToComment")}
+              </p>
               <Button asChild>
-                <Link to="/login">{t('auth.login')}</Link>
+                <Link to="/login">{t("auth.login")}</Link>
               </Button>
             </CardContent>
           </Card>
@@ -460,7 +525,7 @@ export function PostDetailPage() {
         <div className="space-y-4">
           {comments.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
-              {t('postDetailPage.noComments')}
+              {t("postDetailPage.noComments")}
             </div>
           ) : (
             comments.map((comment) => (
@@ -469,7 +534,11 @@ export function PostDetailPage() {
                   <div className="flex items-start gap-4">
                     <Avatar className="w-10 h-10">
                       {comment.author?.avatar ? (
-                        <img src={comment.author.avatar} alt="Avatar" className="w-full h-full object-cover" />
+                        <img
+                          src={comment.author.avatar}
+                          alt="Avatar"
+                          className="w-full h-full object-cover"
+                        />
                       ) : (
                         <AvatarFallback className="bg-primary/10 text-primary text-sm">
                           {comment.author?.username?.charAt(0).toUpperCase()}
@@ -479,20 +548,25 @@ export function PostDetailPage() {
                     <div className="flex-1">
                       <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-2">
-                          <span className="font-medium">{comment.author?.username}</span>
+                          <span className="font-medium">
+                            {comment.author?.username}
+                          </span>
                           <span className="text-sm text-muted-foreground">
                             {formatDate(comment.createdAt)}
                           </span>
                         </div>
-                        {user && (user.id === comment.userId || user.role === 'admin' || user.role === 'super_admin') && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleDeleteComment(comment.id)}
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        )}
+                        {user &&
+                          (user.id === comment.userId ||
+                            user.role === "admin" ||
+                            user.role === "super_admin") && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDeleteComment(comment.id)}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          )}
                       </div>
                       <p className="text-gray-700">{comment.content}</p>
                     </div>

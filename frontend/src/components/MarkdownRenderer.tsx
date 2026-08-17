@@ -1,17 +1,20 @@
-import { useState, useEffect } from 'react';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
-import rehypeHighlight from 'rehype-highlight';
-import rehypeRaw from 'rehype-raw';
-import 'highlight.js/styles/github-dark.css';
-import { Skeleton } from '@/components/ui/skeleton';
+import { useState, useEffect } from "react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import rehypeHighlight from "rehype-highlight";
+import rehypeRaw from "rehype-raw";
+import "highlight.js/styles/github-dark.css";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface MarkdownRendererProps {
   content: string;
   className?: string;
 }
 
-export function MarkdownRenderer({ content, className = '' }: MarkdownRendererProps) {
+export function MarkdownRenderer({
+  content,
+  className = "",
+}: MarkdownRendererProps) {
   const [isRendering, setIsRendering] = useState(true);
 
   useEffect(() => {
