@@ -7,8 +7,8 @@ import (
 	"time"
 
 	"vexgo/backend/internal/mailer"
+	"vexgo/backend/internal/model"
 	"vexgo/backend/internal/verification"
-	"vexgo/backend/model"
 
 	"github.com/sirupsen/logrus"
 	"golang.org/x/crypto/bcrypt"

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"vexgo/backend/model"
+	"vexgo/backend/internal/model"
 
 	"github.com/golang-jwt/jwt/v5"
 )

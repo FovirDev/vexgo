@@ -6,7 +6,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"vexgo/backend/model"
+	"vexgo/backend/internal/model"
 
 	"github.com/gin-gonic/gin"
 )

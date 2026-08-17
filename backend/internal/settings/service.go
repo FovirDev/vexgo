@@ -15,8 +15,8 @@ import (
 	"strings"
 	"time"
 
+	"vexgo/backend/internal/model"
 	"vexgo/backend/internal/public"
-	"vexgo/backend/model"
 
 	"gorm.io/gorm"
 )

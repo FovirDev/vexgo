@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"testing"
 
-	"vexgo/backend/model"
+	"vexgo/backend/internal/model"
 
 	"github.com/glebarez/sqlite"
 	"gorm.io/gorm"

@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	"vexgo/backend/internal/auth"
-	"vexgo/backend/model"
+	"vexgo/backend/internal/model"
 
 	"gorm.io/gorm"
 )

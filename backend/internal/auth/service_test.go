@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"vexgo/backend/model"
+	"vexgo/backend/internal/model"
 
 	"github.com/glebarez/sqlite"
 	"github.com/golang-jwt/jwt/v5"

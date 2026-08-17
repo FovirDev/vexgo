@@ -3,7 +3,7 @@ package middleware
 import (
 	"net/http"
 
-	"vexgo/backend/model"
+	"vexgo/backend/internal/model"
 
 	"github.com/gin-gonic/gin"
 )

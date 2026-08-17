@@ -17,7 +17,7 @@ import (
 
 	"vexgo/backend/internal/auth"
 	"vexgo/backend/internal/config"
-	"vexgo/backend/model"
+	"vexgo/backend/internal/model"
 
 	"github.com/coreos/go-oidc"
 	"github.com/gin-gonic/gin"

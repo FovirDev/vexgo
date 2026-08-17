@@ -4,7 +4,7 @@
 package auth
 
 import (
-	"vexgo/backend/model"
+	"vexgo/backend/internal/model"
 )
 
 // FilterUserByPrivacy filters user information based on privacy settings:

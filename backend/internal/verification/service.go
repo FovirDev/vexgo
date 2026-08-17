@@ -17,7 +17,7 @@ import (
 	"time"
 
 	"vexgo/backend/internal/mailer"
-	"vexgo/backend/model"
+	"vexgo/backend/internal/model"
 
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"

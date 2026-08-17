@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"strconv"
 
-	"vexgo/backend/middleware"
-	"vexgo/backend/model"
+	"vexgo/backend/internal/middleware"
+	"vexgo/backend/internal/model"
 
 	"github.com/gin-gonic/gin"
 )

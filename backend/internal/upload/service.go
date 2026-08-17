@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"io"
 
-	"vexgo/backend/model"
+	"vexgo/backend/internal/model"
 
 	"gorm.io/gorm"
 )

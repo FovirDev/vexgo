@@ -2,7 +2,7 @@
 package home
 
 import (
-	"vexgo/backend/model"
+	"vexgo/backend/internal/model"
 
 	"gorm.io/gorm"
 )

@@ -4,7 +4,7 @@ import (
 	"errors"
 	"net/http"
 
-	"vexgo/backend/middleware"
+	"vexgo/backend/internal/middleware"
 
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"

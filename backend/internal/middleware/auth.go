@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"vexgo/backend/internal/config"
-	"vexgo/backend/model"
+	"vexgo/backend/internal/model"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"

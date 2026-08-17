@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 
 	"vexgo/backend/internal/config"
-	"vexgo/backend/model"
+	"vexgo/backend/internal/model"
 
 	"github.com/sirupsen/logrus"
 

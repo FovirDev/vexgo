@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"net/http"
 
-	"vexgo/backend/model"
+	"vexgo/backend/internal/model"
 
-	"vexgo/backend/middleware"
+	"vexgo/backend/internal/middleware"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
