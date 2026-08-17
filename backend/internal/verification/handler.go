@@ -67,8 +67,8 @@ func (h *Handler) GetVerificationStatus(c *gin.Context) {
 	}
 
 	if userMap, ok := userContext.(map[string]interface{}); ok {
-		if userID, ok := userMap["id"].(float64); ok {
-			emailVerified, email, err := h.svc.VerificationStatus(uint(userID))
+		if userID, ok := userMap["id"].(uint); ok {
+			emailVerified, email, err := h.svc.VerificationStatus(userID)
 			if err != nil {
 				if errors.Is(err, ErrUserNotFound) {
 					c.JSON(http.StatusNotFound, gin.H{"error": "User does not exist"})
@@ -158,8 +158,8 @@ func (h *Handler) ResendVerificationEmail(c *gin.Context) {
 	}
 
 	if userMap, ok := userContext.(map[string]interface{}); ok {
-		if userID, ok := userMap["id"].(float64); ok {
-			err := h.svc.ResendVerificationEmail(uint(userID), c.Request.Host)
+		if userID, ok := userMap["id"].(uint); ok {
+			err := h.svc.ResendVerificationEmail(userID, c.Request.Host)
 			if err != nil {
 				switch {
 				case errors.Is(err, ErrUserNotFound):

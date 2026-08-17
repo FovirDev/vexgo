@@ -328,12 +328,12 @@ func TestList_RoleVisibility(t *testing.T) {
 
 func TestList_GuestViewDenied(t *testing.T) {
 	svc, _, _ := newTestService(t)
-	// Create then Save: Create omits zero-value bools (gorm default:true tag),
-	// Save writes them correctly.
-	var settings model.GeneralSettings
-	svc.db.Create(&settings)
-	settings.AllowGuestViewPosts = false
-	svc.db.Save(&settings)
+	// AllowGuestViewPosts used to carry gorm:"default:true", which made GORM
+	// omit the zero value on Create and silently store true — now fixed, so
+	// false persists directly.
+	if err := svc.db.Create(&model.GeneralSettings{AllowGuestViewPosts: false}).Error; err != nil {
+		t.Fatalf("failed to seed settings: %v", err)
+	}
 
 	posts, total, err := svc.List("", 0, 1, 10, "", "", "")
 	if err != nil {

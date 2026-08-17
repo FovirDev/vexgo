@@ -163,13 +163,18 @@ func TestUpdateGeneralSettings(t *testing.T) {
 		t.Errorf("expected updated settings, got %+v", config)
 	}
 
-	// read back
+	// read back — RegistrationEnabled: false must survive the create path.
+	// It used to be stored as true because the model carried gorm:"default:true"
+	// and GORM omitted zero-value bools on Create.
 	got, err := svc.GetGeneralSettings()
 	if err != nil {
 		t.Fatalf("GetGeneralSettings error: %v", err)
 	}
 	if !got.CaptchaEnabled || got.SiteName != "My Blog" {
 		t.Errorf("expected persisted settings, got %+v", got)
+	}
+	if got.RegistrationEnabled {
+		t.Errorf("expected RegistrationEnabled=false persisted, got %+v", got)
 	}
 }
 

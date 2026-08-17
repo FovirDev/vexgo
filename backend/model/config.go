@@ -22,15 +22,15 @@ type SMTPConfig struct {
 // GeneralSettings stores general system settings
 type GeneralSettings struct {
 	ID                  uint      `json:"id" gorm:"primaryKey"`
-	CaptchaEnabled      bool      `json:"captchaEnabled" gorm:"default:false"`     // Whether captcha verification is enabled
-	RegistrationEnabled bool      `json:"registrationEnabled" gorm:"default:true"` // Whether registration is allowed
-	AllowGuestViewPosts bool      `json:"allowGuestViewPosts" gorm:"default:true"` // Whether guests can view posts
-	SiteName            string    `json:"siteName" gorm:"size:100;default:VexGo"`  // Site name
-	SiteDescription     string    `json:"siteDescription" gorm:"type:text"`        // Site description
-	SiteIcon            string    `json:"siteIcon" gorm:"type:text"`               // Site icon URL
-	ItemsPerPage        int       `json:"itemsPerPage" gorm:"default:20"`          // Items per page
-	CreatedAt           time.Time `json:"created_at"`                              // Creation time
-	UpdatedAt           time.Time `json:"updated_at"`                              // Update time
+	CaptchaEnabled      bool      `json:"captchaEnabled" gorm:"default:false"`    // Whether captcha verification is enabled
+	RegistrationEnabled bool      `json:"registrationEnabled"`                    // Whether registration is allowed
+	AllowGuestViewPosts bool      `json:"allowGuestViewPosts"`                    // Whether guests can view posts
+	SiteName            string    `json:"siteName" gorm:"size:100;default:VexGo"` // Site name
+	SiteDescription     string    `json:"siteDescription" gorm:"type:text"`       // Site description
+	SiteIcon            string    `json:"siteIcon" gorm:"type:text"`              // Site icon URL
+	ItemsPerPage        int       `json:"itemsPerPage" gorm:"default:20"`         // Items per page
+	CreatedAt           time.Time `json:"created_at"`                             // Creation time
+	UpdatedAt           time.Time `json:"updated_at"`                             // Update time
 }
 
 // Captcha stores sliding puzzle captcha information
@@ -58,7 +58,7 @@ type CommentModerationConfig struct {
 	ModelName          string    `json:"modelName" gorm:"default:'gpt-3.5-turbo'"` // Model name
 	ModerationPrompt   string    `json:"moderationPrompt" gorm:"default:''"`       // Moderation prompt
 	BlockKeywords      string    `json:"blockKeywords" gorm:"size:500;default:''"` // Blocked keywords, comma-separated
-	AutoApproveEnabled bool      `json:"autoApproveEnabled" gorm:"default:true"`   // Whether to auto-approve low-risk comments
+	AutoApproveEnabled bool      `json:"autoApproveEnabled"`                       // Whether to auto-approve low-risk comments
 	MinScoreThreshold  float64   `json:"minScoreThreshold" gorm:"default:0.5"`     // Minimum score threshold (below this score will be rejected)
 	CreatedAt          time.Time `json:"createdAt"`
 	UpdatedAt          time.Time `json:"updatedAt"`

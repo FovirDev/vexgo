@@ -100,14 +100,9 @@ func TestCreate_ModerationDisabledManualApproval(t *testing.T) {
 	post := seedPost(t, svc.db, author.ID)
 	commenter := seedUser(t, svc.db, "commenter", model.RoleGuest)
 
-	// Disable auto-approve. Note: the *create* path of UpdateModerationConfig
-	// cannot persist AutoApproveEnabled=false because the model carries
-	// gorm:"default:true" and GORM omits zero-value fields on Create — a
-	// pre-existing bug worth fixing separately. The *update* path (Save) writes
-	// zero values correctly, so create the row first, then update it.
-	if _, err := svc.UpdateModerationConfig(UpdateModerationConfigRequest{Enabled: true}); err != nil {
-		t.Fatalf("UpdateModerationConfig error: %v", err)
-	}
+	// Disable auto-approve via the *create* path. This used to be impossible:
+	// the model carried gorm:"default:true" and GORM omitted zero-value bools
+	// on Create, so AutoApproveEnabled=false was silently stored as true.
 	if _, err := svc.UpdateModerationConfig(UpdateModerationConfigRequest{
 		Enabled:            false,
 		AutoApproveEnabled: false,

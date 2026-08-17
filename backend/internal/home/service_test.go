@@ -61,18 +61,11 @@ func TestStats_GuestViewDisabled(t *testing.T) {
 		t.Fatalf("failed to seed post: %v", err)
 	}
 
-	// AllowGuestViewPosts carries gorm:"default:true"; seed true via Create,
-	// then flip to false with Save (which writes zero values correctly).
-	if err := svc.db.Create(&model.GeneralSettings{AllowGuestViewPosts: true}).Error; err != nil {
+	// Disable guest viewing directly via Create. AllowGuestViewPosts used to
+	// carry gorm:"default:true", which made GORM omit the zero value on Create
+	// and silently store true — that bug is now fixed.
+	if err := svc.db.Create(&model.GeneralSettings{AllowGuestViewPosts: false}).Error; err != nil {
 		t.Fatalf("failed to seed settings: %v", err)
-	}
-	var settings model.GeneralSettings
-	if err := svc.db.First(&settings).Error; err != nil {
-		t.Fatalf("failed to load settings: %v", err)
-	}
-	settings.AllowGuestViewPosts = false
-	if err := svc.db.Save(&settings).Error; err != nil {
-		t.Fatalf("failed to disable guest view: %v", err)
 	}
 
 	// anonymous → empty stats

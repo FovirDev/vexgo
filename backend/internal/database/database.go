@@ -234,6 +234,7 @@ func Seed(db *gorm.DB) {
 					generalSettings = model.GeneralSettings{
 						CaptchaEnabled:      false, // Disable captcha by default
 						RegistrationEnabled: true,  // Allow registration by default
+						AllowGuestViewPosts: true,  // Allow guests to view posts by default
 						SiteName:            "VexGo",
 						SiteDescription:     "",
 						ItemsPerPage:        20,

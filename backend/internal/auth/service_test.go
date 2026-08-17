@@ -208,20 +208,11 @@ func TestRegister_DuplicateEmail(t *testing.T) {
 
 func TestRegister_Disabled(t *testing.T) {
 	svc, _ := newTestService(t)
-	// The RegistrationEnabled field carries gorm:"default:true", and GORM
-	// omits zero-value fields on Create — a pre-existing bug worth fixing
-	// separately. Seed with true via Create, then flip to false with Save
-	// (which writes zero values correctly).
-	if err := svc.db.Create(&model.GeneralSettings{RegistrationEnabled: true}).Error; err != nil {
+	// Seed settings with registration disabled. The RegistrationEnabled field
+	// used to carry gorm:"default:true", which made GORM omit the zero value
+	// on Create and silently store true — that bug is now fixed.
+	if err := svc.db.Create(&model.GeneralSettings{RegistrationEnabled: false}).Error; err != nil {
 		t.Fatalf("failed to seed settings: %v", err)
-	}
-	var settings model.GeneralSettings
-	if err := svc.db.First(&settings).Error; err != nil {
-		t.Fatalf("failed to load settings: %v", err)
-	}
-	settings.RegistrationEnabled = false
-	if err := svc.db.Save(&settings).Error; err != nil {
-		t.Fatalf("failed to disable registration: %v", err)
 	}
 
 	if _, err := svc.Register("new@example.com", "password123", "newbie", "", "", 0, "http", "localhost"); !errors.Is(err, ErrRegistrationDisabled) {
