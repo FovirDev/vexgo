@@ -9,7 +9,7 @@ RUN pnpm install
 
 COPY frontend/ ./
 RUN pnpm run build
-# output: /app/backend/public/dist
+# output: /app/backend/internal/public/dist
 
 # Phase 2: Compiling the backend
 FROM golang:1.25-alpine AS backend-builder
@@ -20,7 +20,7 @@ COPY go.mod go.sum ./
 RUN go mod download
 
 COPY backend/ ./backend/
-COPY --from=frontend-builder /app/backend/public/dist ./backend/public/dist
+COPY --from=frontend-builder /app/backend/internal/public/dist ./backend/internal/public/dist
 
 ARG VERSION=dev
 RUN CGO_ENABLED=0 go build \

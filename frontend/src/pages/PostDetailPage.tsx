@@ -48,7 +48,8 @@ export function PostDetailPage() {
   // 初始状态使用处理后的initialData，确保客户端渲染与服务器端一致
   const [post, setPost] = useState<Post | null>(processedInitialData || null);
   const [comments, setComments] = useState<Comment[]>([]);
-  const [loading, setLoading] = useState(true);
+  // SSR 已提供文章数据时无需等待 API 加载，直接渲染；否则进入加载态
+  const [loading, setLoading] = useState(!processedInitialData);
   const [commentContent, setCommentContent] = useState('');
   const [isLiked, setIsLiked] = useState(false);
   const [likesCount, setLikesCount] = useState(initialData?.post?.likesCount || 0);

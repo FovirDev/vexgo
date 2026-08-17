@@ -22,6 +22,7 @@ import (
 )
 
 //go:embed dist/**/*
+//go:embed dist/manifest.json
 var staticFS embed.FS
 
 //go:embed dist/index.html
