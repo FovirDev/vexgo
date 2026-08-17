@@ -64,7 +64,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     password: string,
     captchaData?: { id: string; token: string; x: number },
   ) => {
-    const requestData: any = { email, password };
+    const requestData: {
+      email: string;
+      password: string;
+      captcha_id?: string;
+      captcha_token?: string;
+      captcha_x?: number;
+    } = { email, password };
     if (captchaData) {
       requestData.captcha_id = captchaData.id;
       requestData.captcha_token = captchaData.token;
@@ -94,7 +100,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     password: string,
     captchaData?: { id: string; token: string; x: number },
   ) => {
-    const requestData: any = { username, email, password };
+    const requestData: {
+      username: string;
+      email: string;
+      password: string;
+      captcha_id?: string;
+      captcha_token?: string;
+      captcha_x?: number;
+    } = { username, email, password };
     if (captchaData) {
       requestData.captcha_id = captchaData.id;
       requestData.captcha_token = captchaData.token;
@@ -109,9 +122,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(user);
         const error = new Error(
           response.data.message || "请先验证您的邮箱地址",
-        );
-        (error as any).requiresVerification = true;
-        (error as any).email = email;
+        ) as Error & { requiresVerification: boolean; email: string };
+        error.requiresVerification = true;
+        error.email = email;
         throw error;
       }
 
@@ -122,10 +135,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } else {
         setUser(user);
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Extract error message from response
+      const apiError = error as {
+        response?: { data?: { error?: string } };
+        message?: string;
+      };
       const errorMessage =
-        error.response?.data?.error || error.message || "注册失败";
+        apiError.response?.data?.error || apiError.message || "注册失败";
       throw new Error(errorMessage);
     }
   };

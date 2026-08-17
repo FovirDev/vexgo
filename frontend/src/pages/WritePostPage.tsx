@@ -4,6 +4,7 @@ import { postsApi, categoriesApi, uploadApi } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
 import { useTranslation } from "@/lib/I18nContext";
 import type { Category } from "@/types";
+import { normalizeTagsArray } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -28,6 +29,29 @@ import {
   Plus,
   ArrowLeft,
 } from "lucide-react";
+
+// 后端返回的文章字段可能比前端 Post 类型更宽松（category 可能是数字、tags 可能是对象数组）
+interface LoadedPost {
+  title: string;
+  content: string;
+  excerpt: string;
+  coverImage: string | null;
+  category?: string | number;
+  tags?:
+    | string
+    | Array<
+        | string
+        | {
+            name?: string;
+            Name?: string;
+            title?: string;
+            label?: string;
+            id?: string | number;
+          }
+      >;
+  tag_names?: string[];
+  Tags?: Array<{ name?: string; Name?: string; id?: string | number }>;
+}
 
 export function WritePostPage() {
   const { t } = useTranslation();
@@ -65,38 +89,6 @@ export function WritePostPage() {
   const [saving, setSaving] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
 
-  // 确保 tags 始终为字符串数组，防止把对象直接渲染到 JSX 中导致 React 报错
-  const normalizeTagsArray = (raw: any): string[] => {
-    if (!raw) return [];
-    if (Array.isArray(raw)) {
-      return raw
-        .map((t: any) => {
-          if (!t && t !== 0) return "";
-          if (typeof t === "string") return t;
-          if (typeof t === "number") return String(t);
-          if (typeof t === "object") {
-            return (
-              t.name ||
-              t.Name ||
-              t.title ||
-              t.label ||
-              (t.id ? String(t.id) : "") ||
-              ""
-            );
-          }
-          return String(t);
-        })
-        .map((s: string) => (s ? s.trim() : ""))
-        .filter(Boolean);
-    }
-    if (typeof raw === "string") {
-      return raw
-        .split(",")
-        .map((s: string) => s.trim())
-        .filter(Boolean);
-    }
-    return [];
-  };
   // 判断用户角色
   const isContributor = user?.role === "contributor";
 
@@ -108,13 +100,14 @@ export function WritePostPage() {
       }
     };
     init();
+    // oxlint-disable-next-line react-hooks/exhaustive-deps -- 仅在路由 id 变化时加载一次；加入依赖会导致分类加载后 effect 无限重跑
   }, [id]);
 
   const loadCategories = async () => {
     try {
       const response = await categoriesApi.getCategories();
       // 确保前端 categories 的 id 为字符串，避免与后端数字 id 类型不一致导致 Select 无法匹配
-      const normalized = (response.data.categories || []).map((c: any) => ({
+      const normalized = (response.data.categories || []).map((c) => ({
         ...c,
         id: String(c.id),
       }));
@@ -127,7 +120,7 @@ export function WritePostPage() {
   const loadPost = async () => {
     try {
       const response = await postsApi.getPost(id!);
-      const post: any = response.data.post;
+      const post: LoadedPost = response.data.post;
       console.debug("WritePostPage loaded post:", post);
       console.log("Post content:", post.content);
       console.log("Post content type:", typeof post.content);
@@ -156,43 +149,43 @@ export function WritePostPage() {
       // 后端返回的 tags 为对象数组 [{id,name}, ...]，前端需要字符串数组
       try {
         let mappedTags: string[] = [];
+        const rawTags = post.tags;
 
-        // 1) 如果后端直接返回字符串数组
-        if (
-          Array.isArray(post.tags) &&
-          post.tags.every((x: any) => typeof x === "string")
-        ) {
-          mappedTags = post.tags as string[];
-        } else if (Array.isArray(post.tags)) {
-          // 2) 常见情况：对象数组 [{id,name}, ...]
-          mappedTags = post.tags
-            .map((t: any) => {
-              if (!t) return "";
-              if (typeof t === "string") return t;
-              return (
-                t.name ||
-                t.Name ||
-                t.title ||
-                t.label ||
-                (t.id ? String(t.id) : undefined) ||
-                ""
-              );
-            })
-            .filter(Boolean);
-        } else if (typeof post.tags === "string") {
+        if (Array.isArray(rawTags)) {
+          if (rawTags.every((x) => typeof x === "string")) {
+            // 1) 如果后端直接返回字符串数组
+            mappedTags = rawTags;
+          } else {
+            // 2) 常见情况：对象数组 [{id,name}, ...]
+            mappedTags = rawTags
+              .map((t) => {
+                if (!t) return "";
+                if (typeof t === "string") return t;
+                return (
+                  t.name ||
+                  t.Name ||
+                  t.title ||
+                  t.label ||
+                  (t.id ? String(t.id) : undefined) ||
+                  ""
+                );
+              })
+              .filter((v): v is string => Boolean(v));
+          }
+        } else if (typeof rawTags === "string") {
           // 3) 如果后端返回逗号分隔的字符串
-          mappedTags = post.tags
+          mappedTags = rawTags
             .split(",")
-            .map((s: string) => s.trim())
+            .map((s) => s.trim())
             .filter(Boolean);
         } else if (post.tag_names && Array.isArray(post.tag_names)) {
           mappedTags = post.tag_names
-            .map((s: any) => String(s).trim())
+            .map((s) => String(s).trim())
             .filter(Boolean);
         } else if (post.Tags && Array.isArray(post.Tags)) {
           mappedTags = post.Tags.map(
-            (t: any) => t.name || t.Name || (t.id ? String(t.id) : ""),
-          ).filter(Boolean);
+            (t) => t.name || t.Name || (t.id ? String(t.id) : ""),
+          ).filter((v): v is string => Boolean(v));
         }
 
         console.debug(

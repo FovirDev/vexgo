@@ -53,7 +53,7 @@ export function VerifyEmailPage() {
     };
 
     verifyEmail();
-  }, [token]);
+  }, [token, t]);
 
   return (
     <div className="container mx-auto px-4 py-16 flex justify-center">

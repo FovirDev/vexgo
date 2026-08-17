@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { postsApi } from "@/lib/api";
@@ -63,11 +63,7 @@ export function MyPostsPage() {
     }
   }, [isAuthenticated, user, navigate]);
 
-  useEffect(() => {
-    loadPosts();
-  }, [currentPage]);
-
-  const loadPosts = async () => {
+  const loadPosts = useCallback(async () => {
     setLoading(true);
     try {
       const response = await postsApi.getMyPosts({
@@ -75,7 +71,7 @@ export function MyPostsPage() {
         limit: 10,
       });
       setPosts(
-        response.data.posts.map((p: any) => ({
+        response.data.posts.map((p) => ({
           ...p,
           tags: normalizeTagsArray(p.tags),
         })),
@@ -86,7 +82,11 @@ export function MyPostsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [currentPage]);
+
+  useEffect(() => {
+    loadPosts();
+  }, [currentPage, loadPosts]);
 
   const handleDeletePost = async (postId: string) => {
     try {

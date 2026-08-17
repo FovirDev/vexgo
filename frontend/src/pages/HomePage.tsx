@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Link, useSearchParams, useNavigate } from "react-router-dom";
 import { postsApi, categoriesApi, statsApi, likesApi } from "@/lib/api";
 import type { Post, Category } from "@/types";
@@ -58,9 +58,9 @@ export function HomePage() {
     loadPopularPosts();
     loadPopularTags();
     // 监听来自文章详情页的点赞事件，保持首页与详情页同步
-    const handler = (e: any) => {
+    const handler = (e: Event) => {
       try {
-        const d = e.detail || {};
+        const d = (e as CustomEvent).detail || {};
         const postId = String(d.postId);
         setPosts((prev) =>
           prev.map((p) =>
@@ -76,22 +76,24 @@ export function HomePage() {
               : p,
           ),
         );
-      } catch (err) {
+      } catch {
         // ignore
       }
     };
     window.addEventListener("like-changed", handler as EventListener);
 
-    const commentHandler = (e: any) => {
+    const commentHandler = (e: Event) => {
       try {
-        const d = e.detail || {};
+        const d = (e as CustomEvent).detail || {};
         const postId = String(d.postId);
         setPosts((prev) =>
           prev.map((p) =>
             p.id === postId ? { ...p, commentsCount: d.commentsCount } : p,
           ),
         );
-      } catch (err) {}
+      } catch {
+        // ignore
+      }
     };
     window.addEventListener("comment-changed", commentHandler as EventListener);
 
@@ -105,8 +107,8 @@ export function HomePage() {
   }, []);
 
   // 标准化后端返回的文章对象，确保 id/authorId 为字符串，时间为 ISO 字符串
-  const normalizePost = (raw: any): Post => {
-    if (!raw) return raw;
+  const normalizePost = (raw: Partial<Post>): Post => {
+    if (!raw) return raw as Post;
     return {
       ...raw,
       id: String(raw.id),
@@ -124,9 +126,62 @@ export function HomePage() {
     } as Post;
   };
 
+  const loadPosts = useCallback(async () => {
+    setLoading(true);
+    try {
+      if (searchQuery && searchQuery.trim()) {
+        // 优先使用后端的标题搜索结果（分页友好），同时在客户端拉取一定数量的文章做标签匹配备援
+        const [respSearch, respBulk] = await Promise.all([
+          postsApi.getPosts({
+            page: currentPage,
+            limit: 10,
+            search: searchQuery,
+            category: selectedCategory || undefined,
+          }),
+          // 拉取更多文章用于在客户端按标签匹配（后端可能不支持按标签搜索）
+          postsApi.getPosts({
+            page: 1,
+            limit: 200,
+            category: selectedCategory || undefined,
+          }),
+        ]);
+        const titleMatches = (respSearch.data.posts || []).map((p) =>
+          normalizePost(p),
+        );
+        const bulk = (respBulk.data.posts || []).map((p) => normalizePost(p));
+        const q = searchQuery.trim().toLowerCase();
+        const tagMatches = bulk.filter((p) =>
+          (p.tags || []).some((t: string) =>
+            String(t).toLowerCase().includes(q),
+          ),
+        );
+        const combinedMap = new Map<string, Post>();
+        titleMatches.forEach((p) => combinedMap.set(p.id, p));
+        tagMatches.forEach((p) => combinedMap.set(p.id, p));
+        const combined = Array.from(combinedMap.values());
+        setPosts(combined);
+        // 使用标题搜索的分页信息作为页面分页参考
+        setPagination(respSearch.data.pagination);
+      } else {
+        const response = await postsApi.getPosts({
+          page: currentPage,
+          limit: 10,
+          category: selectedCategory || undefined,
+        });
+        const all = response.data.posts.map((p) => normalizePost(p));
+        setPosts(all);
+        setPagination(response.data.pagination);
+      }
+    } catch (error) {
+      console.error("加载文章失败:", error);
+    } finally {
+      setLoading(false);
+    }
+  }, [currentPage, searchQuery, selectedCategory]);
+
   useEffect(() => {
     loadPosts();
-  }, [currentPage, searchQuery, selectedCategory]);
+  }, [currentPage, searchQuery, selectedCategory, loadPosts]);
 
   const loadCategories = async () => {
     try {
@@ -140,7 +195,7 @@ export function HomePage() {
   const loadPopularPosts = async () => {
     try {
       const response = await statsApi.getPopularPosts(5);
-      setPopularPosts(response.data.posts.map((p: any) => normalizePost(p)));
+      setPopularPosts(response.data.posts.map((p) => normalizePost(p)));
     } catch (error) {
       console.error("加载热门文章失败:", error);
     }
@@ -150,7 +205,7 @@ export function HomePage() {
     try {
       // 获取足够多的文章来统计标签
       const response = await postsApi.getPosts({ page: 1, limit: 200 });
-      const allPosts = response.data.posts.map((p: any) => normalizePost(p));
+      const allPosts = response.data.posts.map((p) => normalizePost(p));
 
       // 统计每个标签的出现次数
       const tagCounts: Record<string, number> = {};
@@ -171,61 +226,6 @@ export function HomePage() {
       setPopularTags(sortedTags);
     } catch (error) {
       console.error("加载热门标签失败:", error);
-    }
-  };
-
-  const loadPosts = async () => {
-    setLoading(true);
-    try {
-      if (searchQuery && searchQuery.trim()) {
-        // 优先使用后端的标题搜索结果（分页友好），同时在客户端拉取一定数量的文章做标签匹配备援
-        const [respSearch, respBulk] = await Promise.all([
-          postsApi.getPosts({
-            page: currentPage,
-            limit: 10,
-            search: searchQuery,
-            category: selectedCategory || undefined,
-          }),
-          // 拉取更多文章用于在客户端按标签匹配（后端可能不支持按标签搜索）
-          postsApi.getPosts({
-            page: 1,
-            limit: 200,
-            category: selectedCategory || undefined,
-          }),
-        ]);
-        const titleMatches = (respSearch.data.posts || []).map((p: any) =>
-          normalizePost(p),
-        );
-        const bulk = (respBulk.data.posts || []).map((p: any) =>
-          normalizePost(p),
-        );
-        const q = searchQuery.trim().toLowerCase();
-        const tagMatches = bulk.filter((p) =>
-          (p.tags || []).some((t: string) =>
-            String(t).toLowerCase().includes(q),
-          ),
-        );
-        const combinedMap = new Map<string, Post>();
-        titleMatches.forEach((p) => combinedMap.set(p.id, p));
-        tagMatches.forEach((p) => combinedMap.set(p.id, p));
-        const combined = Array.from(combinedMap.values());
-        setPosts(combined);
-        // 使用标题搜索的分页信息作为页面分页参考
-        setPagination(respSearch.data.pagination);
-      } else {
-        const response = await postsApi.getPosts({
-          page: currentPage,
-          limit: 10,
-          category: selectedCategory || undefined,
-        });
-        const all = response.data.posts.map((p: any) => normalizePost(p));
-        setPosts(all);
-        setPagination(response.data.pagination);
-      }
-    } catch (error) {
-      console.error("加载文章失败:", error);
-    } finally {
-      setLoading(false);
     }
   };
 

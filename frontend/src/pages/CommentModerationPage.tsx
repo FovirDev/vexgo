@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "@/lib/I18nContext";
 import { getLocale } from "@/lib/i18n";
 import {
@@ -39,11 +39,7 @@ export function CommentModerationPage() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("pending");
 
-  useEffect(() => {
-    loadData();
-  }, [activeTab]);
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     setLoading(true);
     try {
       if (activeTab === "pending") {
@@ -68,7 +64,11 @@ export function CommentModerationPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [activeTab, t]);
+
+  useEffect(() => {
+    loadData();
+  }, [activeTab, loadData]);
 
   const handleApproveComment = async (commentId: string) => {
     try {

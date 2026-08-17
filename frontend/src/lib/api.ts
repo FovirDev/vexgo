@@ -314,7 +314,9 @@ export const messagesApi = {
     type?: string;
     is_read?: string;
   }) =>
-    api.get<{ notifications: any[]; pagination: any }>("/messages", { params }),
+    api.get<{ notifications: unknown[]; pagination: unknown }>("/messages", {
+      params,
+    }),
 
   getUnreadCount: () =>
     api.get<{ unreadCount: number }>("/messages/unread-count"),

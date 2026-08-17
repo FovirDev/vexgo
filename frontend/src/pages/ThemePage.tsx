@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useCallback, useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useTranslation } from "@/lib/I18nContext";
@@ -51,18 +51,7 @@ export function ThemePage() {
   const [selectedTheme, setSelectedTheme] = useState<ThemeInfo | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    window.scrollTo(0, 0);
-
-    if (user && user.role !== "admin" && user.role !== "super_admin") {
-      navigate("/");
-      return;
-    }
-
-    loadData();
-  }, [user, navigate]);
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     setLoading(true);
     try {
       const [themesRes, configRes] = await Promise.all([
@@ -80,7 +69,18 @@ export function ThemePage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [t]);
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+
+    if (user && user.role !== "admin" && user.role !== "super_admin") {
+      navigate("/");
+      return;
+    }
+
+    loadData();
+  }, [user, navigate, loadData]);
 
   const handleApplyTheme = async (themeId: string) => {
     setApplying(themeId);

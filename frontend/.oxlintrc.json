@@ -98,7 +98,18 @@
         "react/only-export-components": [
           "error",
           {
-            "allowConstantExport": true
+            "allowConstantExport": true,
+            "allowExportNames": [
+              "badgeVariants",
+              "buttonVariants",
+              "buttonGroupVariants",
+              "toggleVariants",
+              "navigationMenuTriggerStyle",
+              "useFormField",
+              "useSidebar",
+              "useAuth",
+              "useTranslation"
+            ]
           }
         ]
       },

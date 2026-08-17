@@ -71,7 +71,7 @@ export function Layout({ children }: LayoutProps) {
       }
     };
     loadSettings();
-  }, []);
+  }, [t]);
 
   // 检查是否需要重定向到登录页面
   useEffect(() => {

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useCallback, useState, useEffect, useRef } from "react";
 import { Button } from "./button";
 import { RefreshCw, CheckCircle, X } from "lucide-react";
 import { useTranslation } from "@/lib/I18nContext";
@@ -44,7 +44,7 @@ export function SliderCaptcha({
   }, [isDragging, sliderPosition]);
 
   // 生成验证码
-  const generateCaptcha = async () => {
+  const generateCaptcha = useCallback(async () => {
     try {
       setIsVerifying(true);
       setError("");
@@ -63,76 +63,79 @@ export function SliderCaptcha({
     } finally {
       setIsVerifying(false);
     }
-  };
+  }, []);
 
   // 当弹窗打开时生成验证码
   useEffect(() => {
     if (isOpen) {
       generateCaptcha();
     }
-  }, [isOpen]);
+  }, [isOpen, generateCaptcha]);
 
   // 验证拼图
-  const verifyCaptcha = async (x: number) => {
-    if (!captchaData) return;
+  const verifyCaptcha = useCallback(
+    async (x: number) => {
+      if (!captchaData) return;
 
-    try {
-      setIsVerifying(true);
-      setError("");
+      try {
+        setIsVerifying(true);
+        setError("");
 
-      // 计算拼图块左边缘的x坐标
-      // 滑块宽度40px，拼图块宽度60px
-      // 滑块中心 = x + 20，拼图块中心应该与滑块中心对齐
-      // 拼图块左边缘 = 滑块中心 - 30 = x + 20 - 30 = x - 10
-      const puzzleX = Math.round(x - 10);
-      console.log("滑块位置:", x, "拼图块左边缘:", puzzleX);
+        // 计算拼图块左边缘的x坐标
+        // 滑块宽度40px，拼图块宽度60px
+        // 滑块中心 = x + 20，拼图块中心应该与滑块中心对齐
+        // 拼图块左边缘 = 滑块中心 - 30 = x + 20 - 30 = x - 10
+        const puzzleX = Math.round(x - 10);
+        console.log("滑块位置:", x, "拼图块左边缘:", puzzleX);
 
-      // 调用后端验证接口
-      const response = await fetch("/api/captcha/verify", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          id: captchaData.id,
-          token: captchaData.token,
-          x: puzzleX,
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "验证失败，请重试");
-      }
-
-      const data = await response.json();
-
-      if (data.success) {
-        // 验证成功
-        setIsVerified(true);
-        onSuccess({
-          id: captchaData.id,
-          token: captchaData.token,
-          x: puzzleX,
+        // 调用后端验证接口
+        const response = await fetch("/api/captcha/verify", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            id: captchaData.id,
+            token: captchaData.token,
+            x: puzzleX,
+          }),
         });
-        // 验证成功后关闭弹窗
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || "验证失败，请重试");
+        }
+
+        const data = await response.json();
+
+        if (data.success) {
+          // 验证成功
+          setIsVerified(true);
+          onSuccess({
+            id: captchaData.id,
+            token: captchaData.token,
+            x: puzzleX,
+          });
+          // 验证成功后关闭弹窗
+          setTimeout(() => {
+            onClose();
+          }, 500);
+        } else {
+          // 验证失败
+          throw new Error(data.message || "验证失败，请重试");
+        }
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "验证失败，请重试");
+        // 验证失败后刷新验证码
         setTimeout(() => {
-          onClose();
-        }, 500);
-      } else {
-        // 验证失败
-        throw new Error(data.message || "验证失败，请重试");
+          generateCaptcha();
+        }, 1000);
+      } finally {
+        setIsVerifying(false);
       }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "验证失败，请重试");
-      // 验证失败后刷新验证码
-      setTimeout(() => {
-        generateCaptcha();
-      }, 1000);
-    } finally {
-      setIsVerifying(false);
-    }
-  };
+    },
+    [captchaData, onSuccess, onClose, generateCaptcha],
+  );
 
   // 处理滑块拖动
   const handleMouseDown = (e: React.MouseEvent) => {
@@ -179,7 +182,7 @@ export function SliderCaptcha({
         document.removeEventListener("mouseup", handleMouseUp);
       };
     }
-  }, [isDragging]);
+  }, [isDragging, verifyCaptcha]);
 
   // 处理触摸事件
   const handleTouchStart = (e: React.TouchEvent) => {
@@ -230,7 +233,7 @@ export function SliderCaptcha({
         document.removeEventListener("touchend", handleTouchEnd);
       };
     }
-  }, [isDragging]);
+  }, [isDragging, verifyCaptcha]);
 
   // 如果弹窗未打开，不渲染任何内容
   if (!isOpen) return null;

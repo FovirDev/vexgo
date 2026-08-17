@@ -52,9 +52,10 @@ export function ResetPasswordPage() {
       await authApi.requestPasswordReset({ email });
       setSuccess(true);
       setError("");
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const apiError = err as { response?: { data?: { error?: string } } };
       setError(
-        err.response?.data?.error || t("resetPasswordPage.requestFailed"),
+        apiError.response?.data?.error || t("resetPasswordPage.requestFailed"),
       );
     } finally {
       setLoading(false);
@@ -90,8 +91,11 @@ export function ResetPasswordPage() {
       setTimeout(() => {
         navigate("/login");
       }, 3000);
-    } catch (err: any) {
-      setError(err.response?.data?.error || t("resetPasswordPage.resetFailed"));
+    } catch (err: unknown) {
+      const apiError = err as { response?: { data?: { error?: string } } };
+      setError(
+        apiError.response?.data?.error || t("resetPasswordPage.resetFailed"),
+      );
     } finally {
       setLoading(false);
     }

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "@/lib/I18nContext";
 import { configApi, uploadApi } from "@/lib/api";
@@ -36,11 +36,7 @@ export function GeneralSettingsPage() {
   });
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    loadConfig();
-  }, []);
-
-  const loadConfig = async () => {
+  const loadConfig = useCallback(async () => {
     try {
       const response = await configApi.getGeneralSettings();
       setConfig(response.data);
@@ -50,7 +46,11 @@ export function GeneralSettingsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [t]);
+
+  useEffect(() => {
+    loadConfig();
+  }, [loadConfig]);
 
   const handleSave = async () => {
     if (!config.siteName.trim()) {

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "@/lib/I18nContext";
 import { configApi } from "@/lib/api";
@@ -37,21 +37,21 @@ export function SMTPSettingsPage() {
     updatedAt: "",
   });
 
-  useEffect(() => {
-    loadConfig();
-  }, []);
-
-  const loadConfig = async () => {
+  const loadConfig = useCallback(async () => {
     try {
       const response = await configApi.getSMTPConfig();
       setConfig(response.data);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("加载 SMTP 配置失败:", error);
       toast.error(t("commentConfig.loadFailed"));
     } finally {
       setLoading(false);
     }
-  };
+  }, [t]);
+
+  useEffect(() => {
+    loadConfig();
+  }, [loadConfig]);
 
   const handleSave = async () => {
     if (!config.host.trim()) {
@@ -79,12 +79,13 @@ export function SMTPSettingsPage() {
     try {
       await configApi.updateSMTPConfig(config);
       toast.success(t("smtpSettings.saveSuccess"));
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("保存 SMTP 配置失败:", error);
+      const apiError = error as { response?: { data?: { error?: string } } };
       toast.error(
         t("smtpSettings.saveFailed") +
           ": " +
-          (error.response?.data?.error || t("common.unknownError")),
+          (apiError.response?.data?.error || t("common.unknownError")),
       );
     } finally {
       setSaving(false);
@@ -105,12 +106,13 @@ export function SMTPSettingsPage() {
     try {
       const response = await configApi.testSMTP();
       toast.success(response.data.message);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("测试邮件失败:", error);
+      const apiError = error as { response?: { data?: { error?: string } } };
       toast.error(
         t("smtpSettings.testFailed") +
           ": " +
-          (error.response?.data?.error || t("common.unknownError")),
+          (apiError.response?.data?.error || t("common.unknownError")),
       );
     } finally {
       setTesting(false);

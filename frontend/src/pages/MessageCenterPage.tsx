@@ -77,20 +77,20 @@ export function MessageCenterPage() {
           is_read: boolean;
         }
 
-        const formattedMessages = response.data.notifications.map(
-          (notification: Notification) => ({
-            id: notification.id.toString(),
-            type: notification.type as MessageType,
-            title: notification.title,
-            content: notification.content,
-            relatedId: notification.related_id,
-            relatedType: notification.related_type,
-            createdAt: notification.created_at,
-            isRead: notification.is_read,
-            // 后端数据中可能没有sender信息，这里暂时为空
-            sender: undefined,
-          }),
-        );
+        const formattedMessages = (
+          response.data.notifications as Notification[]
+        ).map((notification) => ({
+          id: notification.id.toString(),
+          type: notification.type as MessageType,
+          title: notification.title,
+          content: notification.content,
+          relatedId: notification.related_id,
+          relatedType: notification.related_type,
+          createdAt: notification.created_at,
+          isRead: notification.is_read,
+          // 后端数据中可能没有sender信息，这里暂时为空
+          sender: undefined,
+        }));
         setMessages(formattedMessages);
       } catch (error) {
         console.error(t("errors.networkError"), error);
@@ -100,7 +100,7 @@ export function MessageCenterPage() {
     };
 
     fetchMessages();
-  }, []);
+  }, [t]);
 
   // 根据标签筛选消息
   const filteredMessages = messages.filter((message) => {

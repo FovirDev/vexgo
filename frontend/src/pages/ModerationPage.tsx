@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "@/lib/I18nContext";
 import { getLocale } from "@/lib/i18n";
@@ -44,44 +44,56 @@ export function ModerationPage() {
   const [showRejectDialog, setShowRejectDialog] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
 
+  const loadData = useCallback(
+    async (search?: string) => {
+      setLoading(true);
+      try {
+        // 确保只更新当前标签页的数据，避免其他标签页数据被清空
+        if (activeTab === "pending") {
+          const response = await getPendingPosts({
+            limit: 100,
+            search: search,
+          });
+          if (response && response.data) {
+            setPendingPosts(response.data.posts || []);
+          } else {
+            setPendingPosts([]);
+          }
+        } else if (activeTab === "approved") {
+          const response = await getApprovedPosts({
+            limit: 100,
+            search: search,
+          });
+          if (response && response.data) {
+            setApprovedPosts(response.data.posts || []);
+          } else {
+            setApprovedPosts([]);
+          }
+        } else if (activeTab === "rejected") {
+          const response = await getRejectedPosts({
+            limit: 100,
+            search: search,
+          });
+          if (response && response.data) {
+            setRejectedPosts(response.data.posts || []);
+          } else {
+            setRejectedPosts([]);
+          }
+        }
+      } catch (error) {
+        console.error("加载数据失败:", error);
+        toast.error(t("moderation.loadFailed"));
+        // 出错时保持当前数据不变，避免白屏
+      } finally {
+        setLoading(false);
+      }
+    },
+    [activeTab, t],
+  );
+
   useEffect(() => {
     loadData();
-  }, [activeTab]);
-
-  const loadData = async (search?: string) => {
-    setLoading(true);
-    try {
-      // 确保只更新当前标签页的数据，避免其他标签页数据被清空
-      if (activeTab === "pending") {
-        const response = await getPendingPosts({ limit: 100, search: search });
-        if (response && response.data) {
-          setPendingPosts(response.data.posts || []);
-        } else {
-          setPendingPosts([]);
-        }
-      } else if (activeTab === "approved") {
-        const response = await getApprovedPosts({ limit: 100, search: search });
-        if (response && response.data) {
-          setApprovedPosts(response.data.posts || []);
-        } else {
-          setApprovedPosts([]);
-        }
-      } else if (activeTab === "rejected") {
-        const response = await getRejectedPosts({ limit: 100, search: search });
-        if (response && response.data) {
-          setRejectedPosts(response.data.posts || []);
-        } else {
-          setRejectedPosts([]);
-        }
-      }
-    } catch (error) {
-      console.error("加载数据失败:", error);
-      toast.error(t("moderation.loadFailed"));
-      // 出错时保持当前数据不变，避免白屏
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, [activeTab, loadData]);
 
   const handleSearch = async () => {
     // 直接调用loadData函数，传递搜索参数

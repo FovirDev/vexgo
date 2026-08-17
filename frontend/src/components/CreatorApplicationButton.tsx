@@ -58,9 +58,10 @@ export function CreatorApplicationButton({
       setIsDialogOpen(false);
       setIsConfirmOpen(false);
       setReason("");
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("申请角色升级失败:", error);
-      toast.error(error.response?.data?.error || t("errors.networkError"));
+      const apiError = error as { response?: { data?: { error?: string } } };
+      toast.error(apiError.response?.data?.error || t("errors.networkError"));
     } finally {
       setIsLoading(false);
     }

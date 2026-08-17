@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useTranslation } from "@/lib/I18nContext";
 import { getUsers, updateUserRole, deleteUser } from "@/lib/userApi";
@@ -73,11 +73,7 @@ export function UserManagementPage() {
     return [];
   };
 
-  useEffect(() => {
-    loadData();
-  }, [currentPage, searchQuery]);
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     setLoading(true);
     try {
       const response = await getUsers({
@@ -93,7 +89,11 @@ export function UserManagementPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [currentPage, searchQuery, t]);
+
+  useEffect(() => {
+    loadData();
+  }, [currentPage, searchQuery, loadData]);
 
   const handleSearch = () => {
     setSearchQuery(searchTerm);

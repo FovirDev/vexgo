@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "@/lib/I18nContext";
 import { configApi } from "@/lib/api";
@@ -48,11 +48,7 @@ export function AISettingsPage() {
   });
   const [models, setModels] = useState<AIModel[]>([]);
 
-  useEffect(() => {
-    loadConfig();
-  }, []);
-
-  const loadConfig = async () => {
+  const loadConfig = useCallback(async () => {
     try {
       const response = await configApi.getAIConfig();
       setConfig(response.data);
@@ -62,7 +58,11 @@ export function AISettingsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [t]);
+
+  useEffect(() => {
+    loadConfig();
+  }, [loadConfig]);
 
   const fetchModels = async () => {
     if (!config.apiKey || !config.apiEndpoint) {

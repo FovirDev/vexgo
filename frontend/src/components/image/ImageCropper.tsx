@@ -146,7 +146,7 @@ export const ImageCropper: React.FC<Props> = ({
           resolve();
         },
         mime,
-        quality as any,
+        quality,
       );
     });
   };

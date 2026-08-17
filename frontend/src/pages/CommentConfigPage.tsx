@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "@/lib/I18nContext";
 import {
   Card,
@@ -45,30 +45,33 @@ export function CommentConfigPage() {
     updatedAt: "",
   });
 
-  useEffect(() => {
-    loadConfig();
-  }, []);
-
-  const loadConfig = async () => {
+  const loadConfig = useCallback(async () => {
     try {
       const response = await configApi.getCommentModerationConfig();
       setConfig(response.data);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("加载评论审核配置失败:", error);
       toast.error(t("commentConfig.loadFailed"));
     } finally {
       setLoading(false);
     }
-  };
+  }, [t]);
+
+  useEffect(() => {
+    loadConfig();
+  }, [loadConfig]);
 
   const handleSave = async () => {
     setSaving(true);
     try {
       await configApi.updateCommentModerationConfig(config);
       toast.success(t("commentConfig.saveSuccess"));
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("保存配置失败:", error);
-      toast.error(error.response?.data?.error || t("commentConfig.saveFailed"));
+      const apiError = error as { response?: { data?: { error?: string } } };
+      toast.error(
+        apiError.response?.data?.error || t("commentConfig.saveFailed"),
+      );
     } finally {
       setSaving(false);
     }

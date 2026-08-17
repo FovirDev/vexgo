@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useTranslation } from "@/lib/I18nContext";
 import {
@@ -35,6 +35,30 @@ export function CreatorApplicationReviewPage() {
   const [rejectReason, setRejectReason] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
 
+  const loadData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const response = await getCreatorApplications({
+        page: 1,
+        limit: 100,
+        status: "pending",
+      });
+      // 确保 applications 是数组，即使后端返回 null 或 undefined
+      setApplications(response.data.applications || []);
+    } catch (error) {
+      console.error("加载创作者申请列表失败:", error);
+      toast.error(t("errors.networkError"));
+      // 发生错误时也设置为空数组，避免白屏
+      setApplications([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [t]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
   // Show loading state while auth is loading
   if (isAuthLoading) {
     return (
@@ -67,30 +91,6 @@ export function CreatorApplicationReviewPage() {
     );
   }
 
-  useEffect(() => {
-    loadData();
-  }, []);
-
-  const loadData = async () => {
-    setLoading(true);
-    try {
-      const response = await getCreatorApplications({
-        page: 1,
-        limit: 100,
-        status: "pending",
-      });
-      // 确保 applications 是数组，即使后端返回 null 或 undefined
-      setApplications(response.data.applications || []);
-    } catch (error) {
-      console.error("加载创作者申请列表失败:", error);
-      toast.error(t("errors.networkError"));
-      // 发生错误时也设置为空数组，避免白屏
-      setApplications([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleReview = async (action: "approve" | "reject") => {
     if (!selectedApplication) {
       toast.error("Invalid application data");
@@ -117,9 +117,10 @@ export function CreatorApplicationReviewPage() {
       setIsApproveDialogOpen(false);
       setIsRejectDialogOpen(false);
       setRejectReason("");
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("审核创作者申请失败:", error);
-      toast.error(error.response?.data?.error || t("errors.networkError"));
+      const apiError = error as { response?: { data?: { error?: string } } };
+      toast.error(apiError.response?.data?.error || t("errors.networkError"));
     } finally {
       setIsProcessing(false);
     }

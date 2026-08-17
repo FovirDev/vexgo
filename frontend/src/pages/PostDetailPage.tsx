@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
 import { postsApi, commentsApi, likesApi } from "@/lib/api";
 import type { Post, Comment } from "@/types";
@@ -45,7 +45,9 @@ export function PostDetailPage() {
   const { user, isAuthenticated } = useAuth();
   const { t } = useTranslation();
   // 检查是否有初始数据
-  const initialData = (window as any).__INITIAL_DATA__;
+  const initialData = (
+    window as Window & { __INITIAL_DATA__?: { post?: Post } }
+  ).__INITIAL_DATA__;
 
   // 处理初始数据中的标签标准化
   const processedInitialData = initialData?.post
@@ -67,6 +69,58 @@ export function PostDetailPage() {
   );
   const [submittingComment, setSubmittingComment] = useState(false);
   const [shareSuccess, setShareSuccess] = useState(false);
+
+  const loadPost = useCallback(async () => {
+    try {
+      console.log("正在加载文章，ID:", id);
+      const response = await postsApi.getPost(id!);
+      console.log("文章加载成功:", response.data);
+      const p = response.data.post;
+      p.tags = normalizeTagsArray(p.tags);
+      setPost(p);
+      setLikesCount(response.data.post.likesCount || 0);
+    } catch (error: unknown) {
+      console.error("加载文章失败:", error);
+      const axiosError = error as {
+        message?: string;
+        response?: { status?: number; data?: unknown };
+      };
+      console.error("错误详情:", {
+        message: axiosError.message,
+        response: axiosError.response,
+        status: axiosError.response?.status,
+        data: axiosError.response?.data,
+      });
+      // Only redirect back to the homepage if you truly cannot find the article.
+      if (axiosError.response?.status === 404) {
+        navigate("/");
+      }
+      // For other errors, still set loading to false so that users can see the error message.
+    } finally {
+      setLoading(false);
+    }
+  }, [id, navigate]);
+
+  const loadComments = useCallback(async () => {
+    try {
+      const response = await commentsApi.getComments(id!);
+      setComments(response.data.comments);
+      return response.data.comments;
+    } catch (error) {
+      console.error("加载评论失败:", error);
+      return [] as Comment[];
+    }
+  }, [id]);
+
+  const loadLikeStatus = useCallback(async () => {
+    try {
+      const response = await likesApi.getLikeStatus(id!);
+      setIsLiked(response.data.isLiked);
+      setLikesCount(response.data.likesCount);
+    } catch (error) {
+      console.error("加载点赞状态失败:", error);
+    }
+  }, [id]);
 
   useEffect(() => {
     const loadData = async () => {
@@ -92,55 +146,7 @@ export function PostDetailPage() {
     };
 
     loadData();
-  }, [id]);
-
-  const loadPost = async () => {
-    try {
-      console.log("正在加载文章，ID:", id);
-      const response = await postsApi.getPost(id!);
-      console.log("文章加载成功:", response.data);
-      const p = response.data.post;
-      p.tags = normalizeTagsArray(p.tags);
-      setPost(p);
-      setLikesCount(response.data.post.likesCount || 0);
-    } catch (error: any) {
-      console.error("加载文章失败:", error);
-      console.error("错误详情:", {
-        message: error.message,
-        response: error.response,
-        status: error.response?.status,
-        data: error.response?.data,
-      });
-      // Only redirect back to the homepage if you truly cannot find the article.
-      if (error.response?.status === 404) {
-        navigate("/");
-      }
-      // For other errors, still set loading to false so that users can see the error message.
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const loadComments = async () => {
-    try {
-      const response = await commentsApi.getComments(id!);
-      setComments(response.data.comments);
-      return response.data.comments;
-    } catch (error) {
-      console.error("加载评论失败:", error);
-      return [] as Comment[];
-    }
-  };
-
-  const loadLikeStatus = async () => {
-    try {
-      const response = await likesApi.getLikeStatus(id!);
-      setIsLiked(response.data.isLiked);
-      setLikesCount(response.data.likesCount);
-    } catch (error) {
-      console.error("加载点赞状态失败:", error);
-    }
-  };
+  }, [id, loadComments, loadLikeStatus, loadPost, initialData?.post]);
 
   const handleLike = async () => {
     if (!isAuthenticated) {
@@ -163,7 +169,7 @@ export function PostDetailPage() {
             },
           }),
         );
-      } catch (e) {
+      } catch {
         // ignore
       }
     } catch (error) {
@@ -195,7 +201,7 @@ export function PostDetailPage() {
             detail: { postId: id, commentsCount: newCount },
           }),
         );
-      } catch (e) {
+      } catch {
         // ignore
       }
     } catch (error) {
@@ -227,7 +233,9 @@ export function PostDetailPage() {
             detail: { postId: id, commentsCount: newCount },
           }),
         );
-      } catch (e) {}
+      } catch {
+        // ignore
+      }
     } catch (error) {
       console.error("删除评论失败:", error);
     }
