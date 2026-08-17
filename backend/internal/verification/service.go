@@ -1,109 +1,178 @@
-package handler
+// Package verification implements email verification and sliding-puzzle
+// captcha generation/verification.
+package verification
 
 import (
 	"bytes"
 	"crypto/rand"
 	"encoding/base64"
-	"github.com/sirupsen/logrus"
+	"errors"
+	"fmt"
 	"image"
 	"image/color"
 	"image/draw"
 	"image/png"
 	"math"
-	"net/http"
 	"strings"
 	"time"
 
 	"vexgo/backend/internal/mailer"
 	"vexgo/backend/model"
 
-	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
+	"gorm.io/gorm"
 )
 
-// VerifyEmail verifies email (supports initial verification and email change)
-func VerifyEmail(c *gin.Context) {
-	token := c.Query("token")
-	logrus.Printf("[VerifyEmail] Received verification request, token: %s", token)
+// Sentinel errors mapped to HTTP responses by the handler.
+var (
+	// ErrUserNotFound means the user does not exist.
+	ErrUserNotFound = errors.New("user not found")
+	// ErrEmailAlreadyVerified means the email is already verified.
+	ErrEmailAlreadyVerified = errors.New("email already verified")
+	// ErrEmailServiceDisabled means SMTP is not enabled.
+	ErrEmailServiceDisabled = errors.New("email service not enabled")
+	// ErrCaptchaNotFound means the captcha does not exist or has expired.
+	ErrCaptchaNotFound = errors.New("captcha not found")
+	// ErrCaptchaUsed means the captcha was already used.
+	ErrCaptchaUsed = errors.New("captcha already used")
+	// ErrCaptchaExpired means the captcha has expired.
+	ErrCaptchaExpired = errors.New("captcha has expired")
+	// ErrCaptchaMismatch means the submitted puzzle position is wrong.
+	ErrCaptchaMismatch = errors.New("captcha mismatch")
+	// ErrEncodeBgImage means the background image could not be encoded.
+	ErrEncodeBgImage = errors.New("encode background image")
+	// ErrEncodePuzzleImage means the puzzle image could not be encoded.
+	ErrEncodePuzzleImage = errors.New("encode puzzle image")
+	// ErrGenerateToken means the verification token could not be generated.
+	ErrGenerateToken = errors.New("generate verification token")
+	// ErrSendVerificationEmail means the verification email could not be sent.
+	ErrSendVerificationEmail = errors.New("send verification email")
+)
 
-	if token == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Verification token cannot be empty"})
-		return
-	}
+// Deps holds the dependencies required by the verification domain.
+type Deps struct {
+	DB *gorm.DB
+}
 
-	mailer := mailer.NewMailer(db)
+// Service contains the business logic of the verification domain.
+type Service struct {
+	db *gorm.DB
+}
 
-	// Determine if token is for email verification or email change based on prefix
-	var err error
+// NewService creates a verification service with the given dependencies.
+func NewService(deps Deps) *Service {
+	return &Service{db: deps.DB}
+}
+
+// VerifyEmail verifies an email address. Tokens prefixed with "email-change-"
+// confirm a pending email change; all other tokens verify the initial email.
+// It returns whether the token was an email change and the user's new email
+// (only meaningful for email changes).
+func (s *Service) VerifyEmail(token string) (emailChange bool, newEmail string, err error) {
+	mailer := mailer.NewMailer(s.db)
+
 	if strings.HasPrefix(token, "email-change-") {
 		logrus.Printf("[VerifyEmail] Detected email change token, calling ConfirmEmailChange")
-		// Email change token
-		err = mailer.ConfirmEmailChange(token)
-		if err != nil {
+		if err := mailer.ConfirmEmailChange(token); err != nil {
 			logrus.Printf("[VerifyEmail] ConfirmEmailChange failed: %v", err)
-			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-			return
+			return false, "", err
 		}
 		logrus.Printf("[VerifyEmail] ConfirmEmailChange succeeded")
 		// Query user information after change
 		var user model.User
-		if err := db.Where("verification_token = ?", token).First(&user).Error; err == nil {
-			c.JSON(http.StatusOK, gin.H{
-				"message":         "Email change successful! Your new email is now active.",
-				"require_relogin": true,
-				"new_email":       user.Email,
-			})
-		} else {
-			c.JSON(http.StatusOK, gin.H{
-				"message":         "Email change successful! Your new email is now active.",
-				"require_relogin": true,
-			})
+		if err := s.db.Where("verification_token = ?", token).First(&user).Error; err == nil {
+			return true, user.Email, nil
 		}
-	} else {
-		logrus.Printf("[VerifyEmail] Normal email verification token, calling VerifyEmail")
-		// Normal email verification token
-		err = mailer.VerifyEmail(token)
-		if err != nil {
-			logrus.Printf("[VerifyEmail] VerifyEmail failed: %v", err)
-			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-			return
-		}
-		logrus.Printf("[VerifyEmail] VerifyEmail succeeded")
-		c.JSON(http.StatusOK, gin.H{
-			"message": "Email verification successful! You can now log in.",
-		})
+		return true, "", nil
 	}
+
+	logrus.Printf("[VerifyEmail] Normal email verification token, calling VerifyEmail")
+	if err := mailer.VerifyEmail(token); err != nil {
+		logrus.Printf("[VerifyEmail] VerifyEmail failed: %v", err)
+		return false, "", err
+	}
+	logrus.Printf("[VerifyEmail] VerifyEmail succeeded")
+	return false, "", nil
 }
 
-// GetVerificationStatus gets current user's email verification status
-func GetVerificationStatus(c *gin.Context) {
-	userContext, exists := c.Get("user")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
-		return
-	}
-
-	if userMap, ok := userContext.(map[string]interface{}); ok {
-		if userID, ok := userMap["id"].(float64); ok {
-			var user model.User
-			if err := db.First(&user, uint(userID)).Error; err != nil {
-				c.JSON(http.StatusNotFound, gin.H{"error": "User does not exist"})
-				return
-			}
-
-			c.JSON(http.StatusOK, gin.H{
-				"email_verified": user.EmailVerified,
-				"email":          user.Email,
-			})
-			return
+// VerificationStatus returns the email verification status of a user.
+func (s *Service) VerificationStatus(userID uint) (emailVerified bool, email string, err error) {
+	var user model.User
+	if err := s.db.First(&user, userID).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return false, "", ErrUserNotFound
 		}
+		return false, "", err
 	}
-
-	c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get user information"})
+	return user.EmailVerified, user.Email, nil
 }
 
-// GenerateCaptcha generates sliding puzzle captcha
-func GenerateCaptcha(c *gin.Context) {
+// ResendVerificationEmail generates a new verification token for the user and
+// sends it to their email address.
+func (s *Service) ResendVerificationEmail(userID uint, host string) error {
+	var user model.User
+	if err := s.db.First(&user, userID).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return ErrUserNotFound
+		}
+		return err
+	}
+
+	if user.EmailVerified {
+		return ErrEmailAlreadyVerified
+	}
+
+	mailer := mailer.NewMailer(s.db)
+	enabled, err := mailer.IsEmailEnabled()
+	if err != nil || !enabled {
+		return ErrEmailServiceDisabled
+	}
+
+	// Generate new verification token
+	token, err := mailer.GenerateVerificationToken(user.ID)
+	if err != nil {
+		return fmt.Errorf("%w: %v", ErrGenerateToken, err)
+	}
+
+	// Build verification link
+	verificationLink := host + "/verify-email?token=" + token
+	if err := mailer.SendVerificationEmail(user.Email, user.Username, verificationLink); err != nil {
+		return fmt.Errorf("%w: %v", ErrSendVerificationEmail, err)
+	}
+
+	return nil
+}
+
+// IsCaptchaEnabled reports whether captcha verification is enabled in the
+// general settings (disabled by default when no settings row exists).
+func (s *Service) IsCaptchaEnabled() (bool, error) {
+	var settings model.GeneralSettings
+	if err := s.db.First(&settings).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			// Not enabled by default
+			return false, nil
+		}
+		return false, err
+	}
+	return settings.CaptchaEnabled, nil
+}
+
+// Captcha is the result of generating a sliding puzzle captcha. The correct X
+// coordinate is intentionally not exposed to the client.
+type Captcha struct {
+	ID        string
+	Token     string
+	X         int
+	Y         int
+	BgImage   string
+	PuzzleImg string
+	ExpiresAt time.Time
+}
+
+// GenerateCaptcha creates a sliding puzzle captcha, persists it, and returns
+// the client-facing information.
+func (s *Service) GenerateCaptcha() (*Captcha, error) {
 	// Generate captcha ID and token
 	captchaID := uuid.New().String()
 	token := uuid.New().String()
@@ -147,14 +216,12 @@ func GenerateCaptcha(c *gin.Context) {
 	// Convert image to Base64
 	bgImageBase64, err := imageToBase64(bgImageWithHole)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to encode background image"})
-		return
+		return nil, fmt.Errorf("%w: %v", ErrEncodeBgImage, err)
 	}
 
 	puzzleImageBase64, err := imageToBase64(puzzleImage)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to encode puzzle image"})
-		return
+		return nil, fmt.Errorf("%w: %v", ErrEncodePuzzleImage, err)
 	}
 
 	// Save captcha information to database
@@ -171,73 +238,54 @@ func GenerateCaptcha(c *gin.Context) {
 		Used:      false,
 	}
 
-	if err := db.Create(&captcha).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save captcha"})
-		return
+	if err := s.db.Create(&captcha).Error; err != nil {
+		return nil, err
 	}
 
-	// Return captcha information (without correct answer)
-	c.JSON(http.StatusOK, gin.H{
-		"id":         captchaID,
-		"token":      token,
-		"bg_image":   bgImageBase64,
-		"puzzle_img": puzzleImageBase64,
-		"y":          y, // Return puzzle y coordinate
-		"expires_at": captcha.ExpiresAt,
-	})
+	return &Captcha{
+		ID:        captchaID,
+		Token:     token,
+		X:         x,
+		Y:         y,
+		BgImage:   bgImageBase64,
+		PuzzleImg: puzzleImageBase64,
+		ExpiresAt: captcha.ExpiresAt,
+	}, nil
 }
 
-// VerifyCaptcha verifies sliding puzzle and marks as used (pre-verification)
-func VerifyCaptcha(c *gin.Context) {
-	var req struct {
-		ID    string `json:"id" binding:"required"`
-		Token string `json:"token" binding:"required"`
-		X     int    `json:"x" binding:"required"`
-	}
-
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
+// VerifyCaptcha verifies a sliding puzzle submission and marks the captcha as
+// used.
+func (s *Service) VerifyCaptcha(id, token string, x int) error {
 	// Query captcha
 	var captcha model.Captcha
-	if err := db.Where("id = ? AND token = ?", req.ID, req.Token).First(&captcha).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Captcha does not exist or has expired"})
-		return
+	if err := s.db.Where("id = ? AND token = ?", id, token).First(&captcha).Error; err != nil {
+		return ErrCaptchaNotFound
 	}
 
 	// Check if already used
 	if captcha.Used {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Captcha already used"})
-		return
+		return ErrCaptchaUsed
 	}
 
 	// Check if expired
 	if time.Now().After(captcha.ExpiresAt) {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Captcha has expired"})
-		return
+		return ErrCaptchaExpired
 	}
 
 	// Verify position (allow certain tolerance)
 	tolerance := 10 // allow 10 pixel tolerance
-	if math.Abs(float64(req.X-captcha.X)) > float64(tolerance) {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Verification failed, please try again"})
-		return
+	if math.Abs(float64(x-captcha.X)) > float64(tolerance) {
+		return ErrCaptchaMismatch
 	}
 
 	// Mark as used
 	captcha.Used = true
-	if err := db.Save(&captcha).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Captcha verification failed"})
-		return
+	if err := s.db.Save(&captcha).Error; err != nil {
+		return err
 	}
 
-	// Return verification success
-	c.JSON(http.StatusOK, gin.H{"success": true, "message": "Verification successful"})
+	return nil
 }
-
-// Helper functions
 
 // createGradientBackground creates a simple gradient background
 func createGradientBackground(width, height int) *image.RGBA {
@@ -393,56 +441,4 @@ func randInt(max int) int {
 	}
 
 	return int(b[0]) % max
-}
-
-// ResendVerificationEmail resends verification email
-func ResendVerificationEmail(c *gin.Context) {
-	userContext, exists := c.Get("user")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
-		return
-	}
-
-	if userMap, ok := userContext.(map[string]interface{}); ok {
-		if userID, ok := userMap["id"].(float64); ok {
-			var user model.User
-			if err := db.First(&user, uint(userID)).Error; err != nil {
-				c.JSON(http.StatusNotFound, gin.H{"error": "User does not exist"})
-				return
-			}
-
-			if user.EmailVerified {
-				c.JSON(http.StatusBadRequest, gin.H{"error": "Email already verified"})
-				return
-			}
-
-			mailer := mailer.NewMailer(db)
-			enabled, err := mailer.IsEmailEnabled()
-			if err != nil || !enabled {
-				c.JSON(http.StatusServiceUnavailable, gin.H{"error": "Email service not enabled"})
-				return
-			}
-
-			// Generate new verification token
-			token, err := mailer.GenerateVerificationToken(user.ID)
-			if err != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate verification token"})
-				return
-			}
-
-			// Build verification link
-			verificationLink := c.Request.Host + "/verify-email?token=" + token
-			if err := mailer.SendVerificationEmail(user.Email, user.Username, verificationLink); err != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to send verification email"})
-				return
-			}
-
-			c.JSON(http.StatusOK, gin.H{
-				"message": "Verification email has been resent, please check your inbox",
-			})
-			return
-		}
-	}
-
-	c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get user information"})
 }

@@ -15,11 +15,6 @@ func RegisterAPIRoutes(api *gin.RouterGroup) {
 	{
 		// -------------------- Public API (no JWT authentication required) --------------------
 		logrus.Debug("Registering public API routes")
-		api.GET("/verify-email", VerifyEmail)
-
-		api.GET("/captcha", GenerateCaptcha)
-		api.POST("/captcha/verify", VerifyCaptcha)
-
 		api.GET("/stats", GetStats)
 
 		api.GET("/themes", GetThemes)
@@ -39,7 +34,6 @@ func RegisterAPIRoutes(api *gin.RouterGroup) {
 			auth.PUT("/settings", middleware.JWTAuth(), UpdateSettings)
 			auth.POST("/request-password-reset", RequestPasswordReset)
 			auth.POST("/reset-password", ResetPassword)
-			auth.GET("/verification-status", middleware.JWTAuth(), GetVerificationStatus)
 		}
 
 		// -------------------- SSO --------------------
@@ -61,15 +55,6 @@ func RegisterAPIRoutes(api *gin.RouterGroup) {
 		}
 
 		// -------------------- Business API requiring JWT authentication --------------------
-		api.GET("/users", middleware.JWTAuth(), middleware.PermissionMiddleware("admin", "super_admin"), GetUserList)
-		api.PUT("/users/:id/role", middleware.JWTAuth(), middleware.PermissionMiddleware("admin", "super_admin"), UpdateUserRole)
-		api.DELETE("/users/:id", middleware.JWTAuth(), middleware.PermissionMiddleware("admin", "super_admin"), DeleteUser)
-
-		// Creator application routes
-		api.POST("/users/apply-creator", middleware.JWTAuth(), ApplyForCreator)
-		api.GET("/users/creator-applications", middleware.JWTAuth(), middleware.PermissionMiddleware("admin", "super_admin"), GetCreatorApplications)
-		api.PUT("/users/creator-applications/:id/review", middleware.JWTAuth(), middleware.PermissionMiddleware("admin", "super_admin"), ReviewCreatorApplication)
-
 		api.GET("/config/smtp", middleware.JWTAuth(), middleware.PermissionMiddleware("admin", "super_admin"), GetSMTPConfig)
 		api.PUT("/config/smtp", middleware.JWTAuth(), middleware.PermissionMiddleware("admin", "super_admin"), UpdateSMTPConfig)
 		api.POST("/config/smtp/test", middleware.JWTAuth(), middleware.PermissionMiddleware("admin", "super_admin"), TestSMTP)

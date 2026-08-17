@@ -1,0 +1,305 @@
+package user
+
+import (
+	"errors"
+	"net/http"
+	"strconv"
+
+	"vexgo/backend/model"
+
+	"github.com/gin-gonic/gin"
+)
+
+// Handler exposes the user domain over HTTP.
+type Handler struct {
+	svc *Service
+}
+
+// NewHandler creates a user HTTP handler with the given dependencies.
+func NewHandler(deps Deps) *Handler {
+	return &Handler{svc: NewService(deps)}
+}
+
+// currentUser extracts the acting user from the JWT context.
+func currentUser(c *gin.Context) (model.User, bool) {
+	userContext, exists := c.Get("user")
+	if !exists {
+		return model.User{}, false
+	}
+	userMap, ok := userContext.(map[string]interface{})
+	if !ok {
+		return model.User{}, false
+	}
+	id, ok := userMap["id"].(uint)
+	if !ok {
+		return model.User{}, false
+	}
+	username, _ := userMap["username"].(string)
+	role, _ := userMap["role"].(string)
+	return model.User{ID: id, Username: username, Role: role}, true
+}
+
+// GetUserList gets user list
+func (h *Handler) GetUserList(c *gin.Context) {
+	// Pagination parameters
+	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "10"))
+	if page < 1 {
+		page = 1
+	}
+	if limit < 1 || limit > 100 {
+		limit = 10
+	}
+
+	search := c.DefaultQuery("search", "")
+
+	users, total, err := h.svc.ListUsers(search, page, limit)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to query users"})
+		return
+	}
+
+	totalPages := int((total + int64(limit) - 1) / int64(limit))
+	if totalPages == 0 {
+		totalPages = 1
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"users": users,
+		"pagination": gin.H{
+			"total":      total,
+			"page":       page,
+			"limit":      limit,
+			"totalPages": totalPages,
+		},
+	})
+}
+
+// UpdateUserRole updates user role
+func (h *Handler) UpdateUserRole(c *gin.Context) {
+	currentUser, ok := currentUser(c)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "No user information provided"})
+		return
+	}
+
+	idStr := c.Param("id")
+	id, err := strconv.ParseUint(idStr, 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
+		return
+	}
+
+	var req struct {
+		Role string `json:"role" binding:"required"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	user, err := h.svc.UpdateRole(currentUser, uint(id), req.Role)
+	if err != nil {
+		switch {
+		case errors.Is(err, ErrUserNotFound):
+			c.JSON(http.StatusNotFound, gin.H{"error": "User does not exist"})
+		case errors.Is(err, ErrCannotModifySelf):
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		case errors.Is(err, ErrModifySuperAdmin):
+			c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
+		case errors.Is(err, ErrInvalidRole):
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		case errors.Is(err, ErrSuperAdminOwnRole):
+			c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
+		case errors.Is(err, ErrAdminRoleRestricted):
+			c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
+		case errors.Is(err, ErrNoPermission):
+			c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
+		default:
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update user role"})
+		}
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "User role updated successfully",
+		"user":    user,
+	})
+}
+
+// DeleteUser deletes user and all their posts and comments
+func (h *Handler) DeleteUser(c *gin.Context) {
+	currentUser, ok := currentUser(c)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "No user information provided"})
+		return
+	}
+
+	idStr := c.Param("id")
+	id, err := strconv.ParseUint(idStr, 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
+		return
+	}
+
+	err = h.svc.DeleteUser(currentUser, uint(id))
+	if err != nil {
+		switch {
+		case errors.Is(err, ErrUserNotFound):
+			c.JSON(http.StatusNotFound, gin.H{"error": "User does not exist"})
+		case errors.Is(err, ErrCannotDeleteSelf):
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		case errors.Is(err, ErrAdminDeleteRestricted):
+			c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
+		case errors.Is(err, ErrNoPermissionToDelete):
+			c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
+		default:
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete user"})
+		}
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "User deleted successfully"})
+}
+
+// ApplyForCreator handles creator application submission
+func (h *Handler) ApplyForCreator(c *gin.Context) {
+	currentUser, ok := currentUser(c)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "No user information provided"})
+		return
+	}
+
+	var req struct {
+		Reason string `json:"reason"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	applicationID, err := h.svc.ApplyForCreator(currentUser, req.Reason)
+	if err != nil {
+		switch {
+		case errors.Is(err, ErrRoleNotEligible):
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		case errors.Is(err, ErrAlreadyPending):
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		default:
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create application"})
+		}
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message":       "Application submitted successfully",
+		"applicationId": applicationID,
+	})
+}
+
+// GetCreatorApplications gets creator applications for admin review
+func (h *Handler) GetCreatorApplications(c *gin.Context) {
+	currentUser, ok := currentUser(c)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "No user information provided"})
+		return
+	}
+
+	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "10"))
+	status := c.DefaultQuery("status", "pending")
+
+	if page < 1 {
+		page = 1
+	}
+	if limit < 1 || limit > 100 {
+		limit = 10
+	}
+
+	applications, total, err := h.svc.ListCreatorApplications(currentUser.Role, status, page, limit)
+	if err != nil {
+		if errors.Is(err, ErrNoPermissionAccessApps) {
+			c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to query creator applications"})
+		return
+	}
+
+	totalPages := int((total + int64(limit) - 1) / int64(limit))
+	if totalPages == 0 {
+		totalPages = 1
+	}
+
+	// Format response
+	var response []map[string]interface{}
+	for _, app := range applications {
+		response = append(response, map[string]interface{}{
+			"id":          app.ID,
+			"userId":      app.UserID,
+			"username":    app.User.Username,
+			"email":       app.User.Email,
+			"currentRole": app.User.Role,
+			"status":      app.Status,
+			"reason":      app.Reason,
+			"createdAt":   app.CreatedAt.Format("2006-01-02T15:04:05Z"),
+			"updatedAt":   app.UpdatedAt.Format("2006-01-02T15:04:05Z"),
+		})
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"applications": response,
+		"pagination": gin.H{
+			"total":      total,
+			"page":       page,
+			"limit":      limit,
+			"totalPages": totalPages,
+		},
+	})
+}
+
+// ReviewCreatorApplication handles creator application review
+func (h *Handler) ReviewCreatorApplication(c *gin.Context) {
+	currentUser, ok := currentUser(c)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "No user information provided"})
+		return
+	}
+
+	idStr := c.Param("id")
+	id, err := strconv.ParseUint(idStr, 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid application ID"})
+		return
+	}
+
+	var req struct {
+		Action string `json:"action" binding:"required"`
+		Reason string `json:"reason"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	err = h.svc.ReviewCreatorApplication(currentUser, uint(id), req.Action, req.Reason)
+	if err != nil {
+		switch {
+		case errors.Is(err, ErrNoPermissionReviewApps):
+			c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
+		case errors.Is(err, ErrApplicationNotFound):
+			c.JSON(http.StatusNotFound, gin.H{"error": "Application does not exist"})
+		case errors.Is(err, ErrApplicationProcessed):
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		case errors.Is(err, ErrInvalidAction):
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		default:
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update application"})
+		}
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Application reviewed successfully",
+	})
+}

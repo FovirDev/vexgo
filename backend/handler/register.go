@@ -9,6 +9,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"vexgo/backend/internal/mailer"
+	"vexgo/backend/internal/verification"
 	"vexgo/backend/model"
 
 	"github.com/gin-gonic/gin"
@@ -57,7 +58,7 @@ func Register(c *gin.Context) {
 	}
 
 	// Check if captcha verification is enabled
-	captchaEnabled, err := IsCaptchaEnabled()
+	captchaEnabled, err := verification.NewService(verification.Deps{DB: db}).IsCaptchaEnabled()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to check captcha settings"})
 		return

@@ -11,6 +11,8 @@ import (
 	"vexgo/backend/internal/post"
 	"vexgo/backend/internal/router"
 	"vexgo/backend/internal/upload"
+	"vexgo/backend/internal/user"
+	"vexgo/backend/internal/verification"
 	"vexgo/backend/middleware"
 	"vexgo/backend/public"
 
@@ -130,6 +132,14 @@ func main() {
 		Upload: upload.Deps{
 			DB:      db,
 			Storage: storage,
+		},
+		User: user.Deps{
+			DB:       db,
+			Notifier: message.NewService(message.Deps{DB: db}),
+			Files:    storage,
+		},
+		Verification: verification.Deps{
+			DB: db,
 		},
 	})
 

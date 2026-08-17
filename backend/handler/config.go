@@ -20,19 +20,6 @@ import (
 	"gorm.io/gorm"
 )
 
-// IsCaptchaEnabled checks if captcha verification is enabled
-func IsCaptchaEnabled() (bool, error) {
-	var settings model.GeneralSettings
-	if err := db.First(&settings).Error; err != nil {
-		if err == gorm.ErrRecordNotFound {
-			// Not enabled by default
-			return false, nil
-		}
-		return false, err
-	}
-	return settings.CaptchaEnabled, nil
-}
-
 // GetSMTPConfig gets SMTP configuration
 func GetSMTPConfig(c *gin.Context) {
 	var config model.SMTPConfig
@@ -273,15 +260,15 @@ func GetGeneralSettings(c *gin.Context) {
 	if err := db.First(&config).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			// Return default configuration
-		    c.JSON(http.StatusOK, model.GeneralSettings{
-			    CaptchaEnabled:      false,
-			    RegistrationEnabled: true,
-			    AllowGuestViewPosts: true,
-			    SiteName:            "VexGo",
-			    SiteDescription:     "",
-			    SiteIcon:            "",
-			    ItemsPerPage:        20,
-		    })
+			c.JSON(http.StatusOK, model.GeneralSettings{
+				CaptchaEnabled:      false,
+				RegistrationEnabled: true,
+				AllowGuestViewPosts: true,
+				SiteName:            "VexGo",
+				SiteDescription:     "",
+				SiteIcon:            "",
+				ItemsPerPage:        20,
+			})
 			return
 		}
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get general settings"})

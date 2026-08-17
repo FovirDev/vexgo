@@ -8,6 +8,7 @@ import (
 
 	"vexgo/backend/internal/config"
 	"vexgo/backend/internal/mailer"
+	"vexgo/backend/internal/verification"
 	"vexgo/backend/model"
 
 	"github.com/sirupsen/logrus"
@@ -17,41 +18,6 @@ import (
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
-
-// Public function to verify sliding puzzle captcha
-func verifyCaptcha(captchaID, captchaToken string, captchaX int, markAsUsed bool) (*model.Captcha, error) {
-	// Query captcha
-	var captcha model.Captcha
-	if err := db.Where("id = ? AND token = ?", captchaID, captchaToken).First(&captcha).Error; err != nil {
-		return nil, fmt.Errorf("invalid captcha")
-	}
-
-	// Check if captcha has been used
-	if captcha.Used {
-		return nil, fmt.Errorf("captcha already used")
-	}
-
-	// Check if captcha has expired
-	if time.Now().After(captcha.ExpiresAt) {
-		return nil, fmt.Errorf("captcha has expired")
-	}
-
-	// Verify position (allow certain tolerance)
-	tolerance := 10 // allow 5 pixel tolerance
-	if math.Abs(float64(captchaX-captcha.X)) > float64(tolerance) {
-		return nil, fmt.Errorf("verification failed, please try again")
-	}
-
-	// If need to mark as used
-	if markAsUsed {
-		captcha.Used = true
-		if err := db.Save(&captcha).Error; err != nil {
-			return nil, fmt.Errorf("captcha verification failed")
-		}
-	}
-
-	return &captcha, nil
-}
 
 // Login: issue JWT based on email and password
 func Login(c *gin.Context) {
@@ -74,7 +40,7 @@ func Login(c *gin.Context) {
 	logrus.WithField("email", req.Email).Debug("Login request parsed successfully")
 
 	// Check if captcha verification is enabled
-	captchaEnabled, err := IsCaptchaEnabled()
+	captchaEnabled, err := verification.NewService(verification.Deps{DB: db}).IsCaptchaEnabled()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to check captcha settings"})
 		return
