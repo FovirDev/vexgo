@@ -31,10 +31,6 @@ jobs:
           pnpm run build
           cd ..
 
-      - name: Install ESLint
-        run: |
-          npm install eslint@9.39.2
-
       - name: Install formatters
         run: |
           npm install prettier@3.6.2
@@ -59,9 +55,10 @@ jobs:
         run: |
           npx prettier --check "**/*.{js,jsx,ts,tsx,html,md}"
 
-      - name: Run ESLint
+      - name: Run oxlint
         run: |
-          npx eslint -c frontend/eslint.config.js frontend/
+          cd frontend/
+          pnpm exec oxlint .
 
       - name: Run golangci-lint
         uses: golangci/golangci-lint-action@v9
