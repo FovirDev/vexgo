@@ -4,7 +4,7 @@ FROM node:25-alpine AS frontend-builder
 RUN npm install -g pnpm
 
 WORKDIR /app/frontend
-COPY frontend/package.json frontend/pnpm-lock.yaml ./
+COPY frontend/package.json frontend/pnpm-lock.yaml frontend/pnpm-workspace.yaml ./
 RUN pnpm install
 
 COPY frontend/ ./
