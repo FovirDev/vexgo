@@ -68,9 +68,69 @@ type Config struct {
 	S3ForcePath                bool   `yaml:"s3_force_path"`                   // Force path-style URLs
 	S3CustomDomain             string `yaml:"s3_custom_domain"`                // Optional custom domain for S3 URLs
 	S3DisableBucketInCustomURL bool   `yaml:"s3_disable_bucket_in_custom_url"` // Disable including bucket in custom domain URLs (default: false, meaning include bucket by default)
+
+	// fileSet records which fields were explicitly set in the config file.
+	// This lets bool fields distinguish "explicitly false" from "unset",
+	// so an explicit `false` in the file can override an environment `true`.
+	fileSet map[string]bool
 }
 
-// ParseFlags parses command line flags and returns the server configuration
+// fileConfig mirrors Config for YAML unmarshalling, using pointer bools so an
+// explicit `false` in the file can be told apart from "not present".
+type fileConfig struct {
+	Addr      string `yaml:"addr"`
+	Port      int    `yaml:"port"`
+	DataDir   string `yaml:"data_dir"`
+	JWTSecret string `yaml:"jwt_secret"`
+	LogLevel  string `yaml:"log_level"`
+
+	DBType     string `yaml:"db_type"`
+	DBHost     string `yaml:"db_host"`
+	DBPort     int    `yaml:"db_port"`
+	DBUser     string `yaml:"db_user"`
+	DBPassword string `yaml:"db_password"`
+	DBName     string `yaml:"db_name"`
+	DBSSLMode  string `yaml:"db_ssl_mode"`
+
+	OIDCEnabled       *bool  `yaml:"oidc_enabled"`
+	OIDCIssuerURL     string `yaml:"oidc_issuer_url"`
+	OIDCClientID      string `yaml:"oidc_client_id"`
+	OIDCClientSecret  string `yaml:"oidc_client_secret"`
+	OIDCAuthURL       string `yaml:"oidc_auth_url"`
+	OIDCTokenURL      string `yaml:"oidc_token_url"`
+	OIDCUserInfoURL   string `yaml:"oidc_userinfo_url"`
+	OIDCScopes        string `yaml:"oidc_scopes"`
+	OIDCEmailClaim    string `yaml:"oidc_email_claim"`
+	OIDCNameClaim     string `yaml:"oidc_name_claim"`
+	OIDCGroupClaim    string `yaml:"oidc_group_claim"`
+	OIDCAllowedGroups string `yaml:"oidc_allowed_groups"`
+	OIDCAutoRedirect  *bool  `yaml:"oidc_auto_redirect"`
+	OIDCVerifyEmail   *bool  `yaml:"oidc_verify_email"`
+
+	GitHubClientID     string `yaml:"github_client_id"`
+	GitHubClientSecret string `yaml:"github_client_secret"`
+
+	GoogleClientID     string `yaml:"google_client_id"`
+	GoogleClientSecret string `yaml:"google_client_secret"`
+
+	AllowLocalLogin *bool `yaml:"allow_local_login"`
+
+	TrustedProxies     []string `yaml:"trusted_proxies"`
+	BehindReverseProxy *bool    `yaml:"behind_reverse_proxy"`
+
+	S3Enabled                  *bool  `yaml:"s3_enabled"`
+	S3Endpoint                 string `yaml:"s3_endpoint"`
+	S3Region                   string `yaml:"s3_region"`
+	S3Bucket                   string `yaml:"s3_bucket"`
+	S3AccessKey                string `yaml:"s3_access_key"`
+	S3SecretKey                string `yaml:"s3_secret_key"`
+	S3ForcePath                *bool  `yaml:"s3_force_path"`
+	S3CustomDomain             string `yaml:"s3_custom_domain"`
+	S3DisableBucketInCustomURL *bool  `yaml:"s3_disable_bucket_in_custom_url"`
+}
+
+// ParseFlags parses command line flags and returns the server configuration.
+// Priority: command line flags > config file > environment variables > defaults.
 func ParseFlags() *Config {
 	configFile := flag.String("c", "", "Path to configuration file (YAML format)")
 	addr := flag.String("addr", "", "Address to listen on")
@@ -80,463 +140,290 @@ func ParseFlags() *Config {
 	// Parse command line flags
 	flag.Parse()
 
-	// Default configuration with environment variable fallback
-	cfg := &Config{
-		Addr:      getEnvOrDefault("ADDR", *addr, "0.0.0.0"),
-		Port:      getIntEnvOrDefault("PORT", *port, 3001),
-		DataDir:   getEnvOrDefault("DATA_DIR", *dataDir, "./data"),
-		JWTSecret: getEnvOrDefault("JWT_SECRET", "", ""),
-		LogLevel:  getEnvOrDefault("LOG_LEVEL", "", "info"),
+	return buildConfig(*addr, *port, *dataDir, *configFile)
+}
 
-		// S3 configuration defaults
-		S3Enabled:                  getBoolEnvOrDefault("S3_ENABLED", false),
-		S3Endpoint:                 getEnvOrDefault("S3_ENDPOINT", "", ""),
-		S3Region:                   getEnvOrDefault("S3_REGION", "", ""),
-		S3Bucket:                   getEnvOrDefault("S3_BUCKET", "", ""),
-		S3AccessKey:                getEnvOrDefault("S3_ACCESS_KEY", "", ""),
-		S3SecretKey:                getEnvOrDefault("S3_SECRET_KEY", "", ""),
-		S3ForcePath:                getBoolEnvOrDefault("S3_FORCE_PATH", false),
-		S3CustomDomain:             getEnvOrDefault("S3_CUSTOM_DOMAIN", "", ""),
-		S3DisableBucketInCustomURL: getBoolEnvOrDefault("S3_DISABLE_BUCKET_IN_CUSTOM_URL", false),
+// buildConfig merges the three configuration sources with explicit priority:
+// command line flags > config file > environment variables > defaults.
+func buildConfig(addr string, port int, dataDir, configFile string) *Config {
+	// 1. Lowest priority: defaults, then environment variables
+	cfg := newConfigFromEnv()
 
-		// Trusted proxies configuration
-		TrustedProxies:     parseTrustedProxies(getEnvOrDefault("TRUSTED_PROXIES", "", "")),
-		BehindReverseProxy: getBoolEnvOrDefault("BEHIND_REVERSE_PROXY", false),
-	}
-
-	// If config file is specified, load it (overrides env and defaults, but not command line flags)
-	if *configFile != "" {
-		if err := loadConfigFile(*configFile, cfg); err != nil {
-			fmt.Fprintf(os.Stderr, "Warning: failed to load config file %s: %v\n", *configFile, err)
+	// 2. Config file overrides environment variables (but not command line flags)
+	if configFile != "" {
+		file := &fileConfig{}
+		if err := loadConfigFile(configFile, file); err != nil {
+			fmt.Fprintf(os.Stderr, "Warning: failed to load config file %s: %v\n", configFile, err)
 		} else {
-			fmt.Printf("Loaded configuration from %s\n", *configFile)
+			fmt.Printf("Loaded configuration from %s\n", configFile)
+			applyFileConfig(cfg, file)
 		}
 	}
 
-	// Apply environment variable overrides for database config (only if not set by config file or command line)
-	applyEnvOverrides(cfg)
-
-	// Apply trusted proxies from config file (already loaded by loadConfigFile)
-	// No additional processing needed - cfg.TrustedProxies is already set
+	// 3. Highest priority: command line flags
+	if addr != "" {
+		cfg.Addr = addr
+	}
+	if port != 0 {
+		cfg.Port = port
+	}
+	if dataDir != "" {
+		cfg.DataDir = dataDir
+	}
 
 	return cfg
 }
 
-// getEnvOrDefault gets environment variable or returns default value
-func getEnvOrDefault(key, value, defaultValue string) string {
-	if value != "" {
-		return value // command line flag takes precedence
+// newConfigFromEnv returns a Config populated from environment variables,
+// falling back to defaults when a variable is unset or invalid.
+func newConfigFromEnv() *Config {
+	return &Config{
+		Addr:      envString("ADDR", "0.0.0.0"),
+		Port:      envInt("PORT", 3001),
+		DataDir:   envString("DATA_DIR", "./data"),
+		JWTSecret: envString("JWT_SECRET", ""),
+		LogLevel:  envString("LOG_LEVEL", "info"),
+
+		DBType:     envString("DB_TYPE", ""),
+		DBHost:     envString("DB_HOST", ""),
+		DBPort:     envInt("DB_PORT", 0),
+		DBUser:     envString("DB_USER", ""),
+		DBPassword: envString("DB_PASSWORD", ""),
+		DBName:     envString("DB_NAME", ""),
+		DBSSLMode:  envString("DB_SSL_MODE", ""),
+
+		OIDCEnabled:       envBool("OIDC_ENABLED", false),
+		OIDCIssuerURL:     envString("OIDC_ISSUER_URL", ""),
+		OIDCClientID:      envString("OIDC_CLIENT_ID", ""),
+		OIDCClientSecret:  envString("OIDC_CLIENT_SECRET", ""),
+		OIDCAuthURL:       envString("OIDC_AUTH_URL", ""),
+		OIDCTokenURL:      envString("OIDC_TOKEN_URL", ""),
+		OIDCUserInfoURL:   envString("OIDC_USERINFO_URL", ""),
+		OIDCScopes:        envString("OIDC_SCOPES", ""),
+		OIDCEmailClaim:    envString("OIDC_EMAIL_CLAIM", ""),
+		OIDCNameClaim:     envString("OIDC_NAME_CLAIM", ""),
+		OIDCGroupClaim:    envString("OIDC_GROUP_CLAIM", ""),
+		OIDCAllowedGroups: envString("OIDC_ALLOWED_GROUPS", ""),
+		OIDCAutoRedirect:  envBool("OIDC_AUTO_REDIRECT", false),
+		OIDCVerifyEmail:   envBool("OIDC_VERIFY_EMAIL", false),
+
+		GitHubClientID:     envString("GITHUB_CLIENT_ID", ""),
+		GitHubClientSecret: envString("GITHUB_CLIENT_SECRET", ""),
+
+		GoogleClientID:     envString("GOOGLE_CLIENT_ID", ""),
+		GoogleClientSecret: envString("GOOGLE_CLIENT_SECRET", ""),
+
+		AllowLocalLogin: envBool("ALLOW_LOCAL_LOGIN", true),
+
+		TrustedProxies:     parseTrustedProxies(envString("TRUSTED_PROXIES", "")),
+		BehindReverseProxy: envBool("BEHIND_REVERSE_PROXY", false),
+
+		S3Enabled:                  envBool("S3_ENABLED", false),
+		S3Endpoint:                 envString("S3_ENDPOINT", ""),
+		S3Region:                   envString("S3_REGION", ""),
+		S3Bucket:                   envString("S3_BUCKET", ""),
+		S3AccessKey:                envString("S3_ACCESS_KEY", ""),
+		S3SecretKey:                envString("S3_SECRET_KEY", ""),
+		S3ForcePath:                envBool("S3_FORCE_PATH", false),
+		S3CustomDomain:             envString("S3_CUSTOM_DOMAIN", ""),
+		S3DisableBucketInCustomURL: envBool("S3_DISABLE_BUCKET_IN_CUSTOM_URL", false),
+
+		fileSet: make(map[string]bool),
 	}
-	if env := os.Getenv(key); env != "" {
-		return env // environment variable next
-	}
-	return defaultValue // finally use default
 }
 
-// getIntEnvOrDefault gets integer environment variable or returns default value
-func getIntEnvOrDefault(key string, value, defaultValue int) int {
-	if value != 0 {
-		return value // command line flag takes precedence
+// envString returns the environment variable value or defaultValue when unset.
+func envString(key, defaultValue string) string {
+	if v := os.Getenv(key); v != "" {
+		return v
 	}
-	if env := os.Getenv(key); env != "" {
-		var result int
-		if _, err := fmt.Sscanf(env, "%d", &result); err == nil {
-			return result // environment variable next
+	return defaultValue
+}
+
+// envInt returns the parsed integer environment variable or defaultValue.
+func envInt(key string, defaultValue int) int {
+	if v := os.Getenv(key); v != "" {
+		if n, err := strconv.Atoi(v); err == nil {
+			return n
 		}
 	}
-	return defaultValue // finally use default
+	return defaultValue
 }
 
-// getBoolEnvOrDefault gets boolean environment variable or returns default value
-func getBoolEnvOrDefault(key string, defaultValue bool) bool {
-	if env := os.Getenv(key); env != "" {
-		if b, err := strconv.ParseBool(env); err == nil {
+// envBool returns the parsed boolean environment variable or defaultValue.
+func envBool(key string, defaultValue bool) bool {
+	if v := os.Getenv(key); v != "" {
+		if b, err := strconv.ParseBool(v); err == nil {
 			return b
 		}
 	}
 	return defaultValue
 }
 
-// applyEnvOverrides applies environment variable overrides for database and S3 configuration
-// Only applies if the config field is empty (not set by config file or command line)
-func applyEnvOverrides(cfg *Config) {
-	// JWT Secret
-	if cfg.JWTSecret == "" {
-		if env := os.Getenv("JWT_SECRET"); env != "" {
-			cfg.JWTSecret = env
-		}
-	}
-
-	// Database type
-	if cfg.DBType == "" {
-		if env := os.Getenv("DB_TYPE"); env != "" {
-			cfg.DBType = env
-		}
-	}
-
-	// Database host
-	if cfg.DBHost == "" {
-		if env := os.Getenv("DB_HOST"); env != "" {
-			cfg.DBHost = env
-		}
-	}
-
-	// Database port
-	if cfg.DBPort == 0 {
-		if env := os.Getenv("DB_PORT"); env != "" {
-			fmt.Sscanf(env, "%d", &cfg.DBPort)
-		}
-	}
-
-	// Database user
-	if cfg.DBUser == "" {
-		if env := os.Getenv("DB_USER"); env != "" {
-			cfg.DBUser = env
-		}
-	}
-
-	// Database password
-	if cfg.DBPassword == "" {
-		if env := os.Getenv("DB_PASSWORD"); env != "" {
-			cfg.DBPassword = env
-		}
-	}
-
-	// Database name
-	if cfg.DBName == "" {
-		if env := os.Getenv("DB_NAME"); env != "" {
-			cfg.DBName = env
-		}
-	}
-
-	// PostgreSQL SSL mode
-	if cfg.DBSSLMode == "" {
-		if env := os.Getenv("DB_SSL_MODE"); env != "" {
-			cfg.DBSSLMode = env
-		}
-	}
-
-	// OIDC configuration
-	if !cfg.OIDCEnabled {
-		if env := os.Getenv("OIDC_ENABLED"); env != "" {
-			if b, err := strconv.ParseBool(env); err == nil {
-				cfg.OIDCEnabled = b
-			}
-		}
-	}
-	if cfg.OIDCIssuerURL == "" {
-		if env := os.Getenv("OIDC_ISSUER_URL"); env != "" {
-			cfg.OIDCIssuerURL = env
-		}
-	}
-	if cfg.OIDCClientID == "" {
-		if env := os.Getenv("OIDC_CLIENT_ID"); env != "" {
-			cfg.OIDCClientID = env
-		}
-	}
-	if cfg.OIDCClientSecret == "" {
-		if env := os.Getenv("OIDC_CLIENT_SECRET"); env != "" {
-			cfg.OIDCClientSecret = env
-		}
-	}
-	if cfg.OIDCAuthURL == "" {
-		if env := os.Getenv("OIDC_AUTH_URL"); env != "" {
-			cfg.OIDCAuthURL = env
-		}
-	}
-	if cfg.OIDCTokenURL == "" {
-		if env := os.Getenv("OIDC_TOKEN_URL"); env != "" {
-			cfg.OIDCTokenURL = env
-		}
-	}
-	if cfg.OIDCUserInfoURL == "" {
-		if env := os.Getenv("OIDC_USERINFO_URL"); env != "" {
-			cfg.OIDCUserInfoURL = env
-		}
-	}
-	if cfg.OIDCScopes == "" {
-		if env := os.Getenv("OIDC_SCOPES"); env != "" {
-			cfg.OIDCScopes = env
-		}
-	}
-	if cfg.OIDCEmailClaim == "" {
-		if env := os.Getenv("OIDC_EMAIL_CLAIM"); env != "" {
-			cfg.OIDCEmailClaim = env
-		}
-	}
-	if cfg.OIDCNameClaim == "" {
-		if env := os.Getenv("OIDC_NAME_CLAIM"); env != "" {
-			cfg.OIDCNameClaim = env
-		}
-	}
-	if cfg.OIDCGroupClaim == "" {
-		if env := os.Getenv("OIDC_GROUP_CLAIM"); env != "" {
-			cfg.OIDCGroupClaim = env
-		}
-	}
-	if cfg.OIDCAllowedGroups == "" {
-		if env := os.Getenv("OIDC_ALLOWED_GROUPS"); env != "" {
-			cfg.OIDCAllowedGroups = env
-		}
-	}
-	if !cfg.OIDCAutoRedirect {
-		if env := os.Getenv("OIDC_AUTO_REDIRECT"); env != "" {
-			if b, err := strconv.ParseBool(env); err == nil {
-				cfg.OIDCAutoRedirect = b
-			}
-		}
-	}
-	if !cfg.OIDCVerifyEmail {
-		if env := os.Getenv("OIDC_VERIFY_EMAIL"); env != "" {
-			if b, err := strconv.ParseBool(env); err == nil {
-				cfg.OIDCVerifyEmail = b
-			}
-		}
-	}
-	if !cfg.AllowLocalLogin {
-		if env := os.Getenv("ALLOW_LOCAL_LOGIN"); env != "" {
-			if b, err := strconv.ParseBool(env); err == nil {
-				cfg.AllowLocalLogin = b
-			}
-		}
-	}
-
-	// GitHub OAuth configuration
-	if cfg.GitHubClientID == "" {
-		if env := os.Getenv("GITHUB_CLIENT_ID"); env != "" {
-			cfg.GitHubClientID = env
-		}
-	}
-	if cfg.GitHubClientSecret == "" {
-		if env := os.Getenv("GITHUB_CLIENT_SECRET"); env != "" {
-			cfg.GitHubClientSecret = env
-		}
-	}
-
-	// Google OAuth configuration
-	if cfg.GoogleClientID == "" {
-		if env := os.Getenv("GOOGLE_CLIENT_ID"); env != "" {
-			cfg.GoogleClientID = env
-		}
-	}
-	if cfg.GoogleClientSecret == "" {
-		if env := os.Getenv("GOOGLE_CLIENT_SECRET"); env != "" {
-			cfg.GoogleClientSecret = env
-		}
-	}
-
-	// S3 configuration
-	if !cfg.S3Enabled {
-		if env := os.Getenv("S3_ENABLED"); env != "" {
-			if b, err := strconv.ParseBool(env); err == nil {
-				cfg.S3Enabled = b
-			}
-		}
-	}
-	if cfg.S3Endpoint == "" {
-		if env := os.Getenv("S3_ENDPOINT"); env != "" {
-			cfg.S3Endpoint = env
-		}
-	}
-	if cfg.S3Region == "" {
-		if env := os.Getenv("S3_REGION"); env != "" {
-			cfg.S3Region = env
-		}
-	}
-	if cfg.S3Bucket == "" {
-		if env := os.Getenv("S3_BUCKET"); env != "" {
-			cfg.S3Bucket = env
-		}
-	}
-	if cfg.S3AccessKey == "" {
-		if env := os.Getenv("S3_ACCESS_KEY"); env != "" {
-			cfg.S3AccessKey = env
-		}
-	}
-	if cfg.S3SecretKey == "" {
-		if env := os.Getenv("S3_SECRET_KEY"); env != "" {
-			cfg.S3SecretKey = env
-		}
-	}
-	if !cfg.S3ForcePath {
-		if env := os.Getenv("S3_FORCE_PATH"); env != "" {
-			if b, err := strconv.ParseBool(env); err == nil {
-				cfg.S3ForcePath = b
-			}
-		}
-	}
-	if cfg.S3CustomDomain == "" {
-		if env := os.Getenv("S3_CUSTOM_DOMAIN"); env != "" {
-			cfg.S3CustomDomain = env
-		}
-	}
-	if !cfg.S3DisableBucketInCustomURL {
-		if env := os.Getenv("S3_DISABLE_BUCKET_IN_CUSTOM_URL"); env != "" {
-			if b, err := strconv.ParseBool(env); err == nil {
-				cfg.S3DisableBucketInCustomURL = b
-			}
-		}
-	}
-}
-
-// loadConfigFile loads configuration from a YAML file
-// It only fills empty fields, preserving values already set (e.g., from command line)
-func loadConfigFile(filename string, cfg *Config) error {
+// loadConfigFile parses a YAML configuration file into file.
+func loadConfigFile(filename string, file *fileConfig) error {
 	data, err := os.ReadFile(filename)
 	if err != nil {
 		return fmt.Errorf("failed to read file: %w", err)
 	}
-
-	// Unmarshal YAML into a temporary struct to avoid overwriting existing values
-	var temp Config
-	if err := yaml.Unmarshal(data, &temp); err != nil {
+	if err := yaml.Unmarshal(data, file); err != nil {
 		return fmt.Errorf("failed to parse YAML: %w", err)
 	}
-
-	// Only apply values from config file if the field is currently empty (zero value)
-	// This preserves command line flag values which have highest priority
-	if cfg.Addr == "" || cfg.Addr == "0.0.0.0" {
-		if temp.Addr != "" {
-			cfg.Addr = temp.Addr
-		}
-	}
-	if cfg.Port == 0 {
-		if temp.Port != 0 {
-			cfg.Port = temp.Port
-		}
-	}
-	if cfg.DataDir == "" || cfg.DataDir == "./data" {
-		if temp.DataDir != "" {
-			cfg.DataDir = temp.DataDir
-		}
-	}
-	if cfg.JWTSecret == "" {
-		cfg.JWTSecret = temp.JWTSecret
-	}
-	if cfg.DBType == "" {
-		cfg.DBType = temp.DBType
-	}
-	if cfg.DBHost == "" {
-		cfg.DBHost = temp.DBHost
-	}
-	if cfg.DBPort == 0 {
-		cfg.DBPort = temp.DBPort
-	}
-	if cfg.DBUser == "" {
-		cfg.DBUser = temp.DBUser
-	}
-	if cfg.DBPassword == "" {
-		cfg.DBPassword = temp.DBPassword
-	}
-	if cfg.DBName == "" {
-		cfg.DBName = temp.DBName
-	}
-	if cfg.DBSSLMode == "" {
-		cfg.DBSSLMode = temp.DBSSLMode
-	}
-
-	// OIDC configuration
-	if !cfg.OIDCEnabled && temp.OIDCEnabled {
-		cfg.OIDCEnabled = temp.OIDCEnabled
-	}
-	if cfg.OIDCIssuerURL == "" && temp.OIDCIssuerURL != "" {
-		cfg.OIDCIssuerURL = temp.OIDCIssuerURL
-	}
-	if cfg.OIDCClientID == "" && temp.OIDCClientID != "" {
-		cfg.OIDCClientID = temp.OIDCClientID
-	}
-	if cfg.OIDCClientSecret == "" && temp.OIDCClientSecret != "" {
-		cfg.OIDCClientSecret = temp.OIDCClientSecret
-	}
-	if cfg.OIDCAuthURL == "" && temp.OIDCAuthURL != "" {
-		cfg.OIDCAuthURL = temp.OIDCAuthURL
-	}
-	if cfg.OIDCTokenURL == "" && temp.OIDCTokenURL != "" {
-		cfg.OIDCTokenURL = temp.OIDCTokenURL
-	}
-	if cfg.OIDCUserInfoURL == "" && temp.OIDCUserInfoURL != "" {
-		cfg.OIDCUserInfoURL = temp.OIDCUserInfoURL
-	}
-	if cfg.OIDCScopes == "" && temp.OIDCScopes != "" {
-		cfg.OIDCScopes = temp.OIDCScopes
-	}
-	if cfg.OIDCEmailClaim == "" && temp.OIDCEmailClaim != "" {
-		cfg.OIDCEmailClaim = temp.OIDCEmailClaim
-	}
-	if cfg.OIDCNameClaim == "" && temp.OIDCNameClaim != "" {
-		cfg.OIDCNameClaim = temp.OIDCNameClaim
-	}
-	if cfg.OIDCGroupClaim == "" && temp.OIDCGroupClaim != "" {
-		cfg.OIDCGroupClaim = temp.OIDCGroupClaim
-	}
-	if cfg.OIDCAllowedGroups == "" && temp.OIDCAllowedGroups != "" {
-		cfg.OIDCAllowedGroups = temp.OIDCAllowedGroups
-	}
-	if !cfg.OIDCAutoRedirect && temp.OIDCAutoRedirect {
-		cfg.OIDCAutoRedirect = temp.OIDCAutoRedirect
-	}
-	if !cfg.OIDCVerifyEmail && temp.OIDCVerifyEmail {
-		cfg.OIDCVerifyEmail = temp.OIDCVerifyEmail
-	}
-	if !cfg.AllowLocalLogin && temp.AllowLocalLogin {
-		cfg.AllowLocalLogin = temp.AllowLocalLogin
-	}
-
-	// Trusted proxies configuration
-	// Handle the case where trusted_proxies might be an empty string in YAML
-	if temp.TrustedProxies != nil {
-		cfg.TrustedProxies = temp.TrustedProxies
-	}
-	if temp.BehindReverseProxy {
-		cfg.BehindReverseProxy = temp.BehindReverseProxy
-	}
-
-	// GitHub OAuth configuration
-	if cfg.GitHubClientID == "" && temp.GitHubClientID != "" {
-		cfg.GitHubClientID = temp.GitHubClientID
-	}
-	if cfg.GitHubClientSecret == "" && temp.GitHubClientSecret != "" {
-		cfg.GitHubClientSecret = temp.GitHubClientSecret
-	}
-
-	// Google OAuth configuration
-	if cfg.GoogleClientID == "" && temp.GoogleClientID != "" {
-		cfg.GoogleClientID = temp.GoogleClientID
-	}
-	if cfg.GoogleClientSecret == "" && temp.GoogleClientSecret != "" {
-		cfg.GoogleClientSecret = temp.GoogleClientSecret
-	}
-
-	// S3 configuration
-	if !cfg.S3Enabled && temp.S3Enabled {
-		cfg.S3Enabled = temp.S3Enabled
-	}
-	if cfg.S3Endpoint == "" && temp.S3Endpoint != "" {
-		cfg.S3Endpoint = temp.S3Endpoint
-	}
-	if cfg.S3Region == "" && temp.S3Region != "" {
-		cfg.S3Region = temp.S3Region
-	}
-	if cfg.S3Bucket == "" && temp.S3Bucket != "" {
-		cfg.S3Bucket = temp.S3Bucket
-	}
-	if cfg.S3AccessKey == "" && temp.S3AccessKey != "" {
-		cfg.S3AccessKey = temp.S3AccessKey
-	}
-	if cfg.S3SecretKey == "" && temp.S3SecretKey != "" {
-		cfg.S3SecretKey = temp.S3SecretKey
-	}
-	if !cfg.S3ForcePath && temp.S3ForcePath {
-		cfg.S3ForcePath = temp.S3ForcePath
-	}
-	if cfg.S3CustomDomain == "" && temp.S3CustomDomain != "" {
-		cfg.S3CustomDomain = temp.S3CustomDomain
-	}
-	if !cfg.S3DisableBucketInCustomURL && temp.S3DisableBucketInCustomURL {
-		cfg.S3DisableBucketInCustomURL = temp.S3DisableBucketInCustomURL
-	}
-
 	return nil
+}
+
+// applyFileConfig applies config file values over cfg (which already contains
+// environment variables). Only fields explicitly present in the file are
+// applied, so an explicit `false` for a bool overrides an environment `true`.
+func applyFileConfig(cfg *Config, f *fileConfig) {
+	if f.Addr != "" {
+		cfg.Addr = f.Addr
+	}
+	if f.Port != 0 {
+		cfg.Port = f.Port
+	}
+	if f.DataDir != "" {
+		cfg.DataDir = f.DataDir
+	}
+	if f.JWTSecret != "" {
+		cfg.JWTSecret = f.JWTSecret
+	}
+	if f.LogLevel != "" {
+		cfg.LogLevel = f.LogLevel
+	}
+
+	// Database
+	if f.DBType != "" {
+		cfg.DBType = f.DBType
+	}
+	if f.DBHost != "" {
+		cfg.DBHost = f.DBHost
+	}
+	if f.DBPort != 0 {
+		cfg.DBPort = f.DBPort
+	}
+	if f.DBUser != "" {
+		cfg.DBUser = f.DBUser
+	}
+	if f.DBPassword != "" {
+		cfg.DBPassword = f.DBPassword
+	}
+	if f.DBName != "" {
+		cfg.DBName = f.DBName
+	}
+	if f.DBSSLMode != "" {
+		cfg.DBSSLMode = f.DBSSLMode
+	}
+
+	// OIDC
+	if f.OIDCEnabled != nil {
+		cfg.OIDCEnabled = *f.OIDCEnabled
+		cfg.fileSet["oidc_enabled"] = true
+	}
+	if f.OIDCIssuerURL != "" {
+		cfg.OIDCIssuerURL = f.OIDCIssuerURL
+	}
+	if f.OIDCClientID != "" {
+		cfg.OIDCClientID = f.OIDCClientID
+	}
+	if f.OIDCClientSecret != "" {
+		cfg.OIDCClientSecret = f.OIDCClientSecret
+	}
+	if f.OIDCAuthURL != "" {
+		cfg.OIDCAuthURL = f.OIDCAuthURL
+	}
+	if f.OIDCTokenURL != "" {
+		cfg.OIDCTokenURL = f.OIDCTokenURL
+	}
+	if f.OIDCUserInfoURL != "" {
+		cfg.OIDCUserInfoURL = f.OIDCUserInfoURL
+	}
+	if f.OIDCScopes != "" {
+		cfg.OIDCScopes = f.OIDCScopes
+	}
+	if f.OIDCEmailClaim != "" {
+		cfg.OIDCEmailClaim = f.OIDCEmailClaim
+	}
+	if f.OIDCNameClaim != "" {
+		cfg.OIDCNameClaim = f.OIDCNameClaim
+	}
+	if f.OIDCGroupClaim != "" {
+		cfg.OIDCGroupClaim = f.OIDCGroupClaim
+	}
+	if f.OIDCAllowedGroups != "" {
+		cfg.OIDCAllowedGroups = f.OIDCAllowedGroups
+	}
+	if f.OIDCAutoRedirect != nil {
+		cfg.OIDCAutoRedirect = *f.OIDCAutoRedirect
+		cfg.fileSet["oidc_auto_redirect"] = true
+	}
+	if f.OIDCVerifyEmail != nil {
+		cfg.OIDCVerifyEmail = *f.OIDCVerifyEmail
+		cfg.fileSet["oidc_verify_email"] = true
+	}
+
+	// GitHub OAuth
+	if f.GitHubClientID != "" {
+		cfg.GitHubClientID = f.GitHubClientID
+	}
+	if f.GitHubClientSecret != "" {
+		cfg.GitHubClientSecret = f.GitHubClientSecret
+	}
+
+	// Google OAuth
+	if f.GoogleClientID != "" {
+		cfg.GoogleClientID = f.GoogleClientID
+	}
+	if f.GoogleClientSecret != "" {
+		cfg.GoogleClientSecret = f.GoogleClientSecret
+	}
+
+	// Global options
+	if f.AllowLocalLogin != nil {
+		cfg.AllowLocalLogin = *f.AllowLocalLogin
+		cfg.fileSet["allow_local_login"] = true
+	}
+
+	// Trusted proxies
+	if f.TrustedProxies != nil {
+		cfg.TrustedProxies = f.TrustedProxies
+	}
+	if f.BehindReverseProxy != nil {
+		cfg.BehindReverseProxy = *f.BehindReverseProxy
+		cfg.fileSet["behind_reverse_proxy"] = true
+	}
+
+	// S3
+	if f.S3Enabled != nil {
+		cfg.S3Enabled = *f.S3Enabled
+		cfg.fileSet["s3_enabled"] = true
+	}
+	if f.S3Endpoint != "" {
+		cfg.S3Endpoint = f.S3Endpoint
+	}
+	if f.S3Region != "" {
+		cfg.S3Region = f.S3Region
+	}
+	if f.S3Bucket != "" {
+		cfg.S3Bucket = f.S3Bucket
+	}
+	if f.S3AccessKey != "" {
+		cfg.S3AccessKey = f.S3AccessKey
+	}
+	if f.S3SecretKey != "" {
+		cfg.S3SecretKey = f.S3SecretKey
+	}
+	if f.S3ForcePath != nil {
+		cfg.S3ForcePath = *f.S3ForcePath
+		cfg.fileSet["s3_force_path"] = true
+	}
+	if f.S3CustomDomain != "" {
+		cfg.S3CustomDomain = f.S3CustomDomain
+	}
+	if f.S3DisableBucketInCustomURL != nil {
+		cfg.S3DisableBucketInCustomURL = *f.S3DisableBucketInCustomURL
+		cfg.fileSet["s3_disable_bucket_in_custom_url"] = true
+	}
 }
 
 // GetListenAddr returns the full listen address in the format "addr:port"

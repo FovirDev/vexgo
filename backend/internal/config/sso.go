@@ -71,27 +71,30 @@ type SSOConfig struct {
 // This should be called after Init() in main.go to override
 // environment variables with config file values.
 func LoadFromConfig(cfg *Config) {
-	// Only update fields that are set in the config (non-zero values)
-	// This preserves the priority: command line > config file > environment
+	// Only update fields that were explicitly set in the config file.
+	// This preserves the priority: command line > config file > environment.
+	// String fields fall back to the merged cfg value (file > env); bool
+	// fields consult cfg.fileSet so an explicit `false` in the file can
+	// override an environment `true`.
 
 	// GitHub OAuth
-	if cfg.GitHubClientID != "" {
+	if cfg.fileSet["github_client_id"] || cfg.GitHubClientID != "" {
 		SSO.GitHub.ClientID = cfg.GitHubClientID
 	}
-	if cfg.GitHubClientSecret != "" {
+	if cfg.fileSet["github_client_secret"] || cfg.GitHubClientSecret != "" {
 		SSO.GitHub.ClientSecret = cfg.GitHubClientSecret
 	}
 
 	// Google OAuth
-	if cfg.GoogleClientID != "" {
+	if cfg.fileSet["google_client_id"] || cfg.GoogleClientID != "" {
 		SSO.Google.ClientID = cfg.GoogleClientID
 	}
-	if cfg.GoogleClientSecret != "" {
+	if cfg.fileSet["google_client_secret"] || cfg.GoogleClientSecret != "" {
 		SSO.Google.ClientSecret = cfg.GoogleClientSecret
 	}
 
 	// OIDC Enabled
-	if cfg.OIDCEnabled {
+	if cfg.fileSet["oidc_enabled"] {
 		SSO.OIDC.Enabled = cfg.OIDCEnabled
 	}
 
@@ -139,15 +142,15 @@ func LoadFromConfig(cfg *Config) {
 	}
 
 	// OIDC UX options
-	if cfg.OIDCAutoRedirect {
+	if cfg.fileSet["oidc_auto_redirect"] {
 		SSO.OIDC.AutoRedirect = cfg.OIDCAutoRedirect
 	}
-	if cfg.OIDCVerifyEmail {
+	if cfg.fileSet["oidc_verify_email"] {
 		SSO.OIDC.VerifyEmail = cfg.OIDCVerifyEmail
 	}
 
 	// Global options
-	if cfg.AllowLocalLogin {
+	if cfg.fileSet["allow_local_login"] {
 		SSO.AllowLocalLogin = cfg.AllowLocalLogin
 	}
 }
