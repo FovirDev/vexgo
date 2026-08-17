@@ -39,9 +39,14 @@
         { pkgs }: {
           default = pkgs.mkShell {
             packages = with pkgs; [
+              eslint
               go
+              gofumpt
+              golangci-lint
+              just
               nodejs
               pnpm
+              prettier
             ];
           };
         }
