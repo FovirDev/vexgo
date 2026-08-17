@@ -86,7 +86,7 @@ export function SliderCaptcha({
         // Slider center = x + 20; the puzzle piece center should align with the slider center
         // Puzzle left edge = slider center - 30 = x + 20 - 30 = x - 10
         const puzzleX = Math.round(x - 10);
-        console.log("滑块位置:", x, "拼图块左边缘:", puzzleX);
+        console.log("Slider position:", x, "puzzle left edge:", puzzleX);
 
         // Call the backend verify endpoint
         const response = await fetch("/api/captcha/verify", {

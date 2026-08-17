@@ -41,7 +41,7 @@ export function GeneralSettingsPage() {
       const response = await configApi.getGeneralSettings();
       setConfig(response.data);
     } catch (error) {
-      console.error("加载通用设置失败:", error);
+      console.error("Failed to load general settings:", error);
       toast.error(t("generalSettings.loadFailed"));
     } finally {
       setLoading(false);
@@ -67,7 +67,7 @@ export function GeneralSettingsPage() {
       await configApi.updateGeneralSettings(config);
       toast.success(t("generalSettings.saveSuccess"));
     } catch (error) {
-      console.error("保存通用设置失败:", error);
+      console.error("Failed to save general settings:", error);
       const err = error as { response?: { data?: { error?: string } } };
       toast.error(
         t("generalSettings.saveFailed") +
@@ -95,7 +95,7 @@ export function GeneralSettingsPage() {
       }
       toast.success(t("generalSettings.iconUploadSuccess"));
     } catch (error) {
-      console.error("上传图标失败:", error);
+      console.error("Failed to upload icon:", error);
       toast.error(t("generalSettings.iconUploadFailed"));
     }
 

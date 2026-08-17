@@ -50,7 +50,7 @@ export function CommentConfigPage() {
       const response = await configApi.getCommentModerationConfig();
       setConfig(response.data);
     } catch (error: unknown) {
-      console.error("加载评论审核配置失败:", error);
+      console.error("Failed to load comment moderation config:", error);
       toast.error(t("commentConfig.loadFailed"));
     } finally {
       setLoading(false);
@@ -67,7 +67,7 @@ export function CommentConfigPage() {
       await configApi.updateCommentModerationConfig(config);
       toast.success(t("commentConfig.saveSuccess"));
     } catch (error: unknown) {
-      console.error("保存配置失败:", error);
+      console.error("Failed to save config:", error);
       const apiError = error as { response?: { data?: { error?: string } } };
       toast.error(
         apiError.response?.data?.error || t("commentConfig.saveFailed"),

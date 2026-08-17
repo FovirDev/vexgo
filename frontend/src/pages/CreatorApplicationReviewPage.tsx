@@ -46,7 +46,7 @@ export function CreatorApplicationReviewPage() {
       // Ensure applications is an array even if the backend returns null or undefined
       setApplications(response.data.applications || []);
     } catch (error) {
-      console.error("加载创作者申请列表失败:", error);
+      console.error("Failed to load creator applications:", error);
       toast.error(t("errors.networkError"));
       // Also fall back to an empty array on error to avoid a blank screen
       setApplications([]);
@@ -118,7 +118,7 @@ export function CreatorApplicationReviewPage() {
       setIsRejectDialogOpen(false);
       setRejectReason("");
     } catch (error: unknown) {
-      console.error("审核创作者申请失败:", error);
+      console.error("Failed to review creator application:", error);
       const apiError = error as { response?: { data?: { error?: string } } };
       toast.error(apiError.response?.data?.error || t("errors.networkError"));
     } finally {

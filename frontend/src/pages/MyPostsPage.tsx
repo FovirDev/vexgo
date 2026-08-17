@@ -78,7 +78,7 @@ export function MyPostsPage() {
       );
       setPagination(response.data.pagination);
     } catch (error) {
-      console.error("加载文章失败:", error);
+      console.error("Failed to load posts:", error);
     } finally {
       setLoading(false);
     }
@@ -93,7 +93,7 @@ export function MyPostsPage() {
       await postsApi.deletePost(postId);
       loadPosts();
     } catch (error) {
-      console.error("删除文章失败:", error);
+      console.error("Failed to delete post:", error);
     }
   };
 

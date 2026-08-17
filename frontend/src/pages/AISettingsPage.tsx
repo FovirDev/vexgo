@@ -53,7 +53,7 @@ export function AISettingsPage() {
       const response = await configApi.getAIConfig();
       setConfig(response.data);
     } catch (error: unknown) {
-      console.error("加载 AI 配置失败:", error);
+      console.error("Failed to load AI config:", error);
       toast.error(t("aiSettings.loadFailed"));
     } finally {
       setLoading(false);
@@ -76,7 +76,7 @@ export function AISettingsPage() {
       setModels(response.data.models);
       toast.success(t("aiSettings.testSuccess"));
     } catch (error: unknown) {
-      console.error("获取模型列表失败:", error);
+      console.error("Failed to fetch the model list:", error);
       const axiosError = error as AxiosError<ApiErrorResponse>;
       const errorMessage =
         axiosError.response?.data?.error || t("common.unknownError");
@@ -106,7 +106,7 @@ export function AISettingsPage() {
       await configApi.updateAIConfig(config);
       toast.success(t("aiSettings.saveSuccess"));
     } catch (error: unknown) {
-      console.error("保存 AI 配置失败:", error);
+      console.error("Failed to save AI config:", error);
       const axiosError = error as AxiosError<ApiErrorResponse>;
       const errorMessage =
         axiosError.response?.data?.error || t("common.unknownError");
@@ -132,7 +132,7 @@ export function AISettingsPage() {
       toast.success(t("aiSettings.testSuccess") + "!");
       console.log("AI Response:", response.data.response);
     } catch (error: unknown) {
-      console.error("测试 AI 连接失败:", error);
+      console.error("Failed to test the AI connection:", error);
       const axiosError = error as AxiosError<ApiErrorResponse>;
       const errorMessage =
         axiosError.response?.data?.error || t("common.unknownError");

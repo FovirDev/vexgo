@@ -35,7 +35,7 @@ export function UserPostsPage() {
         setUser(response.data.posts[0].author);
       }
     } catch (error) {
-      console.error("加载用户文章失败:", error);
+      console.error("Failed to load user posts:", error);
     } finally {
       setLoading(false);
     }

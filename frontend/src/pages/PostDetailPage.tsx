@@ -72,20 +72,20 @@ export function PostDetailPage() {
 
   const loadPost = useCallback(async () => {
     try {
-      console.log("正在加载文章，ID:", id);
+      console.log("Loading post, ID:", id);
       const response = await postsApi.getPost(id!);
-      console.log("文章加载成功:", response.data);
+      console.log("Post loaded successfully:", response.data);
       const p = response.data.post;
       p.tags = normalizeTagsArray(p.tags);
       setPost(p);
       setLikesCount(response.data.post.likesCount || 0);
     } catch (error: unknown) {
-      console.error("加载文章失败:", error);
+      console.error("Failed to load post:", error);
       const axiosError = error as {
         message?: string;
         response?: { status?: number; data?: unknown };
       };
-      console.error("错误详情:", {
+      console.error("Error details:", {
         message: axiosError.message,
         response: axiosError.response,
         status: axiosError.response?.status,
@@ -107,7 +107,7 @@ export function PostDetailPage() {
       setComments(response.data.comments);
       return response.data.comments;
     } catch (error) {
-      console.error("加载评论失败:", error);
+      console.error("Failed to load comments:", error);
       return [] as Comment[];
     }
   }, [id]);
@@ -118,7 +118,7 @@ export function PostDetailPage() {
       setIsLiked(response.data.isLiked);
       setLikesCount(response.data.likesCount);
     } catch (error) {
-      console.error("加载点赞状态失败:", error);
+      console.error("Failed to load like status:", error);
     }
   }, [id]);
 
@@ -137,7 +137,7 @@ export function PostDetailPage() {
             setLoading(false);
           }
         } catch (error) {
-          console.error("加载数据失败:", error);
+          console.error("Failed to load data:", error);
           if (!initialData?.post) {
             setLoading(false);
           }
@@ -173,7 +173,7 @@ export function PostDetailPage() {
         // ignore
       }
     } catch (error) {
-      console.error("点赞失败:", error);
+      console.error("Failed to like:", error);
     }
   };
 
@@ -205,7 +205,7 @@ export function PostDetailPage() {
         // ignore
       }
     } catch (error) {
-      console.error("发表评论失败:", error);
+      console.error("Failed to post comment:", error);
     } finally {
       setSubmittingComment(false);
     }
@@ -216,7 +216,7 @@ export function PostDetailPage() {
       await postsApi.deletePost(id!);
       navigate("/");
     } catch (error) {
-      console.error("删除文章失败:", error);
+      console.error("Failed to delete post:", error);
     }
   };
 
@@ -237,7 +237,7 @@ export function PostDetailPage() {
         // ignore
       }
     } catch (error) {
-      console.error("删除评论失败:", error);
+      console.error("Failed to delete comment:", error);
     }
   };
 
@@ -251,7 +251,7 @@ export function PostDetailPage() {
         setShareSuccess(false);
       }, 3000);
     } catch (error) {
-      console.error("复制链接失败:", error);
+      console.error("Failed to copy link:", error);
     }
   };
 

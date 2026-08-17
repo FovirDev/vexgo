@@ -81,7 +81,7 @@ export function ModerationPage() {
           }
         }
       } catch (error) {
-        console.error("加载数据失败:", error);
+        console.error("Failed to load data:", error);
         toast.error(t("moderation.loadFailed"));
         // Keep the current data unchanged on error to avoid a blank screen
       } finally {
@@ -118,7 +118,7 @@ export function ModerationPage() {
       toast.success(t("moderation.approveSuccess"));
       loadData();
     } catch (error) {
-      console.error("审核通过失败:", error);
+      console.error("Failed to approve:", error);
       toast.error(t("moderation.approveFailed"));
     }
   };
@@ -140,7 +140,7 @@ export function ModerationPage() {
       setRejectionReason("");
       loadData();
     } catch (error) {
-      console.error("拒绝文章失败:", error);
+      console.error("Failed to reject post:", error);
       toast.error(t("moderation.rejectFailed"));
     }
   };
@@ -157,7 +157,7 @@ export function ModerationPage() {
       toast.success(t("moderation.resubmitSuccess"));
       loadData();
     } catch (error) {
-      console.error("重新提交审核失败:", error);
+      console.error("Failed to resubmit for review:", error);
       toast.error(t("moderation.resubmitFailed"));
     }
   };

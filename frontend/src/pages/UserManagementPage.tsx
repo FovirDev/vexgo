@@ -84,7 +84,7 @@ export function UserManagementPage() {
       setUsers(response.data.users);
       setTotalPages(response.data.pagination.totalPages);
     } catch (error) {
-      console.error("加载用户列表失败:", error);
+      console.error("Failed to load user list:", error);
       toast.error(t("userManagement.loadingUsers"));
     } finally {
       setLoading(false);
@@ -128,7 +128,7 @@ export function UserManagementPage() {
         ),
       );
     } catch (error) {
-      console.error("更新用户角色失败:", error);
+      console.error("Failed to update user role:", error);
       toast.error(t("userManagement.updateRoleFailed"));
     }
   };
@@ -141,7 +141,7 @@ export function UserManagementPage() {
       // Remove the deleted user from the local list
       setUsers((prevUsers) => prevUsers.filter((user) => user.id !== userId));
     } catch (error) {
-      console.error("删除用户失败:", error);
+      console.error("Failed to delete user:", error);
       toast.error(t("userManagement.deleteUserFailed"));
     }
   };

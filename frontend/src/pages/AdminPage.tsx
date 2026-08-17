@@ -79,7 +79,7 @@ export function AdminPage() {
       setDraftPosts(draftPostsRes.data.posts);
       setCategories(categoriesRes.data.categories);
     } catch (error) {
-      console.error("加载数据失败:", error);
+      console.error("Failed to load data:", error);
     } finally {
       setLoading(false);
     }
@@ -97,7 +97,7 @@ export function AdminPage() {
       setNewCategoryDesc("");
       loadData();
     } catch (error) {
-      console.error("创建分类失败:", error);
+      console.error("Failed to create category:", error);
     }
   };
 
@@ -108,7 +108,7 @@ export function AdminPage() {
       setActiveTab("posts");
       loadData();
     } catch (error) {
-      console.error("删除文章失败:", error);
+      console.error("Failed to delete post:", error);
     }
   };
 

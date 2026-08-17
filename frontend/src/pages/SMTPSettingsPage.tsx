@@ -42,7 +42,7 @@ export function SMTPSettingsPage() {
       const response = await configApi.getSMTPConfig();
       setConfig(response.data);
     } catch (error: unknown) {
-      console.error("加载 SMTP 配置失败:", error);
+      console.error("Failed to load SMTP config:", error);
       toast.error(t("commentConfig.loadFailed"));
     } finally {
       setLoading(false);
@@ -80,7 +80,7 @@ export function SMTPSettingsPage() {
       await configApi.updateSMTPConfig(config);
       toast.success(t("smtpSettings.saveSuccess"));
     } catch (error: unknown) {
-      console.error("保存 SMTP 配置失败:", error);
+      console.error("Failed to save SMTP config:", error);
       const apiError = error as { response?: { data?: { error?: string } } };
       toast.error(
         t("smtpSettings.saveFailed") +
@@ -107,7 +107,7 @@ export function SMTPSettingsPage() {
       const response = await configApi.testSMTP();
       toast.success(response.data.message);
     } catch (error: unknown) {
-      console.error("测试邮件失败:", error);
+      console.error("Failed to send test email:", error);
       const apiError = error as { response?: { data?: { error?: string } } };
       toast.error(
         t("smtpSettings.testFailed") +

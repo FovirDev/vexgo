@@ -173,7 +173,7 @@ export function HomePage() {
         setPagination(response.data.pagination);
       }
     } catch (error) {
-      console.error("加载文章失败:", error);
+      console.error("Failed to load posts:", error);
     } finally {
       setLoading(false);
     }
@@ -188,7 +188,7 @@ export function HomePage() {
       const response = await categoriesApi.getCategories();
       setCategories(response.data.categories);
     } catch (error) {
-      console.error("加载分类失败:", error);
+      console.error("Failed to load categories:", error);
     }
   };
 
@@ -197,7 +197,7 @@ export function HomePage() {
       const response = await statsApi.getPopularPosts(5);
       setPopularPosts(response.data.posts.map((p) => normalizePost(p)));
     } catch (error) {
-      console.error("加载热门文章失败:", error);
+      console.error("Failed to load popular posts:", error);
     }
   };
 
@@ -225,7 +225,7 @@ export function HomePage() {
 
       setPopularTags(sortedTags);
     } catch (error) {
-      console.error("加载热门标签失败:", error);
+      console.error("Failed to load popular tags:", error);
     }
   };
 
@@ -282,7 +282,7 @@ export function HomePage() {
         prev.map((p) => (p.id === postId ? { ...p, isLiked, likesCount } : p)),
       );
     } catch (error) {
-      console.error("切换点赞失败:", error);
+      console.error("Failed to toggle like:", error);
     }
   };
 

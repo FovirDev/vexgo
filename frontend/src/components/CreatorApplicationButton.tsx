@@ -59,7 +59,7 @@ export function CreatorApplicationButton({
       setIsConfirmOpen(false);
       setReason("");
     } catch (error: unknown) {
-      console.error("申请角色升级失败:", error);
+      console.error("Failed to apply for role upgrade:", error);
       const apiError = error as { response?: { data?: { error?: string } } };
       toast.error(apiError.response?.data?.error || t("errors.networkError"));
     } finally {

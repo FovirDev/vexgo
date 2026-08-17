@@ -108,7 +108,7 @@ export function Layout({ children }: LayoutProps) {
       const response = await messagesApi.getUnreadCount();
       setUnreadCount(response.data.unreadCount);
     } catch (error) {
-      console.error("获取未读消息数量失败:", error);
+      console.error("Failed to fetch the unread message count:", error);
     }
   };
 

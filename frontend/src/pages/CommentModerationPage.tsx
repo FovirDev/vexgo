@@ -59,7 +59,7 @@ export function CommentModerationPage() {
         setRejectedComments(response.data.comments);
       }
     } catch (error) {
-      console.error("加载评论失败:", error);
+      console.error("Failed to load comments:", error);
       toast.error(t("common.error"));
     } finally {
       setLoading(false);
@@ -76,7 +76,7 @@ export function CommentModerationPage() {
       toast.success(t("moderation.approveSuccess"));
       loadData();
     } catch (error) {
-      console.error("审核通过失败:", error);
+      console.error("Failed to approve:", error);
       toast.error(t("moderation.approveFailed"));
     }
   };
@@ -87,7 +87,7 @@ export function CommentModerationPage() {
       toast.success(t("moderation.rejectSuccess"));
       loadData();
     } catch (error) {
-      console.error("拒绝评论失败:", error);
+      console.error("Failed to reject comment:", error);
       toast.error(t("moderation.rejectFailed"));
     }
   };

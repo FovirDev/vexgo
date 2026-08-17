@@ -186,7 +186,7 @@ export function RegisterPage() {
       setCaptchaEnabled(response.data.captchaEnabled);
       setRegistrationEnabled(response.data.registrationEnabled);
     } catch (error) {
-      console.error("加载设置失败:", error);
+      console.error("Failed to load settings:", error);
     }
   };
 
@@ -212,7 +212,7 @@ export function RegisterPage() {
         }),
       });
     } catch (error) {
-      console.error("预验证失败:", error);
+      console.error("Pre-verification failed:", error);
       // Keep the data even if pre-verification fails so the user can still try to register
     }
 

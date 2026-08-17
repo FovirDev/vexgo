@@ -228,7 +228,7 @@ export function LoginPage() {
         body: JSON.stringify({ id: data.id, token: data.token, x: data.x }),
       });
     } catch (error) {
-      console.error("预验证失败:", error);
+      console.error("Pre-verification failed:", error);
     }
     setIsCaptchaVerified(true);
   };

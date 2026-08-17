@@ -113,7 +113,7 @@ export function WritePostPage() {
       }));
       setCategories(normalized);
     } catch (error) {
-      console.error("加载分类失败:", error);
+      console.error("Failed to load categories:", error);
     }
   };
 
@@ -196,12 +196,12 @@ export function WritePostPage() {
         );
         setTags(normalizeTagsArray(mappedTags));
       } catch (e) {
-        console.error("解析 post.tags 失败:", e, post && post.tags);
+        console.error("Failed to parse post.tags:", e, post && post.tags);
         setTags([]);
       }
       setCoverImage(post.coverImage || "");
     } catch (error) {
-      console.error("加载文章失败:", error);
+      console.error("Failed to load post:", error);
       navigate("/");
     }
   };
@@ -240,7 +240,7 @@ export function WritePostPage() {
       const response = await uploadApi.uploadFile(croppedFile);
       setCoverImage(response.data.file!.url);
     } catch (err) {
-      console.error("上传裁剪后图片失败:", err);
+      console.error("Failed to upload cropped image:", err);
       alert(t("writePostPage.uploadFailed"));
     } finally {
       setUploadingImage(false);
@@ -282,7 +282,7 @@ export function WritePostPage() {
         navigate(`/post/${response.data.post.id}`);
       }
     } catch (error) {
-      console.error("保存文章失败:", error);
+      console.error("Failed to save post:", error);
       alert(t("writePostPage.writePostFailed"));
     } finally {
       setSaving(false);

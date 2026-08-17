@@ -64,7 +64,7 @@ export function ThemePage() {
       setActiveTheme(configRes.data.activeTheme || "default");
       console.log("activeTheme from API:", configRes.data.activeTheme);
     } catch (error) {
-      console.error("加载主题数据失败:", error);
+      console.error("Failed to load theme data:", error);
       setMessage({ type: "error", text: t("themePage.loadFailed") });
     } finally {
       setLoading(false);
@@ -99,7 +99,7 @@ export function ThemePage() {
       //   window.location.reload();
       // }, 1500);
     } catch (error) {
-      console.error("应用主题失败:", error);
+      console.error("Failed to apply theme:", error);
       setMessage({ type: "error", text: t("themePage.applyFailed") });
     } finally {
       setApplying(null);
@@ -139,7 +139,7 @@ export function ThemePage() {
       // Reload the theme list
       loadData();
     } catch (error) {
-      console.error("上传主题失败:", error);
+      console.error("Failed to upload theme:", error);
       setMessage({ type: "error", text: t("themePage.uploadFailed") });
     } finally {
       setUploading(false);
