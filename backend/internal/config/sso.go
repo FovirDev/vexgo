@@ -49,7 +49,9 @@ type OIDCConfig struct {
 	VerifyEmail  bool // OIDC_VERIFY_EMAIL   — require email_verified=true in token
 }
 
-type ssoConfig struct {
+// SSOConfig is the full SSO configuration (GitHub / Google / OIDC).
+// The zero value disables every provider.
+type SSOConfig struct {
 	// BaseURL overrides auto-detected callback host, e.g. https://vexgo.yzlab.de
 	BaseURL string
 
@@ -74,79 +76,79 @@ func LoadFromConfig(cfg *Config) {
 
 	// GitHub OAuth
 	if cfg.GitHubClientID != "" {
-		SSOConfig.GitHub.ClientID = cfg.GitHubClientID
+		SSO.GitHub.ClientID = cfg.GitHubClientID
 	}
 	if cfg.GitHubClientSecret != "" {
-		SSOConfig.GitHub.ClientSecret = cfg.GitHubClientSecret
+		SSO.GitHub.ClientSecret = cfg.GitHubClientSecret
 	}
 
 	// Google OAuth
 	if cfg.GoogleClientID != "" {
-		SSOConfig.Google.ClientID = cfg.GoogleClientID
+		SSO.Google.ClientID = cfg.GoogleClientID
 	}
 	if cfg.GoogleClientSecret != "" {
-		SSOConfig.Google.ClientSecret = cfg.GoogleClientSecret
+		SSO.Google.ClientSecret = cfg.GoogleClientSecret
 	}
 
 	// OIDC Enabled
 	if cfg.OIDCEnabled {
-		SSOConfig.OIDC.Enabled = cfg.OIDCEnabled
+		SSO.OIDC.Enabled = cfg.OIDCEnabled
 	}
 
 	// OIDC Client credentials
 	if cfg.OIDCClientID != "" {
-		SSOConfig.OIDC.ClientID = cfg.OIDCClientID
+		SSO.OIDC.ClientID = cfg.OIDCClientID
 	}
 	if cfg.OIDCClientSecret != "" {
-		SSOConfig.OIDC.ClientSecret = cfg.OIDCClientSecret
+		SSO.OIDC.ClientSecret = cfg.OIDCClientSecret
 	}
 
 	// OIDC endpoints
 	if cfg.OIDCIssuerURL != "" {
-		SSOConfig.OIDC.IssuerURL = cfg.OIDCIssuerURL
+		SSO.OIDC.IssuerURL = cfg.OIDCIssuerURL
 	}
 	if cfg.OIDCAuthURL != "" {
-		SSOConfig.OIDC.AuthURL = cfg.OIDCAuthURL
+		SSO.OIDC.AuthURL = cfg.OIDCAuthURL
 	}
 	if cfg.OIDCTokenURL != "" {
-		SSOConfig.OIDC.TokenURL = cfg.OIDCTokenURL
+		SSO.OIDC.TokenURL = cfg.OIDCTokenURL
 	}
 	if cfg.OIDCUserInfoURL != "" {
-		SSOConfig.OIDC.UserInfoURL = cfg.OIDCUserInfoURL
+		SSO.OIDC.UserInfoURL = cfg.OIDCUserInfoURL
 	}
 
 	// OIDC Scopes
 	if cfg.OIDCScopes != "" {
-		SSOConfig.OIDC.Scopes = strings.Fields(cfg.OIDCScopes)
+		SSO.OIDC.Scopes = strings.Fields(cfg.OIDCScopes)
 	}
 
 	// OIDC Claim names
 	if cfg.OIDCEmailClaim != "" {
-		SSOConfig.OIDC.EmailClaim = cfg.OIDCEmailClaim
+		SSO.OIDC.EmailClaim = cfg.OIDCEmailClaim
 	}
 	if cfg.OIDCNameClaim != "" {
-		SSOConfig.OIDC.NameClaim = cfg.OIDCNameClaim
+		SSO.OIDC.NameClaim = cfg.OIDCNameClaim
 	}
 	if cfg.OIDCGroupClaim != "" {
-		SSOConfig.OIDC.GroupClaim = cfg.OIDCGroupClaim
+		SSO.OIDC.GroupClaim = cfg.OIDCGroupClaim
 	}
 
 	// OIDC Allowed groups
 	if cfg.OIDCAllowedGroups != "" {
-		SSOConfig.OIDC.AllowedGroups = parseCommaSeparatedFromString(cfg.OIDCAllowedGroups)
+		SSO.OIDC.AllowedGroups = parseCommaSeparatedFromString(cfg.OIDCAllowedGroups)
 	}
 
 	// OIDC UX options
 	if cfg.OIDCAutoRedirect {
-		SSOConfig.OIDC.AutoRedirect = cfg.OIDCAutoRedirect
+		SSO.OIDC.AutoRedirect = cfg.OIDCAutoRedirect
 	}
 	if cfg.OIDCVerifyEmail {
-		SSOConfig.OIDC.VerifyEmail = cfg.OIDCVerifyEmail
+		SSO.OIDC.VerifyEmail = cfg.OIDCVerifyEmail
 	}
 
 	// Global options
 	if cfg.AllowLocalLogin {
-		SSOConfig.AllowLocalLogin = cfg.AllowLocalLogin
+		SSO.AllowLocalLogin = cfg.AllowLocalLogin
 	}
 }
 
@@ -207,7 +209,7 @@ func parseCommaSeparatedFromString(s string) []string {
 //
 //	ALLOW_LOCAL_LOGIN       Allow password-based login (default: true)
 //	                        Set false to enforce SSO-only access
-var SSOConfig = ssoConfig{
+var SSO = SSOConfig{
 	BaseURL: os.Getenv("BASE_URL"),
 	GitHub: SSOProviderConfig{
 		ClientID:     os.Getenv("GITHUB_CLIENT_ID"),

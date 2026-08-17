@@ -4,12 +4,14 @@ import (
 	"fmt"
 	"strings"
 	"vexgo/backend/handler"
+	"vexgo/backend/internal/auth"
 	"vexgo/backend/internal/comment"
 	"vexgo/backend/internal/config"
 	"vexgo/backend/internal/database"
 	"vexgo/backend/internal/message"
 	"vexgo/backend/internal/post"
 	"vexgo/backend/internal/router"
+	"vexgo/backend/internal/sso"
 	"vexgo/backend/internal/upload"
 	"vexgo/backend/internal/user"
 	"vexgo/backend/internal/verification"
@@ -32,9 +34,6 @@ func main() {
 
 	// 3.1 Load SSO configuration from config file (overrides environment variables)
 	config.LoadFromConfig(cfg)
-
-	// Set data directory (for file uploads, only used if S3 is not enabled)
-	handler.DataDir = cfg.DataDir
 
 	// 4. Initialize file storage: local disk by default, S3-compatible when enabled
 	var storage upload.Storage = upload.NewLocalStorage(cfg.DataDir)
@@ -67,8 +66,6 @@ func main() {
 	} else {
 		logrus.Info("Using local file storage")
 	}
-	// Bridge the storage into the legacy handler package (avatar deletion)
-	handler.SetFileRemover(storage)
 
 	// 5. Initialize database connection (ensure database driver and connection string are configured correctly)
 	db := database.Open(cfg, cfg.DataDir)
@@ -140,6 +137,16 @@ func main() {
 		},
 		Verification: verification.Deps{
 			DB: db,
+		},
+		Auth: auth.Deps{
+			DB:        db,
+			JWTSecret: config.JWTSecret,
+			Files:     storage,
+		},
+		SSO: sso.Deps{
+			DB:        db,
+			SSO:       &config.SSO,
+			JWTSecret: config.JWTSecret,
 		},
 	})
 

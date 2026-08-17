@@ -1,5 +1,6 @@
-// backend/handler/sso.go
-package handler
+// Package sso implements OAuth2 / OIDC login (GitHub, Google, OIDC) and
+// SSO account binding.
+package sso
 
 import (
 	"context"
@@ -14,12 +15,12 @@ import (
 	"sync"
 	"time"
 
+	"vexgo/backend/internal/auth"
 	"vexgo/backend/internal/config"
 	"vexgo/backend/model"
 
 	"github.com/coreos/go-oidc"
 	"github.com/gin-gonic/gin"
-	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/github"
 	"golang.org/x/oauth2/google"
@@ -71,38 +72,137 @@ func verifyState(provider, ip, state string) (method string, ok bool) {
 	return entry.method, true
 }
 
-// LocalLoginGuard returns a middleware that rejects password-based login
-// when ALLOW_LOCAL_LOGIN=false.
-func LocalLoginGuard() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		if !config.SSOConfig.AllowLocalLogin {
-			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{
-				"error": "local login is disabled, please use SSO",
-			})
-			return
-		}
-		c.Next()
+// Deps holds the dependencies required by the sso domain.
+type Deps struct {
+	DB        *gorm.DB
+	SSO       *config.SSOConfig
+	JWTSecret []byte
+}
+
+// Service contains the business logic of the sso domain.
+type Service struct {
+	db        *gorm.DB
+	sso       *config.SSOConfig
+	jwtSecret []byte
+}
+
+// NewService creates an sso service with the given dependencies.
+func NewService(deps Deps) *Service {
+	return &Service{db: deps.DB, sso: deps.SSO, jwtSecret: deps.JWTSecret}
+}
+
+// Providers returns the list of enabled providers and whether local login is
+// allowed.
+func (s *Service) Providers() ([]string, bool) {
+	enabled := make([]string, 0, 3)
+	if s.sso.GitHub.ClientID != "" {
+		enabled = append(enabled, "github")
 	}
+	if s.sso.Google.ClientID != "" {
+		enabled = append(enabled, "google")
+	}
+	if s.sso.OIDC.Enabled && s.sso.OIDC.ClientID != "" {
+		enabled = append(enabled, "oidc")
+	}
+	return enabled, s.sso.AllowLocalLogin
+}
+
+// LoginRedirect starts the OAuth2 authorization flow. It returns the
+// authorization URL, or a non-2xx status and an error message (exact original
+// response) when the request is invalid or the provider is not configured.
+func (s *Service) LoginRedirect(c *gin.Context, provider, method string) (authURL string, status int, message string) {
+	if !isValidMethod(method) {
+		return "", http.StatusBadRequest, "invalid method, use sso_get_token or get_sso_id"
+	}
+
+	redirectURI := s.callbackURI(c, provider)
+	state := generateState(provider, c.ClientIP(), method)
+
+	switch provider {
+	case "github":
+		if s.sso.GitHub.ClientID == "" {
+			return "", http.StatusNotImplemented, "GitHub SSO not configured"
+		}
+		authURL = s.githubOAuth2Config(redirectURI).AuthCodeURL(state)
+	case "google":
+		if s.sso.Google.ClientID == "" {
+			return "", http.StatusNotImplemented, "Google SSO not configured"
+		}
+		authURL = s.googleOAuth2Config(redirectURI).AuthCodeURL(state)
+	case "oidc":
+		if !s.sso.OIDC.Enabled || s.sso.OIDC.ClientID == "" {
+			return "", http.StatusNotImplemented, "OIDC SSO not configured"
+		}
+		oidcCfg, err := s.oidcOAuth2Config(c.Request.Context(), redirectURI)
+		if err != nil {
+			return "", http.StatusInternalServerError, err.Error()
+		}
+		authURL = oidcCfg.AuthCodeURL(state)
+	default:
+		return "", http.StatusBadRequest, "unsupported provider: " + provider
+	}
+
+	return authURL, 0, ""
+}
+
+// Callback handles the OAuth2 callback for all providers. It returns the
+// postMessage payload (either the provider-scoped sso_id for binding or the
+// issued JWT), or an error message when the exchange fails.
+func (s *Service) Callback(c *gin.Context, provider, state, code string) (payload map[string]string, message string) {
+	method, ok := verifyState(provider, c.ClientIP(), state)
+	if !ok {
+		return nil, "invalid or expired state parameter"
+	}
+	if !isValidMethod(method) {
+		return nil, "invalid method in state"
+	}
+	if code == "" {
+		return nil, "no authorization code provided"
+	}
+
+	redirectURI := s.callbackURI(c, provider)
+	info, err := s.exchange(c, provider, code, redirectURI)
+	if err != nil {
+		return nil, err.Error()
+	}
+
+	// get_sso_id: just return the provider-scoped ID so the frontend can bind it
+	if method == "get_sso_id" {
+		return map[string]string{
+			"sso_id": provider + ":" + info.providerID,
+		}, ""
+	}
+
+	// sso_get_token: find or create local user, then issue JWT
+	user, err := s.FindOrCreateUser(provider, info)
+	if err != nil {
+		return nil, err.Error()
+	}
+	token, err := auth.IssueJWT(user, s.jwtSecret)
+	if err != nil {
+		return nil, "failed to issue token"
+	}
+	return map[string]string{"token": token}, ""
 }
 
 // ─────────────────────────────────────────────
 // OAuth2 configs (built per-request to allow dynamic redirect URI)
 // ─────────────────────────────────────────────
 
-func githubOAuth2Config(redirectURI string) *oauth2.Config {
+func (s *Service) githubOAuth2Config(redirectURI string) *oauth2.Config {
 	return &oauth2.Config{
-		ClientID:     config.SSOConfig.GitHub.ClientID,
-		ClientSecret: config.SSOConfig.GitHub.ClientSecret,
+		ClientID:     s.sso.GitHub.ClientID,
+		ClientSecret: s.sso.GitHub.ClientSecret,
 		Endpoint:     github.Endpoint,
 		Scopes:       []string{"read:user", "user:email"},
 		RedirectURL:  redirectURI,
 	}
 }
 
-func googleOAuth2Config(redirectURI string) *oauth2.Config {
+func (s *Service) googleOAuth2Config(redirectURI string) *oauth2.Config {
 	return &oauth2.Config{
-		ClientID:     config.SSOConfig.Google.ClientID,
-		ClientSecret: config.SSOConfig.Google.ClientSecret,
+		ClientID:     s.sso.Google.ClientID,
+		ClientSecret: s.sso.Google.ClientSecret,
 		Endpoint:     google.Endpoint,
 		Scopes:       []string{"openid", "profile", "email"},
 		RedirectURL:  redirectURI,
@@ -112,8 +212,8 @@ func googleOAuth2Config(redirectURI string) *oauth2.Config {
 // oidcOAuth2Config builds the oauth2.Config for OIDC.
 // When IssuerURL is set it uses OIDC discovery to obtain endpoints automatically;
 // AuthURL / TokenURL are used as a manual fallback for non-standard providers.
-func oidcOAuth2Config(ctx context.Context, redirectURI string) (*oauth2.Config, error) {
-	cfg := config.SSOConfig.OIDC
+func (s *Service) oidcOAuth2Config(ctx context.Context, redirectURI string) (*oauth2.Config, error) {
+	cfg := s.sso.OIDC
 
 	var endpoint oauth2.Endpoint
 	if cfg.IssuerURL != "" {
@@ -144,8 +244,8 @@ func oidcOAuth2Config(ctx context.Context, redirectURI string) (*oauth2.Config, 
 // When BASE_URL is set (e.g. https://vexgo.yzlab.de), it takes priority over
 // auto-detection from the request host. This is needed when running behind a
 // reverse proxy or when the public domain differs from the listen address.
-func callbackURI(c *gin.Context, provider string) string {
-	if base := config.SSOConfig.BaseURL; base != "" {
+func (s *Service) callbackURI(c *gin.Context, provider string) string {
+	if base := s.sso.BaseURL; base != "" {
 		return fmt.Sprintf("%s/api/sso/%s/callback", strings.TrimRight(base, "/"), provider)
 	}
 	scheme := "http"
@@ -153,139 +253,6 @@ func callbackURI(c *gin.Context, provider string) string {
 		scheme = "https"
 	}
 	return fmt.Sprintf("%s://%s/api/sso/%s/callback", scheme, c.Request.Host, provider)
-}
-
-// ─────────────────────────────────────────────
-// Route handlers
-// ─────────────────────────────────────────────
-
-// SSOProviders returns which SSO providers are currently enabled.
-// This is a public endpoint — no authentication required.
-//
-// GET /api/sso/providers
-//
-// Response:
-//
-//	{
-//	  "providers": ["github", "google"],   // only enabled ones
-//	  "allow_local_login": true
-//	}
-func SSOProviders(c *gin.Context) {
-	enabled := make([]string, 0, 3)
-	if config.SSOConfig.GitHub.ClientID != "" {
-		enabled = append(enabled, "github")
-	}
-	if config.SSOConfig.Google.ClientID != "" {
-		enabled = append(enabled, "google")
-	}
-	if config.SSOConfig.OIDC.Enabled && config.SSOConfig.OIDC.ClientID != "" {
-		enabled = append(enabled, "oidc")
-	}
-	c.JSON(http.StatusOK, gin.H{
-		"providers":         enabled,
-		"allow_local_login": config.SSOConfig.AllowLocalLogin,
-	})
-}
-
-// SSOLoginRedirect starts the OAuth2 authorization flow.
-//
-// GET /api/sso/:provider/login?method=sso_get_token|get_sso_id
-//
-//   - sso_get_token  → full login, issues a JWT on callback
-//   - get_sso_id     → only returns the provider-side ID (used to bind SSO
-//     to an existing account from the settings page)
-func SSOLoginRedirect(c *gin.Context) {
-	provider := c.Param("provider")
-	method := c.DefaultQuery("method", "sso_get_token")
-	if !isValidMethod(method) {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid method, use sso_get_token or get_sso_id"})
-		return
-	}
-
-	redirectURI := callbackURI(c, provider)
-	state := generateState(provider, c.ClientIP(), method)
-
-	var authURL string
-	switch provider {
-	case "github":
-		if config.SSOConfig.GitHub.ClientID == "" {
-			c.JSON(http.StatusNotImplemented, gin.H{"error": "GitHub SSO not configured"})
-			return
-		}
-		authURL = githubOAuth2Config(redirectURI).AuthCodeURL(state)
-	case "google":
-		if config.SSOConfig.Google.ClientID == "" {
-			c.JSON(http.StatusNotImplemented, gin.H{"error": "Google SSO not configured"})
-			return
-		}
-		authURL = googleOAuth2Config(redirectURI).AuthCodeURL(state)
-	case "oidc":
-		if !config.SSOConfig.OIDC.Enabled || config.SSOConfig.OIDC.ClientID == "" {
-			c.JSON(http.StatusNotImplemented, gin.H{"error": "OIDC SSO not configured"})
-			return
-		}
-		oidcCfg, err := oidcOAuth2Config(c.Request.Context(), redirectURI)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-			return
-		}
-		authURL = oidcCfg.AuthCodeURL(state)
-	default:
-		c.JSON(http.StatusBadRequest, gin.H{"error": "unsupported provider: " + provider})
-		return
-	}
-
-	c.Redirect(http.StatusFound, authURL)
-}
-
-// SSOCallback handles the OAuth2 callback for all providers.
-// The popup window calls postMessage to pass data back to the opener, then closes.
-//
-// GET /api/sso/:provider/callback?method=...&code=...&state=...
-func SSOCallback(c *gin.Context, db *gorm.DB) {
-	provider := c.Param("provider")
-
-	method, ok := verifyState(provider, c.ClientIP(), c.Query("state"))
-	if !ok {
-		respondError(c, "invalid or expired state parameter")
-		return
-	}
-	if !isValidMethod(method) {
-		respondError(c, "invalid method in state")
-		return
-	}
-	if c.Query("code") == "" {
-		respondError(c, "no authorization code provided")
-		return
-	}
-
-	redirectURI := callbackURI(c, provider)
-	info, err := exchange(c, provider, c.Query("code"), redirectURI)
-	if err != nil {
-		respondError(c, err.Error())
-		return
-	}
-
-	// get_sso_id: just return the provider-scoped ID so the frontend can bind it
-	if method == "get_sso_id" {
-		respondPostMessage(c, map[string]string{
-			"sso_id": provider + ":" + info.providerID,
-		})
-		return
-	}
-
-	// sso_get_token: find or create local user, then issue JWT
-	user, err := findOrCreateUser(db, provider, info)
-	if err != nil {
-		respondError(c, err.Error())
-		return
-	}
-	token, err := issueJWT(user)
-	if err != nil {
-		respondError(c, "failed to issue token")
-		return
-	}
-	respondPostMessage(c, map[string]string{"token": token})
 }
 
 // ─────────────────────────────────────────────
@@ -299,21 +266,21 @@ type ssoUserInfo struct {
 	avatar     string
 }
 
-func exchange(c *gin.Context, provider, code, redirectURI string) (*ssoUserInfo, error) {
+func (s *Service) exchange(c *gin.Context, provider, code, redirectURI string) (*ssoUserInfo, error) {
 	switch provider {
 	case "github":
-		return exchangeGitHub(c, code, redirectURI)
+		return s.exchangeGitHub(c, code, redirectURI)
 	case "google":
-		return exchangeGoogle(c, code, redirectURI)
+		return s.exchangeGoogle(c, code, redirectURI)
 	case "oidc":
-		return exchangeOIDC(c, code, redirectURI)
+		return s.exchangeOIDC(c, code, redirectURI)
 	default:
 		return nil, errors.New("unsupported provider: " + provider)
 	}
 }
 
-func exchangeGitHub(c *gin.Context, code, redirectURI string) (*ssoUserInfo, error) {
-	tok, err := githubOAuth2Config(redirectURI).Exchange(c.Request.Context(), code)
+func (s *Service) exchangeGitHub(c *gin.Context, code, redirectURI string) (*ssoUserInfo, error) {
+	tok, err := s.githubOAuth2Config(redirectURI).Exchange(c.Request.Context(), code)
 	if err != nil {
 		return nil, fmt.Errorf("token exchange failed: %w", err)
 	}
@@ -349,8 +316,8 @@ func exchangeGitHub(c *gin.Context, code, redirectURI string) (*ssoUserInfo, err
 	return info, nil
 }
 
-func exchangeGoogle(c *gin.Context, code, redirectURI string) (*ssoUserInfo, error) {
-	tok, err := googleOAuth2Config(redirectURI).Exchange(c.Request.Context(), code)
+func (s *Service) exchangeGoogle(c *gin.Context, code, redirectURI string) (*ssoUserInfo, error) {
+	tok, err := s.googleOAuth2Config(redirectURI).Exchange(c.Request.Context(), code)
 	if err != nil {
 		return nil, fmt.Errorf("token exchange failed: %w", err)
 	}
@@ -377,10 +344,10 @@ func exchangeGoogle(c *gin.Context, code, redirectURI string) (*ssoUserInfo, err
 	return info, nil
 }
 
-func exchangeOIDC(c *gin.Context, code, redirectURI string) (*ssoUserInfo, error) {
-	oidcCfg := config.SSOConfig.OIDC
+func (s *Service) exchangeOIDC(c *gin.Context, code, redirectURI string) (*ssoUserInfo, error) {
+	oidcCfg := s.sso.OIDC
 
-	oauth2Cfg, err := oidcOAuth2Config(c.Request.Context(), redirectURI)
+	oauth2Cfg, err := s.oidcOAuth2Config(c.Request.Context(), redirectURI)
 	if err != nil {
 		return nil, err
 	}
@@ -412,7 +379,7 @@ func exchangeOIDC(c *gin.Context, code, redirectURI string) (*ssoUserInfo, error
 		}
 	}
 
-	info := claimsToUserInfo(claims)
+	info := s.claimsToUserInfo(claims)
 	if info.providerID == "" {
 		return nil, errors.New("cannot get user ID from OIDC provider")
 	}
@@ -478,8 +445,8 @@ func parseOIDCIDTokenClaims(rawIDToken string) (map[string]interface{}, error) {
 	return claims, nil
 }
 
-func claimsToUserInfo(claims map[string]interface{}) *ssoUserInfo {
-	cfg := config.SSOConfig.OIDC
+func (s *Service) claimsToUserInfo(claims map[string]interface{}) *ssoUserInfo {
+	cfg := s.sso.OIDC
 	info := &ssoUserInfo{}
 
 	// subject / id
@@ -508,34 +475,37 @@ func claimsToUserInfo(claims map[string]interface{}) *ssoUserInfo {
 // User find-or-create
 // ─────────────────────────────────────────────
 
-func findOrCreateUser(db *gorm.DB, provider string, info *ssoUserInfo) (*model.User, error) {
+// FindOrCreateUser resolves an SSO identity to a local user: first by exact
+// SSO binding, then by email match, and finally by auto-registering a new
+// guest user. The binding is persisted so future logins skip the fallbacks.
+func (s *Service) FindOrCreateUser(provider string, info *ssoUserInfo) (*model.User, error) {
 	// 1. Exact SSO binding match
 	var binding model.SSOBinding
-	if err := db.Where("provider = ? AND provider_id = ?", provider, info.providerID).First(&binding).Error; err == nil {
+	if err := s.db.Where("provider = ? AND provider_id = ?", provider, info.providerID).First(&binding).Error; err == nil {
 		var user model.User
-		if err := db.First(&user, binding.UserID).Error; err != nil {
+		if err := s.db.First(&user, binding.UserID).Error; err != nil {
 			return nil, errors.New("user account not found")
 		}
 		// Update last login time
 		user.LastLoginAt = time.Now()
-		db.Save(&user)
+		s.db.Save(&user)
 		return &user, nil
 	}
 
 	// 2. Email match → link to existing account
 	var user model.User
 	if info.email != "" {
-		db.Where("email = ?", info.email).First(&user)
+		s.db.Where("email = ?", info.email).First(&user)
 		if user.ID != 0 {
 			// Update last login time
 			user.LastLoginAt = time.Now()
-			db.Save(&user)
+			s.db.Save(&user)
 		}
 	}
 
 	// 3. Auto-register new user
 	if user.ID == 0 {
-		username := generateUsername(db, info.username, info.email)
+		username := s.generateUsername(info.username, info.email)
 		user = model.User{
 			Username:        username,
 			Email:           info.email,
@@ -543,13 +513,13 @@ func findOrCreateUser(db *gorm.DB, provider string, info *ssoUserInfo) (*model.U
 			PasswordVersion: 0,
 			// No password set — this user can only log in via SSO
 		}
-		if err := db.Create(&user).Error; err != nil {
+		if err := s.db.Create(&user).Error; err != nil {
 			return nil, fmt.Errorf("failed to create user: %w", err)
 		}
 	}
 
 	// Persist binding so future logins skip steps 2-3
-	db.Create(&model.SSOBinding{
+	s.db.Create(&model.SSOBinding{
 		UserID:     user.ID,
 		Provider:   provider,
 		ProviderID: info.providerID,
@@ -561,28 +531,8 @@ func findOrCreateUser(db *gorm.DB, provider string, info *ssoUserInfo) (*model.U
 	return &user, nil
 }
 
-// ─────────────────────────────────────────────
-// JWT
-// ─────────────────────────────────────────────
-
-func issueJWT(user *model.User) (string, error) {
-	claims := jwt.MapClaims{
-		"user_id":          user.ID,
-		"username":         user.Username,
-		"role":             user.Role,
-		"password_version": user.PasswordVersion,
-		"exp":              time.Now().Add(7 * 24 * time.Hour).Unix(),
-		"iat":              time.Now().Unix(),
-		"jti":              fmt.Sprintf("%d-%s", user.ID, time.Now().Format(time.RFC3339Nano)),
-	}
-	return jwt.NewWithClaims(jwt.SigningMethodHS256, claims).SignedString(config.JWTSecret)
-}
-
-// ─────────────────────────────────────────────
-// Utilities
-// ─────────────────────────────────────────────
-
-func generateUsername(db *gorm.DB, name, email string) string {
+// generateUsername derives a unique username from the provider name or email.
+func (s *Service) generateUsername(name, email string) string {
 	base := name
 	if base == "" {
 		if idx := strings.Index(email, "@"); idx > 0 {
@@ -609,12 +559,16 @@ func generateUsername(db *gorm.DB, name, email string) string {
 		if suffix > 0 {
 			username = fmt.Sprintf("%s%d", candidate, suffix)
 		}
-		db.Model(&model.User{}).Where("username = ?", username).Count(&count)
+		s.db.Model(&model.User{}).Where("username = ?", username).Count(&count)
 		if count == 0 {
 			return username
 		}
 	}
 }
+
+// ─────────────────────────────────────────────
+// Utilities
+// ─────────────────────────────────────────────
 
 func apiGet(url, accessToken, scheme string) ([]byte, error) {
 	req, err := http.NewRequest("GET", url, nil)
@@ -660,43 +614,4 @@ func fetchGitHubPrimaryEmail(accessToken string) string {
 
 func isValidMethod(method string) bool {
 	return method == "sso_get_token" || method == "get_sso_id"
-}
-
-// respondPostMessage renders an HTML popup page that sends data back to opener via postMessage.
-// Pattern mirrors OpenList's implementation.
-// SSO_STORAGE_KEY must match the constant in the frontend ssoLogin() helper.
-const ssoStorageKey = "sso_callback_result"
-
-// respondPostMessage writes the result to localStorage so the opener window
-// can pick it up via the 'storage' event. Using localStorage instead of
-// postMessage avoids the window.opener=null issue caused by cross-origin
-// redirects during the OAuth2 / OIDC flow.
-func respondPostMessage(c *gin.Context, data map[string]string) {
-	pairs := make([]string, 0, len(data))
-	for k, v := range data {
-		pairs = append(pairs, fmt.Sprintf(`%q:%q`, k, v))
-	}
-	payload := "{" + strings.Join(pairs, ",") + "}"
-	html := fmt.Sprintf(`<!DOCTYPE html>
-<head></head>
-<body>
-<script>
-try { localStorage.setItem(%q, JSON.stringify(%s)) } catch(e) {}
-window.close()
-</script>
-</body>`, ssoStorageKey, payload)
-	c.Data(http.StatusOK, "text/html; charset=utf-8", []byte(html))
-}
-
-// respondError writes an error result to localStorage and closes the popup.
-func respondError(c *gin.Context, msg string) {
-	html := fmt.Sprintf(`<!DOCTYPE html>
-<head></head>
-<body>
-<script>
-try { localStorage.setItem(%q, JSON.stringify({"error":%q})) } catch(e) {}
-window.close()
-</script>
-</body>`, ssoStorageKey, msg)
-	c.Data(http.StatusBadRequest, "text/html; charset=utf-8", []byte(html))
 }
