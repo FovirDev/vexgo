@@ -10,6 +10,7 @@ import (
 	"vexgo/backend/internal/auth"
 	"vexgo/backend/internal/model"
 
+	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
 
@@ -188,14 +189,16 @@ func (s *Service) notifyPostAuthor(postID, userID uint, content string) {
 	if len(commentContent) > 50 {
 		commentContent = commentContent[:50] + "..."
 	}
-	s.notifier.CreateNotification(
+	if err := s.notifier.CreateNotification(
 		post.AuthorID,
 		"comment",
 		"Post Commented",
 		fmt.Sprintf("User \"%s\" commented on your post \"%s\": %s", user.Username, post.Title, commentContent),
 		strconv.FormatUint(uint64(postID), 10),
 		"post",
-	)
+	); err != nil {
+		logrus.WithError(err).Warn("failed to create comment notification")
+	}
 }
 
 // notifyParentAuthor notifies the parent comment author unless they wrote the reply.
@@ -217,14 +220,16 @@ func (s *Service) notifyParentAuthor(parentID, userID uint, content string) {
 	if len(replyContent) > 50 {
 		replyContent = replyContent[:50] + "..."
 	}
-	s.notifier.CreateNotification(
+	if err := s.notifier.CreateNotification(
 		parentComment.UserID,
 		"reply",
 		"Comment Replied",
 		fmt.Sprintf("User \"%s\" replied to your comment: %s", user.Username, replyContent),
 		strconv.FormatUint(uint64(parentID), 10),
 		"comment",
-	)
+	); err != nil {
+		logrus.WithError(err).Warn("failed to create reply notification")
+	}
 }
 
 // Delete removes a comment when the acting user is its author or an admin.

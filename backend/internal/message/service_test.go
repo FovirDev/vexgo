@@ -95,7 +95,7 @@ func TestList_PaginationAndFilters(t *testing.T) {
 	}
 
 	// filter by type
-	list, total, err = svc.List(1, 1, 10, "comment", "")
+	_, total, err = svc.List(1, 1, 10, "comment", "")
 	if err != nil {
 		t.Fatalf("List error: %v", err)
 	}

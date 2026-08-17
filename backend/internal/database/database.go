@@ -32,7 +32,8 @@ func Open(cfg *config.Config, dataDir string) *gorm.DB {
 	var err error
 	var db *gorm.DB
 
-	if dbType == "mysql" {
+	switch dbType {
+	case "mysql":
 		// MySQL connection - use config values with environment fallback
 		user := cfg.DBUser
 		if user == "" {
@@ -51,7 +52,10 @@ func Open(cfg *config.Config, dataDir string) *gorm.DB {
 			// If port not set in config, get from env
 			portStr := os.Getenv("DB_PORT")
 			if portStr != "" {
-				fmt.Sscanf(portStr, "%d", &port)
+				if _, err := fmt.Sscanf(portStr, "%d", &port); err != nil {
+					logrus.Warnf("invalid DB_PORT %q, using default MySQL port", portStr)
+					port = 3306
+				}
 			} else {
 				port = 3306 // default MySQL port
 			}
@@ -94,7 +98,7 @@ func Open(cfg *config.Config, dataDir string) *gorm.DB {
 			}
 		}
 		logrus.Println("Successfully connected to MySQL database")
-	} else if dbType == "postgres" {
+	case "postgres":
 		// PostgreSQL connection - use config values with environment fallback
 		user := cfg.DBUser
 		if user == "" {
@@ -113,7 +117,10 @@ func Open(cfg *config.Config, dataDir string) *gorm.DB {
 			// If port not set in config, get from env
 			portStr := os.Getenv("DB_PORT")
 			if portStr != "" {
-				fmt.Sscanf(portStr, "%d", &port)
+				if _, err := fmt.Sscanf(portStr, "%d", &port); err != nil {
+					logrus.Warnf("invalid DB_PORT %q, using default PostgreSQL port", portStr)
+					port = 5432
+				}
 			} else {
 				port = 5432 // default PostgreSQL port
 			}
@@ -139,7 +146,7 @@ func Open(cfg *config.Config, dataDir string) *gorm.DB {
 			logrus.Fatalf("failed to connect to PostgreSQL database: %v", err)
 		}
 		logrus.Println("Successfully connected to PostgreSQL database")
-	} else {
+	default:
 		// SQLite connection (default)
 		// Use dataDir from config (already set via command line or config file)
 		if err := os.MkdirAll(dataDir, os.ModePerm); err != nil {

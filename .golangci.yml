@@ -1,0 +1,13 @@
+# golangci-lint configuration (v2 format).
+# Uses the standard linter set: errcheck, govet, ineffassign, staticcheck, unused.
+version: "2"
+
+linters:
+  settings:
+    errcheck:
+      # Closing a file, HTTP body or similar resource in a defer or right after
+      # a copy is a cleanup step whose error is not actionable; errcheck would
+      # otherwise flag every such call.
+      exclude-functions:
+        - (io.Closer).Close
+        - (*os.File).Close

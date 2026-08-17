@@ -170,8 +170,8 @@ func TestBuildAssetManifestFromURLsSkipsNonAssets(t *testing.T) {
 	urls := []string{
 		"/assets/index-DsXrKOv2.js",
 		"/assets/index-DsXrKOv2.js.map", // source map: not css/js
-		"/assets/logo.svg",               // not css/js
-		"/assets/no-hash.js",             // no "-" separator: no asset name
+		"/assets/logo.svg",              // not css/js
+		"/assets/no-hash.js",            // no "-" separator: no asset name
 		"/assets/react-vendor-BmqGXi6J.js",
 	}
 

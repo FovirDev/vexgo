@@ -12,6 +12,7 @@ import (
 	"vexgo/backend/internal/auth"
 	"vexgo/backend/internal/model"
 
+	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
 
@@ -78,14 +79,14 @@ func (s *Service) List(userRole string, userID uint, page, limit int, categoryID
 		Preload("Tags")
 
 	// Determine visible posts based on user role
-	switch {
-	case userRole == "" || userRole == model.RoleGuest:
+	switch userRole {
+	case "", model.RoleGuest:
 		query = query.Where("status = ?", "published")
-	case userRole == model.RoleContributor:
+	case model.RoleContributor:
 		query = query.Where(
 			s.db.Where("status = ?", "published").Or("author_id = ? AND status != ?", userID, "rejected"),
 		)
-	case userRole == model.RoleAuthor || userRole == model.RoleAdmin || userRole == model.RoleSuperAdmin:
+	case model.RoleAuthor, model.RoleAdmin, model.RoleSuperAdmin:
 		query = query.Where("status != ?", "rejected")
 	default:
 		query = query.Where("status = ?", "published")
@@ -209,10 +210,10 @@ func (s *Service) Create(userRole string, userID uint, req CreateRequest) (*mode
 	// Determine initial post status based on user role
 	initialStatus := req.Status
 	if initialStatus == "" {
-		switch {
-		case userRole == "contributor":
+		switch userRole {
+		case "contributor":
 			initialStatus = "pending"
-		case userRole == "author" || userRole == "admin" || userRole == "super_admin":
+		case "author", "admin", "super_admin":
 			initialStatus = "published"
 		default:
 			initialStatus = "draft"
@@ -302,7 +303,9 @@ func (s *Service) Update(id string, userID uint, req UpdateRequest) (*model.Post
 	if len(req.Tags) > 0 {
 		tags, err := s.resolveTags(req.Tags)
 		if err == nil {
-			s.db.Model(&post).Association("Tags").Replace(tags)
+			if err := s.db.Model(&post).Association("Tags").Replace(tags); err != nil {
+				return nil, fmt.Errorf("replace tags: %w", err)
+			}
 			post.Tags = tags
 		}
 	}
@@ -446,10 +449,10 @@ func (s *Service) UserPosts(userIDStr string, currentUserRole string, currentUse
 		Where("author_id = ?", userID)
 
 	// Determine visible posts based on user role
-	switch {
-	case currentUserRole == "" || currentUserRole == model.RoleGuest:
+	switch currentUserRole {
+	case "", model.RoleGuest:
 		query = query.Where("status = ?", "published")
-	case currentUserRole == model.RoleContributor:
+	case model.RoleContributor:
 		if uint(userID) != currentUserID {
 			query = query.Where("status = ?", "published")
 		} else {
@@ -625,14 +628,16 @@ func (s *Service) Approve(id string) (*model.Post, error) {
 	post.Status = "published"
 	s.db.Save(&post)
 
-	s.notifier.CreateNotification(
+	if err := s.notifier.CreateNotification(
 		post.AuthorID,
 		"review",
 		"Post approved",
 		fmt.Sprintf("Your post \"%s\" has been approved", post.Title),
 		id,
 		"post",
-	)
+	); err != nil {
+		logrus.WithError(err).Warn("failed to create post approved notification")
+	}
 
 	return &post, nil
 }
@@ -648,14 +653,16 @@ func (s *Service) Reject(id, rejectionReason string) (*model.Post, error) {
 	post.RejectionReason = rejectionReason
 	s.db.Save(&post)
 
-	s.notifier.CreateNotification(
+	if err := s.notifier.CreateNotification(
 		post.AuthorID,
 		"review",
 		"post rejected",
 		fmt.Sprintf("Your post \"%s\" has been rejected, reason: %s", post.Title, rejectionReason),
 		id,
 		"post",
-	)
+	); err != nil {
+		logrus.WithError(err).Warn("failed to create post rejected notification")
+	}
 
 	return &post, nil
 }
@@ -702,14 +709,16 @@ func (s *Service) ToggleLike(postID, userID uint) (isLiked bool, count int64, er
 		if post.AuthorID != userID { // Don't notify the user if they are the post author
 			var user model.User
 			if err := s.db.First(&user, userID).Error; err == nil {
-				s.notifier.CreateNotification(
+				if err := s.notifier.CreateNotification(
 					post.AuthorID,
 					"like",
 					"The post received likes",
 					fmt.Sprintf("User \"%s\" liked your post \"%s\"", user.Username, post.Title),
 					strconv.FormatUint(uint64(postID), 10),
 					"post",
-				)
+				); err != nil {
+					logrus.WithError(err).Warn("failed to create like notification")
+				}
 			}
 		}
 	}

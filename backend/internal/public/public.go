@@ -62,7 +62,7 @@ type Renderer struct {
 // NewRenderer creates a Renderer with the given dependencies.
 func NewRenderer(db *gorm.DB, baseURL, dataDir string) *Renderer {
 	// Ensure the themes directory exists
-	_ = os.MkdirAll(filepath.Join(dataDir, ThemesDir), 0755)
+	_ = os.MkdirAll(filepath.Join(dataDir, ThemesDir), 0o755)
 	return &Renderer{db: db, baseURL: baseURL, dataDir: dataDir}
 }
 

@@ -7,6 +7,7 @@ import (
 
 	"vexgo/backend/internal/model"
 
+	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
 
@@ -130,21 +131,22 @@ func (s *Service) UpdateRole(actor model.User, targetID uint, newRole string) (*
 	// Permission check
 	// Super admin can set any role (including making other users super admin)
 	// But cannot downgrade own super admin privileges
-	if actor.Role == model.RoleSuperAdmin {
+	switch actor.Role {
+	case model.RoleSuperAdmin:
 		// If current user is super admin, can set any role
 		// Note: super admin cannot downgrade own role
 		if user.ID == actor.ID && newRole != model.RoleSuperAdmin {
 			return nil, ErrSuperAdminOwnRole
 		}
 		user.Role = newRole
-	} else if actor.Role == model.RoleAdmin {
+	case model.RoleAdmin:
 		// Admin can only set user roles to author, contributor, or guest (cannot set to admin or super admin)
 		if newRole == model.RoleAuthor || newRole == model.RoleContributor || newRole == model.RoleGuest {
 			user.Role = newRole
 		} else {
 			return nil, ErrAdminRoleRestricted
 		}
-	} else {
+	default:
 		return nil, ErrNoPermission
 	}
 
@@ -158,14 +160,16 @@ func (s *Service) UpdateRole(actor model.User, targetID uint, newRole string) (*
 	}
 
 	// Create notification for user when role changes
-	s.notifier.CreateNotification(
+	if err := s.notifier.CreateNotification(
 		user.ID,
 		"role",
 		"role changed",
 		fmt.Sprintf("Your role has been changed from \"%s\" to \"%s\"", oldRole, newRole),
 		"",
 		"",
-	)
+	); err != nil {
+		logrus.WithError(err).Warn("failed to create role change notification")
+	}
 
 	return &user, nil
 }
@@ -189,13 +193,14 @@ func (s *Service) DeleteUser(actor model.User, targetID uint) error {
 	// Permission check
 	// Super admin can delete any user except themselves
 	// Admin can only delete users with role author, contributor, or guest
-	if actor.Role == model.RoleSuperAdmin {
+	switch actor.Role {
+	case model.RoleSuperAdmin:
 		// Super admin can delete any user
-	} else if actor.Role == model.RoleAdmin {
+	case model.RoleAdmin:
 		if user.Role != model.RoleAuthor && user.Role != model.RoleContributor && user.Role != model.RoleGuest {
 			return ErrAdminDeleteRestricted
 		}
-	} else {
+	default:
 		return ErrNoPermissionToDelete
 	}
 
@@ -309,9 +314,10 @@ func (s *Service) ApplyForCreator(user model.User, reason string) (uint, error) 
 
 	// Determine target role based on current role
 	targetRole := ""
-	if user.Role == model.RoleGuest {
+	switch user.Role {
+	case model.RoleGuest:
 		targetRole = "contributor"
-	} else if user.Role == model.RoleContributor {
+	case model.RoleContributor:
 		targetRole = "author"
 	}
 
@@ -319,14 +325,16 @@ func (s *Service) ApplyForCreator(user model.User, reason string) (uint, error) 
 	var admins []model.User
 	if err := s.db.Where("role IN ?", []string{model.RoleAdmin, model.RoleSuperAdmin}).Find(&admins).Error; err == nil {
 		for _, admin := range admins {
-			s.notifier.CreateNotification(
+			if err := s.notifier.CreateNotification(
 				admin.ID,
 				"role",
 				"New Role Application",
 				fmt.Sprintf("User %s has applied for %s role", user.Username, targetRole),
 				fmt.Sprintf("%d", application.ID),
 				"creator_application",
-			)
+			); err != nil {
+				logrus.WithError(err).Warn("failed to create role application notification")
+			}
 		}
 	}
 
@@ -393,9 +401,10 @@ func (s *Service) ReviewCreatorApplication(actor model.User, appID uint, action,
 	if action == "approve" {
 		application.Status = model.CreatorApplicationStatusApproved
 		// Update user role based on current role
-		if application.User.Role == model.RoleGuest {
+		switch application.User.Role {
+		case model.RoleGuest:
 			application.User.Role = model.RoleContributor
-		} else if application.User.Role == model.RoleContributor {
+		case model.RoleContributor:
 			application.User.Role = model.RoleAuthor
 		}
 		if err := s.db.Model(&application.User).Select("Role").Updates(&application.User).Error; err != nil {
@@ -430,14 +439,16 @@ func (s *Service) ReviewCreatorApplication(actor model.User, appID uint, action,
 		}
 	}
 
-	s.notifier.CreateNotification(
+	if err := s.notifier.CreateNotification(
 		application.UserID,
 		"role",
 		notificationTitle,
 		notificationContent,
 		"",
 		"",
-	)
+	); err != nil {
+		logrus.WithError(err).Warn("failed to create creator application notification")
+	}
 
 	return nil
 }

@@ -14,6 +14,7 @@ import (
 	"vexgo/backend/internal/public"
 
 	"github.com/gin-gonic/gin"
+	"github.com/sirupsen/logrus"
 )
 
 // Handler exposes the settings domain over HTTP.
@@ -335,7 +336,10 @@ func (h *Handler) UploadTheme(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create temporary directory"})
 		return
 	}
-	defer os.RemoveAll(tempDir)
+	// Clean up the temporary directory once the upload is done.
+	defer func() {
+		_ = os.RemoveAll(tempDir)
+	}()
 
 	// Read the zip file
 	zipReader, err := zip.NewReader(file, header.Size)
@@ -359,7 +363,7 @@ func (h *Handler) UploadTheme(c *gin.Context) {
 		// Create the directory structure
 		filePath := filepath.Join(tempDir, f.Name)
 		dir := filepath.Dir(filePath)
-		if err := os.MkdirAll(dir, 0755); err != nil {
+		if err := os.MkdirAll(dir, 0o755); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create directory structure"})
 			return
 		}
@@ -475,7 +479,7 @@ func (h *Handler) UploadTheme(c *gin.Context) {
 	}
 
 	// Create the target directory
-	if err := os.MkdirAll(targetThemeDir, 0755); err != nil {
+	if err := os.MkdirAll(targetThemeDir, 0o755); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create theme directory"})
 		return
 	}
@@ -504,7 +508,7 @@ func (h *Handler) UploadTheme(c *gin.Context) {
 		targetPath := filepath.Join(targetThemeDir, relPath)
 
 		if info.IsDir() {
-			return os.MkdirAll(targetPath, 0755)
+			return os.MkdirAll(targetPath, 0o755)
 		}
 
 		srcFile, err := os.Open(path)
@@ -522,10 +526,11 @@ func (h *Handler) UploadTheme(c *gin.Context) {
 		_, err = io.Copy(dstFile, srcFile)
 		return err
 	})
-
 	if err != nil {
 		// Clean up partial installation
-		os.RemoveAll(targetThemeDir)
+		if err := os.RemoveAll(targetThemeDir); err != nil {
+			logrus.WithError(err).Warn("failed to clean up partial theme installation")
+		}
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to copy theme files"})
 		return
 	}

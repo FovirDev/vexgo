@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"strings"
+
 	"vexgo/backend/internal/auth"
 	"vexgo/backend/internal/comment"
 	"vexgo/backend/internal/config"
@@ -85,7 +86,9 @@ func main() {
 	if cfg.BehindReverseProxy {
 		if len(cfg.TrustedProxies) > 0 {
 			// Use explicitly configured trusted proxies
-			r.SetTrustedProxies(cfg.TrustedProxies)
+			if err := r.SetTrustedProxies(cfg.TrustedProxies); err != nil {
+				logrus.WithError(err).Fatal("Invalid trusted proxies configuration")
+			}
 			logrus.WithField("proxies", cfg.TrustedProxies).Info("Trusted proxies configured")
 		} else {
 			// Use common defaults: trust all private IP ranges and localhost
@@ -97,12 +100,16 @@ func main() {
 				"10.0.0.0/8",
 				"172.16.0.0/12",
 			}
-			r.SetTrustedProxies(defaultProxies)
+			if err := r.SetTrustedProxies(defaultProxies); err != nil {
+				logrus.WithError(err).Fatal("Invalid default trusted proxies configuration")
+			}
 			logrus.WithField("proxies", defaultProxies).Info("Trusted proxies set to common private networks (behind reverse proxy)")
 		}
 	} else {
 		// Not behind a reverse proxy, disable trust
-		r.SetTrustedProxies(nil)
+		if err := r.SetTrustedProxies(nil); err != nil {
+			logrus.WithError(err).Fatal("Failed to disable trusted proxies")
+		}
 		logrus.Info("No trusted proxies configured (not behind reverse proxy)")
 	}
 

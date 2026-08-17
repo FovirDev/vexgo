@@ -25,21 +25,21 @@ import (
 // the exact message of the original handler response it replaces.
 var (
 	// SMTP config errors.
-	ErrSMTPNotConfigured = errors.New("Please configure SMTP settings first")
+	ErrSMTPNotConfigured = errors.New("please configure SMTP settings first")
 	ErrSMTPDisabled      = errors.New("SMTP is not enabled, please enable and save configuration first")
-	ErrSMTPIncomplete    = errors.New("Please fill in all SMTP configuration fields")
-	ErrSMTPNoRecipient   = errors.New("Please fill in test email address first")
+	ErrSMTPIncomplete    = errors.New("please fill in all SMTP configuration fields")
+	ErrSMTPNoRecipient   = errors.New("please fill in test email address first")
 
 	// AI config errors.
-	ErrAINotConfigured    = errors.New("Please configure AI settings first")
+	ErrAINotConfigured    = errors.New("please configure AI settings first")
 	ErrAIDisabled         = errors.New("AI is not enabled, please enable and save configuration first")
-	ErrAIIncomplete       = errors.New("Please fill in all AI configuration fields (endpoint, API key, model name)")
-	ErrAIIncompleteModels = errors.New("Please fill in all AI configuration fields (endpoint, API key)")
+	ErrAIIncomplete       = errors.New("please fill in all AI configuration fields (endpoint, API key, model name)")
+	ErrAIIncompleteModels = errors.New("please fill in all AI configuration fields (endpoint, API key)")
 
 	// Theme errors.
-	ErrThemeNotFound       = errors.New("Theme not found")
-	ErrPreviewNotSpecified = errors.New("Preview not specified")
-	ErrPreviewNotFound     = errors.New("Preview image not found")
+	ErrThemeNotFound       = errors.New("theme not found")
+	ErrPreviewNotSpecified = errors.New("preview not specified")
+	ErrPreviewNotFound     = errors.New("preview image not found")
 )
 
 // Deps holds the dependencies required by the settings domain.
@@ -114,10 +114,10 @@ func (s *Service) UpdateSMTPConfig(req SMTPConfigRequest) (model.SMTPConfig, err
 				TestEmail: req.TestEmail,
 			}
 			if err := s.db.Create(&config).Error; err != nil {
-				return config, fmt.Errorf("Failed to create SMTP config: %w", err)
+				return config, fmt.Errorf("failed to create SMTP config: %w", err)
 			}
 		} else {
-			return config, fmt.Errorf("Failed to get SMTP config: %w", err)
+			return config, fmt.Errorf("failed to get SMTP config: %w", err)
 		}
 	} else {
 		// Update existing configuration
@@ -135,7 +135,7 @@ func (s *Service) UpdateSMTPConfig(req SMTPConfigRequest) (model.SMTPConfig, err
 		}
 
 		if err := s.db.Save(&config).Error; err != nil {
-			return config, fmt.Errorf("Failed to update SMTP config: %w", err)
+			return config, fmt.Errorf("failed to update SMTP config: %w", err)
 		}
 	}
 
@@ -258,7 +258,7 @@ Time: %s
 	auth := smtp.PlainAuth("", config.Username, config.Password, config.Host)
 
 	if err := smtp.SendMail(addr, auth, config.FromEmail, []string{to}, []byte(message)); err != nil {
-		return "", fmt.Errorf("Failed to send test email: %w", err)
+		return "", fmt.Errorf("failed to send test email: %w", err)
 	}
 
 	return recipientEmail, nil
@@ -314,10 +314,10 @@ func (s *Service) UpdateGeneralSettings(req GeneralSettingsRequest) (model.Gener
 				ItemsPerPage:        req.ItemsPerPage,
 			}
 			if err := s.db.Create(&config).Error; err != nil {
-				return config, fmt.Errorf("Failed to create general settings: %w", err)
+				return config, fmt.Errorf("failed to create general settings: %w", err)
 			}
 		} else {
-			return config, fmt.Errorf("Failed to get general settings: %w", err)
+			return config, fmt.Errorf("failed to get general settings: %w", err)
 		}
 	} else {
 		// Update existing configuration
@@ -330,7 +330,7 @@ func (s *Service) UpdateGeneralSettings(req GeneralSettingsRequest) (model.Gener
 		config.ItemsPerPage = req.ItemsPerPage
 
 		if err := s.db.Save(&config).Error; err != nil {
-			return config, fmt.Errorf("Failed to update general settings: %w", err)
+			return config, fmt.Errorf("failed to update general settings: %w", err)
 		}
 	}
 
@@ -384,10 +384,10 @@ func (s *Service) UpdateAIConfig(req AIConfigRequest) (model.AIConfig, error) {
 				ModelName:   req.ModelName,
 			}
 			if err := s.db.Create(&config).Error; err != nil {
-				return config, fmt.Errorf("Failed to create AI config: %w", err)
+				return config, fmt.Errorf("failed to create AI config: %w", err)
 			}
 		} else {
-			return config, fmt.Errorf("Failed to get AI config: %w", err)
+			return config, fmt.Errorf("failed to get AI config: %w", err)
 		}
 	} else {
 		// Update existing configuration
@@ -402,7 +402,7 @@ func (s *Service) UpdateAIConfig(req AIConfigRequest) (model.AIConfig, error) {
 		}
 
 		if err := s.db.Save(&config).Error; err != nil {
-			return config, fmt.Errorf("Failed to update AI config: %w", err)
+			return config, fmt.Errorf("failed to update AI config: %w", err)
 		}
 	}
 
@@ -471,7 +471,7 @@ func (s *Service) TestAI() (*AIResult, error) {
 		// Model check failed, but continue testing chat completion, endpoint may not support model listing
 		fmt.Printf("Model validation warning (will continue test): %v\n", modelErr)
 	} else if !modelExists {
-		return nil, fmt.Errorf("Model '%s' does not exist or is not available, please check model name", config.ModelName)
+		return nil, fmt.Errorf("model '%s' does not exist or is not available, please check model name", config.ModelName)
 	}
 
 	// Step 2: Test chat completion functionality
@@ -494,12 +494,12 @@ func (s *Service) TestAI() (*AIResult, error) {
 
 	jsonBody, err := json.Marshal(requestBody)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to marshal request: %w", err)
+		return nil, fmt.Errorf("failed to marshal request: %w", err)
 	}
 
 	req, err := http.NewRequest("POST", chatCompletionsURL, bytes.NewBuffer(jsonBody))
 	if err != nil {
-		return nil, fmt.Errorf("Failed to create request: %w", err)
+		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
 
 	req.Header.Set("Content-Type", "application/json")
@@ -507,7 +507,7 @@ func (s *Service) TestAI() (*AIResult, error) {
 
 	resp, err := client.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to connect to AI API: %w", err)
+		return nil, fmt.Errorf("failed to connect to AI API: %w", err)
 	}
 	defer resp.Body.Close()
 
@@ -519,7 +519,7 @@ func (s *Service) TestAI() (*AIResult, error) {
 	// Parse response
 	var result map[string]interface{}
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		return nil, fmt.Errorf("Failed to parse AI response: %w", err)
+		return nil, fmt.Errorf("failed to parse AI response: %w", err)
 	}
 
 	// Check for error field
@@ -593,7 +593,7 @@ func (s *Service) AIModels() (*AIResult, error) {
 
 	req, err := http.NewRequest("GET", modelsURL, nil)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to create request: %w", err)
+		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
 
 	req.Header.Set("Authorization", "Bearer "+config.ApiKey)
@@ -601,19 +601,19 @@ func (s *Service) AIModels() (*AIResult, error) {
 
 	resp, err := client.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to fetch models: %w", err)
+		return nil, fmt.Errorf("failed to fetch models: %w", err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
-		return nil, fmt.Errorf("Failed to fetch models, status: %d, response: %s", resp.StatusCode, string(body))
+		return nil, fmt.Errorf("failed to fetch models, status: %d, response: %s", resp.StatusCode, string(body))
 	}
 
 	// Parse response
 	var result map[string]interface{}
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		return nil, fmt.Errorf("Failed to parse models response: %w", err)
+		return nil, fmt.Errorf("failed to parse models response: %w", err)
 	}
 
 	// Check for errors
@@ -702,12 +702,12 @@ func (s *Service) ThemePreview(themeID string) (string, error) {
 	metaPath := filepath.Join(s.themes.DataDir(), public.ThemesDir, themeID, public.ThemeMetaFile)
 	content, err := os.ReadFile(metaPath)
 	if err != nil {
-		return "", fmt.Errorf("Failed to read theme metadata: %w", err)
+		return "", fmt.Errorf("failed to read theme metadata: %w", err)
 	}
 
 	var themeInfo public.ThemeInfo
 	if err := json.Unmarshal(content, &themeInfo); err != nil {
-		return "", fmt.Errorf("Invalid theme metadata: %w", err)
+		return "", fmt.Errorf("invalid theme metadata: %w", err)
 	}
 
 	// Check if preview is specified
@@ -755,15 +755,15 @@ func (s *Service) UpdateThemeConfig(activeTheme string) (string, error) {
 		if err == gorm.ErrRecordNotFound {
 			config = model.ThemeConfig{ActiveTheme: activeTheme}
 			if err := s.db.Create(&config).Error; err != nil {
-				return "", fmt.Errorf("Failed to save theme config: %w", err)
+				return "", fmt.Errorf("failed to save theme config: %w", err)
 			}
 		} else {
-			return "", fmt.Errorf("Failed to get theme config: %w", err)
+			return "", fmt.Errorf("failed to get theme config: %w", err)
 		}
 	} else {
 		config.ActiveTheme = activeTheme
 		if err := s.db.Save(&config).Error; err != nil {
-			return "", fmt.Errorf("Failed to update theme config: %w", err)
+			return "", fmt.Errorf("failed to update theme config: %w", err)
 		}
 	}
 

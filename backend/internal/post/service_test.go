@@ -301,8 +301,12 @@ func TestList_RoleVisibility(t *testing.T) {
 	contributor := seedUser(t, svc.db, "contrib", model.RoleContributor)
 	svc.db.Create(&model.GeneralSettings{AllowGuestViewPosts: true})
 
-	svc.Create(contributor.Role, contributor.ID, CreateRequest{Title: "pub", Content: "c", Category: 1, Status: "published"})
-	svc.Create(contributor.Role, contributor.ID, CreateRequest{Title: "pend", Content: "c", Category: 1, Status: "pending"})
+	if _, err := svc.Create(contributor.Role, contributor.ID, CreateRequest{Title: "pub", Content: "c", Category: 1, Status: "published"}); err != nil {
+		t.Fatalf("Create error: %v", err)
+	}
+	if _, err := svc.Create(contributor.Role, contributor.ID, CreateRequest{Title: "pend", Content: "c", Category: 1, Status: "pending"}); err != nil {
+		t.Fatalf("Create error: %v", err)
+	}
 
 	// anonymous: published only
 	posts, total, err := svc.List("", 0, 1, 10, "", "", "")
@@ -315,9 +319,11 @@ func TestList_RoleVisibility(t *testing.T) {
 
 	// contributor: own non-rejected + others' published
 	other := seedUser(t, svc.db, "other", model.RoleAuthor)
-	svc.Create(other.Role, other.ID, CreateRequest{Title: "otherpub", Content: "c", Category: 1, Status: "published"})
+	if _, err := svc.Create(other.Role, other.ID, CreateRequest{Title: "otherpub", Content: "c", Category: 1, Status: "published"}); err != nil {
+		t.Fatalf("Create error: %v", err)
+	}
 
-	posts, total, err = svc.List(contributor.Role, contributor.ID, 1, 10, "", "", "")
+	_, total, err = svc.List(contributor.Role, contributor.ID, 1, 10, "", "", "")
 	if err != nil {
 		t.Fatalf("List error: %v", err)
 	}
