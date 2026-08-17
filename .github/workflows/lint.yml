@@ -1,0 +1,69 @@
+name: Lint
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    name: lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: "1.25"
+
+      - name: Set up pnpm
+        uses: pnpm/setup@v1
+        with:
+          version: 10
+
+      - name: Build frontend
+        run: |
+          cd frontend/
+          pnpm install
+          pnpm run build
+          cd ..
+
+      - name: Install ESLint
+        run: |
+          npm install eslint@9.39.2
+
+      - name: Install formatters
+        run: |
+          npm install prettier@3.6.2
+          go install mvdan.cc/gofumpt@latest
+
+      - name: Check Go formatting
+        run: |
+          files="$(gofumpt -l .)"
+
+          if [[ -n "$files" ]]; then
+            echo "::error::unformatted files:"
+            printf '%s\n' "$files"
+
+            echo "::group::gofumpt diff"
+            gofumpt -d .
+            echo "::endgroup::"
+
+            exit 1
+          fi
+
+      - name: Check Prettier formatting
+        run: |
+          npx prettier --check "**/*.{js,jsx,ts,tsx,html,md}"
+
+      - name: Run ESLint
+        run: |
+          npx eslint -c frontend/eslint.config.js frontend/
+
+      - name: Run golangci-lint
+        uses: golangci/golangci-lint-action@v9
+        with:
+          version: v2.11
