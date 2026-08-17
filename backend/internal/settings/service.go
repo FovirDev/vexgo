@@ -15,6 +15,7 @@ import (
 	"strings"
 	"time"
 
+	"vexgo/backend/internal/mailer"
 	"vexgo/backend/internal/model"
 	"vexgo/backend/internal/public"
 
@@ -177,7 +178,6 @@ func (s *Service) TestSMTP(adminEmail string) (string, error) {
 	}
 
 	// Send test email
-	subject := "SMTP Configuration Test Email"
 	textBody := fmt.Sprintf(`
 Dear %s,
 
@@ -229,35 +229,19 @@ Time: %s
 </html>
 	`, config.FromName, config.Host, config.Port, config.FromName, config.FromEmail, time.Now().Format("2006-01-02 15:04:05"))
 
-	// Build email message
-	from := fmt.Sprintf("%s <%s>", config.FromName, config.FromEmail)
-	to := recipientEmail
-
-	headers := make(map[string]string)
-	headers["From"] = from
-	headers["To"] = to
-	headers["Subject"] = subject
-	headers["MIME-Version"] = "1.0"
-	headers["Content-Type"] = "multipart/alternative; boundary=\"boundary\""
-
-	message := ""
-	for k, v := range headers {
-		message += fmt.Sprintf("%s: %s\r\n", k, v)
-	}
-	message += "\r\n"
-	message += "--boundary\r\n"
-	message += "Content-Type: text/plain; charset=UTF-8\r\n\r\n"
-	message += strings.TrimSpace(textBody) + "\r\n\r\n"
-	message += "--boundary\r\n"
-	message += "Content-Type: text/html; charset=UTF-8\r\n\r\n"
-	message += strings.TrimSpace(htmlBody) + "\r\n\r\n"
-	message += "--boundary--\r\n"
+	// Build email
+	message := mailer.BuildMailMessage(&mailer.MailMessageArgs{
+		To:       recipientEmail,
+		Subject:  "SMTP Configuration Test Email",
+		TextBody: textBody,
+		HTMLBody: htmlBody,
+	}, &config)
 
 	// Connect to SMTP server
 	addr := fmt.Sprintf("%s:%d", config.Host, config.Port)
 	auth := smtp.PlainAuth("", config.Username, config.Password, config.Host)
 
-	if err := smtp.SendMail(addr, auth, config.FromEmail, []string{to}, []byte(message)); err != nil {
+	if err := smtp.SendMail(addr, auth, config.FromEmail, []string{recipientEmail}, []byte(message)); err != nil {
 		return "", fmt.Errorf("failed to send test email: %w", err)
 	}
 

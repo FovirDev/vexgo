@@ -36,6 +36,13 @@ type Mailer struct {
 	DB *gorm.DB
 }
 
+type MailMessageArgs struct {
+	To       string
+	Subject  string
+	TextBody string
+	HTMLBody string
+}
+
 // compile-time check that Mailer satisfies MailSender
 var _ MailSender = (*Mailer)(nil)
 
@@ -46,15 +53,9 @@ func NewMailer(db *gorm.DB) *Mailer {
 
 // SendVerificationEmail sends email verification email
 func (m *Mailer) SendVerificationEmail(toEmail, toName, verificationLink string) error {
-	// Get SMTP configuration
-	var config model.SMTPConfig
-	if err := m.DB.First(&config).Error; err != nil {
-		return fmt.Errorf("failed to get SMTP config: %w", err)
-	}
-
-	// Check if SMTP is enabled
-	if !config.Enabled {
-		return fmt.Errorf("SMTP is not enabled")
+	config, err := m.getConfig()
+	if err != nil {
+		return err
 	}
 
 	// Email body (text version)
@@ -116,31 +117,13 @@ If you did not register for this account, please ignore this email.
 </html>
 	`, toName, verificationLink, verificationLink)
 
-	// Build email message
-	from := fmt.Sprintf("%s <%s>", config.FromName, config.FromEmail)
-	to := toEmail
-
-	// Email headers
-	headers := make(map[string]string)
-	headers["From"] = from
-	headers["To"] = to
-	headers["Subject"] = "Please Verify Your Email Address"
-	headers["MIME-Version"] = "1.0"
-	headers["Content-Type"] = "multipart/alternative; boundary=\"boundary\""
-
-	// Build email body
-	message := ""
-	for k, v := range headers {
-		message += fmt.Sprintf("%s: %s\r\n", k, v)
-	}
-	message += "\r\n"
-	message += "--boundary\r\n"
-	message += "Content-Type: text/plain; charset=UTF-8\r\n\r\n"
-	message += strings.TrimSpace(textBody) + "\r\n\r\n"
-	message += "--boundary\r\n"
-	message += "Content-Type: text/html; charset=UTF-8\r\n\r\n"
-	message += strings.TrimSpace(htmlBody) + "\r\n\r\n"
-	message += "--boundary--\r\n"
+	// Build email
+	message := BuildMailMessage(&MailMessageArgs{
+		To:       toEmail,
+		Subject:  "Please Verify Your Email Address",
+		TextBody: textBody,
+		HTMLBody: htmlBody,
+	}, config)
 
 	// Connect to SMTP server
 	addr := fmt.Sprintf("%s:%d", config.Host, config.Port)
@@ -165,7 +148,7 @@ func (m *Mailer) GenerateVerificationToken(userID uint) (string, error) {
 	expiresAt := time.Now().Add(5 * time.Minute)
 
 	// Save to database
-	updates := map[string]interface{}{
+	updates := map[string]any{
 		"verification_token": token,
 		"token_expires_at":   expiresAt,
 	}
@@ -192,7 +175,7 @@ func (m *Mailer) VerifyEmail(token string) error {
 	}
 
 	// Update user verification status
-	if err := m.DB.Model(&user).Updates(map[string]interface{}{
+	if err := m.DB.Model(&user).Updates(map[string]any{
 		"email_verified":     true,
 		"verification_token": "",
 		"token_expires_at":   time.Time{},
@@ -215,14 +198,9 @@ func (m *Mailer) IsEmailEnabled() (bool, error) {
 // SendPasswordResetEmail sends password reset email
 func (m *Mailer) SendPasswordResetEmail(toEmail, toName, resetLink string) error {
 	// Get SMTP configuration
-	var config model.SMTPConfig
-	if err := m.DB.First(&config).Error; err != nil {
-		return fmt.Errorf("failed to get SMTP config: %w", err)
-	}
-
-	// Check if SMTP is enabled
-	if !config.Enabled {
-		return fmt.Errorf("SMTP is not enabled")
+	config, err := m.getConfig()
+	if err != nil {
+		return err
 	}
 
 	// Email body (text version)
@@ -284,31 +262,13 @@ If you did not request a password reset, please ignore this email.
 </html>
 	`, toName, resetLink, resetLink)
 
-	// Build email message
-	from := fmt.Sprintf("%s <%s>", config.FromName, config.FromEmail)
-	to := toEmail
-
-	// Email headers
-	headers := make(map[string]string)
-	headers["From"] = from
-	headers["To"] = to
-	headers["Subject"] = "Password Reset Request"
-	headers["MIME-Version"] = "1.0"
-	headers["Content-Type"] = "multipart/alternative; boundary=\"boundary\""
-
-	// Build email body
-	message := ""
-	for k, v := range headers {
-		message += fmt.Sprintf("%s: %s\r\n", k, v)
-	}
-	message += "\r\n"
-	message += "--boundary\r\n"
-	message += "Content-Type: text/plain; charset=UTF-8\r\n\r\n"
-	message += strings.TrimSpace(textBody) + "\r\n\r\n"
-	message += "--boundary\r\n"
-	message += "Content-Type: text/html; charset=UTF-8\r\n\r\n"
-	message += strings.TrimSpace(htmlBody) + "\r\n\r\n"
-	message += "--boundary--\r\n"
+	// Build email
+	message := BuildMailMessage(&MailMessageArgs{
+		To:       toEmail,
+		Subject:  "Password Reset Request",
+		TextBody: textBody,
+		HTMLBody: htmlBody,
+	}, config)
 
 	// Connect to SMTP server
 	addr := fmt.Sprintf("%s:%d", config.Host, config.Port)
@@ -333,7 +293,7 @@ func (m *Mailer) GeneratePasswordResetToken(userID uint) (string, error) {
 	expiresAt := time.Now().Add(5 * time.Minute)
 
 	// Save to database
-	updates := map[string]interface{}{
+	updates := map[string]any{
 		"verification_token": token,
 		"token_expires_at":   expiresAt,
 	}
@@ -353,7 +313,7 @@ func (m *Mailer) GenerateEmailChangeToken(userID uint, newEmail string) (string,
 	expiresAt := time.Now().Add(5 * time.Minute)
 
 	// Save to database, also store pending new email
-	updates := map[string]interface{}{
+	updates := map[string]any{
 		"verification_token": token,
 		"token_expires_at":   expiresAt,
 		"pending_email":      newEmail,
@@ -368,14 +328,9 @@ func (m *Mailer) GenerateEmailChangeToken(userID uint, newEmail string) (string,
 // SendEmailChangeEmail sends email change confirmation email
 func (m *Mailer) SendEmailChangeEmail(toEmail, toName, newEmail, verificationLink string) error {
 	// Get SMTP configuration
-	var config model.SMTPConfig
-	if err := m.DB.First(&config).Error; err != nil {
-		return fmt.Errorf("failed to get SMTP config: %w", err)
-	}
-
-	// Check if SMTP is enabled
-	if !config.Enabled {
-		return fmt.Errorf("SMTP is not enabled")
+	config, err := m.getConfig()
+	if err != nil {
+		return err
 	}
 
 	// Email body (text version)
@@ -439,31 +394,13 @@ If you did not request an email change, please ignore this email.
 </html>
 	`, toName, newEmail, verificationLink, verificationLink)
 
-	// Build email message
-	from := fmt.Sprintf("%s <%s>", config.FromName, config.FromEmail)
-	to := toEmail
-
-	// Email headers
-	headers := make(map[string]string)
-	headers["From"] = from
-	headers["To"] = to
-	headers["Subject"] = "Confirm Email Change"
-	headers["MIME-Version"] = "1.0"
-	headers["Content-Type"] = "multipart/alternative; boundary=\"boundary\""
-
-	// Build email body
-	message := ""
-	for k, v := range headers {
-		message += fmt.Sprintf("%s: %s\r\n", k, v)
-	}
-	message += "\r\n"
-	message += "--boundary\r\n"
-	message += "Content-Type: text/plain; charset=UTF-8\r\n\r\n"
-	message += strings.TrimSpace(textBody) + "\r\n\r\n"
-	message += "--boundary\r\n"
-	message += "Content-Type: text/html; charset=UTF-8\r\n\r\n"
-	message += strings.TrimSpace(htmlBody) + "\r\n\r\n"
-	message += "--boundary--\r\n"
+	// Build email
+	message := BuildMailMessage(&MailMessageArgs{
+		To:       toEmail,
+		Subject:  "Confirm Email Change",
+		TextBody: textBody,
+		HTMLBody: htmlBody,
+	}, config)
 
 	// Connect to SMTP server
 	addr := fmt.Sprintf("%s:%d", config.Host, config.Port)
@@ -520,7 +457,7 @@ func (m *Mailer) ConfirmEmailChange(token string) error {
 
 	// Update email address
 	log.Printf("Starting to update user email...")
-	if err := m.DB.Model(&user).Updates(map[string]interface{}{
+	if err := m.DB.Model(&user).Updates(map[string]any{
 		"email":              user.PendingEmail,
 		"email_verified":     true, // automatically verify the changed email
 		"pending_email":      "",
@@ -534,4 +471,47 @@ func (m *Mailer) ConfirmEmailChange(token string) error {
 	log.Printf("Email update successful! New email: %s", user.PendingEmail)
 	log.Printf("=== ConfirmEmailChange processing completed ===")
 	return nil
+}
+
+func (m *Mailer) getConfig() (*model.SMTPConfig, error) {
+	var config model.SMTPConfig
+	if err := m.DB.First(&config).Error; err != nil {
+		return nil, fmt.Errorf("failed to get SMTP config: %w", err)
+	}
+
+	// Check if SMTP is enabled
+	if !config.Enabled {
+		return nil, fmt.Errorf("SMTP is not enabled")
+	}
+
+	return &config, nil
+}
+
+func BuildMailMessage(arg *MailMessageArgs, config *model.SMTPConfig) string {
+	const BOUNDARY = "\r\n\r\n--boundary\r\n"
+
+	// Email headers
+	headers := make(map[string]string)
+	headers["From"] = fmt.Sprintf("%s <%s>", config.FromName, config.FromEmail)
+	headers["To"] = arg.To
+	headers["Subject"] = arg.Subject
+	headers["MIME-Version"] = "1.0"
+	headers["Content-Type"] = "multipart/alternative; boundary=\"boundary\""
+
+	// Build email body
+	var message strings.Builder
+	for k, v := range headers {
+		fmt.Fprintf(&message, "%s: %s\r\n", k, v)
+	}
+
+	message.WriteString("\r\n")
+	message.WriteString("--boundary\r\n")
+	message.WriteString("Content-Type: text/plain; charset=UTF-8\r\n\r\n")
+	message.WriteString(strings.TrimSpace(arg.TextBody))
+	message.WriteString(BOUNDARY)
+	message.WriteString("Content-Type: text/html; charset=UTF-8\r\n\r\n")
+	message.WriteString(strings.TrimSpace(arg.HTMLBody))
+	message.WriteString(BOUNDARY)
+
+	return message.String()
 }
