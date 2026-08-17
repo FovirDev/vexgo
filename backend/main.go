@@ -4,10 +4,13 @@ import (
 	"fmt"
 	"strings"
 	"vexgo/backend/handler"
+	"vexgo/backend/internal/comment"
 	"vexgo/backend/internal/config"
 	"vexgo/backend/internal/database"
 	"vexgo/backend/internal/message"
+	"vexgo/backend/internal/post"
 	"vexgo/backend/internal/router"
+	"vexgo/backend/internal/upload"
 	"vexgo/backend/middleware"
 	"vexgo/backend/public"
 
@@ -31,7 +34,8 @@ func main() {
 	// Set data directory (for file uploads, only used if S3 is not enabled)
 	handler.DataDir = cfg.DataDir
 
-	// 4. Initialize S3 storage if enabled
+	// 4. Initialize file storage: local disk by default, S3-compatible when enabled
+	var storage upload.Storage = upload.NewLocalStorage(cfg.DataDir)
 	if cfg.S3Enabled {
 		s3Cfg := &config.S3Config{
 			Enabled:                  cfg.S3Enabled,
@@ -52,13 +56,17 @@ func main() {
 			"customDomain":             s3Cfg.CustomDomain,
 			"disableBucketInCustomURL": s3Cfg.DisableBucketInCustomURL,
 		}).Info("S3 Config Loaded")
-		if err := handler.InitS3(s3Cfg); err != nil {
+		if s3Storage, err := upload.NewS3Storage(s3Cfg); err != nil {
 			logrus.WithError(err).Fatal("Failed to initialize S3 storage")
+		} else if s3Storage != nil {
+			storage = s3Storage
 		}
 		logrus.Info("S3 storage initialized")
 	} else {
 		logrus.Info("Using local file storage")
 	}
+	// Bridge the storage into the legacy handler package (avatar deletion)
+	handler.SetFileRemover(storage)
 
 	// 5. Initialize database connection (ensure database driver and connection string are configured correctly)
 	db := database.Open(cfg, cfg.DataDir)
@@ -110,6 +118,19 @@ func main() {
 	// All API routing definitions have been moved to router.RegisterAPIRoutes to avoid cluttering main.go.
 	router.RegisterAPIRoutes(r, router.Deps{
 		Message: message.Deps{DB: db},
+		Comment: comment.Deps{
+			DB:       db,
+			Notifier: message.NewService(message.Deps{DB: db}),
+		},
+		Post: post.Deps{
+			DB:       db,
+			Notifier: message.NewService(message.Deps{DB: db}),
+			Files:    storage,
+		},
+		Upload: upload.Deps{
+			DB:      db,
+			Storage: storage,
+		},
 	})
 
 	// ===================== Static file hosting =====================

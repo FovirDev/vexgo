@@ -3,7 +3,10 @@ package router
 
 import (
 	"vexgo/backend/handler"
+	"vexgo/backend/internal/comment"
 	"vexgo/backend/internal/message"
+	"vexgo/backend/internal/post"
+	"vexgo/backend/internal/upload"
 	"vexgo/backend/middleware"
 
 	"github.com/gin-gonic/gin"
@@ -12,6 +15,9 @@ import (
 // Deps aggregates the dependencies of every domain package.
 type Deps struct {
 	Message message.Deps
+	Comment comment.Deps
+	Post    post.Deps
+	Upload  upload.Deps
 }
 
 // RegisterAPIRoutes registers all routes under /api.
@@ -26,4 +32,7 @@ func RegisterAPIRoutes(r *gin.Engine, deps Deps) {
 
 	handler.RegisterAPIRoutes(api)
 	message.NewHandler(deps.Message).RegisterRoutes(api)
+	comment.NewHandler(deps.Comment).RegisterRoutes(api)
+	post.NewHandler(deps.Post).RegisterRoutes(api)
+	upload.NewHandler(deps.Upload).RegisterRoutes(api)
 }

@@ -15,27 +15,15 @@ func RegisterAPIRoutes(api *gin.RouterGroup) {
 	{
 		// -------------------- Public API (no JWT authentication required) --------------------
 		logrus.Debug("Registering public API routes")
-		api.GET("/posts", GetPosts)
-		api.GET("/posts/:id", GetPost)
-
 		api.GET("/verify-email", VerifyEmail)
 
 		api.GET("/captcha", GenerateCaptcha)
 		api.POST("/captcha/verify", VerifyCaptcha)
 
-		api.GET("/categories", GetCategories)
-		api.GET("/tags", GetTags)
-
 		api.GET("/stats", GetStats)
-		api.GET("/stats/popular-posts", GetPopularPosts)
-		api.GET("/stats/latest-posts", GetLatestPosts)
 
 		api.GET("/themes", GetThemes)
 		api.GET("/theme/:id/preview", GetThemePreview)
-
-		api.GET("/comments/post/:id", GetComments)
-		api.GET("/likes/:postId", GetLikeStatus)
-		api.GET("/posts/user/:id", GetUserPosts)
 
 		// -------------------- Authentication API --------------------
 		logrus.Debug("Registering authentication API routes")
@@ -73,40 +61,6 @@ func RegisterAPIRoutes(api *gin.RouterGroup) {
 		}
 
 		// -------------------- Business API requiring JWT authentication --------------------
-		api.POST("/posts", middleware.JWTAuth(), CreatePost)
-		api.GET("/posts/user/my-posts", middleware.JWTAuth(), GetMyPosts)
-		api.GET("/posts/drafts", middleware.JWTAuth(), GetDraftPosts)
-		api.PUT("/posts/:id", middleware.JWTAuth(), UpdatePost)
-		api.DELETE("/posts/:id", middleware.JWTAuth(), DeletePost)
-
-		api.POST("/categories", middleware.JWTAuth(), CreateCategory)
-		api.POST("/tags", middleware.JWTAuth(), CreateTag)
-
-		api.POST("/comments", middleware.JWTAuth(), CreateComment)
-		api.DELETE("/comments/:id", middleware.JWTAuth(), DeleteComment)
-
-		api.GET("/moderation/comments/pending", middleware.JWTAuth(), middleware.PermissionMiddleware("admin", "super_admin"), GetPendingComments)
-		api.GET("/moderation/comments/approved", middleware.JWTAuth(), middleware.PermissionMiddleware("admin", "super_admin"), GetApprovedComments)
-		api.GET("/moderation/comments/rejected", middleware.JWTAuth(), middleware.PermissionMiddleware("admin", "super_admin"), GetRejectedComments)
-		api.PUT("/moderation/comments/approve/:id", middleware.JWTAuth(), middleware.PermissionMiddleware("admin", "super_admin"), ApproveComment)
-		api.PUT("/moderation/comments/reject/:id", middleware.JWTAuth(), middleware.PermissionMiddleware("admin", "super_admin"), RejectComment)
-		api.GET("/moderation/comments/config", middleware.JWTAuth(), middleware.PermissionMiddleware("admin", "super_admin"), GetCommentModerationConfig)
-		api.PUT("/moderation/comments/config", middleware.JWTAuth(), middleware.PermissionMiddleware("admin", "super_admin"), UpdateCommentModerationConfig)
-
-		api.POST("/likes/:postId", middleware.JWTAuth(), ToggleLike)
-
-		api.POST("/upload/file", middleware.JWTAuth(), UploadFile)
-		api.POST("/upload/files", middleware.JWTAuth(), UploadFiles)
-		api.GET("/upload/my-files", middleware.JWTAuth(), GetMyFiles)
-		api.DELETE("/upload/:id", middleware.JWTAuth(), DeleteFile)
-
-		api.GET("/moderation/pending", middleware.JWTAuth(), middleware.PermissionMiddleware("admin", "super_admin"), GetPendingPosts)
-		api.GET("/moderation/approved", middleware.JWTAuth(), middleware.PermissionMiddleware("admin", "super_admin"), GetApprovedPosts)
-		api.GET("/moderation/rejected", middleware.JWTAuth(), middleware.PermissionMiddleware("admin", "super_admin"), GetRejectedPosts)
-		api.PUT("/moderation/approve/:id", middleware.JWTAuth(), middleware.PermissionMiddleware("admin", "super_admin"), ApprovePost)
-		api.PUT("/moderation/reject/:id", middleware.JWTAuth(), middleware.PermissionMiddleware("admin", "super_admin"), RejectPost)
-		api.PUT("/moderation/resubmit/:id", middleware.JWTAuth(), middleware.PermissionMiddleware("admin", "super_admin"), ResubmitPost)
-
 		api.GET("/users", middleware.JWTAuth(), middleware.PermissionMiddleware("admin", "super_admin"), GetUserList)
 		api.PUT("/users/:id/role", middleware.JWTAuth(), middleware.PermissionMiddleware("admin", "super_admin"), UpdateUserRole)
 		api.DELETE("/users/:id", middleware.JWTAuth(), middleware.PermissionMiddleware("admin", "super_admin"), DeleteUser)
