@@ -15,7 +15,7 @@ type fakeNotifier struct {
 	calls []string
 }
 
-func (f *fakeNotifier) CreateNotification(userID uint, notificationType string, title string, content string, relatedID string, relatedType string) error {
+func (f *fakeNotifier) CreateNotification(userID uint, notificationType, title, content, relatedID, relatedType string) error {
 	f.calls = append(f.calls, notificationType)
 	return nil
 }

@@ -33,7 +33,7 @@ type Deps struct {
 // Notifier is the seam for creating notifications. It is implemented by the
 // message domain and injected so it can be faked in tests.
 type Notifier interface {
-	CreateNotification(userID uint, notificationType string, title string, content string, relatedID string, relatedType string) error
+	CreateNotification(userID uint, notificationType, title, content, relatedID, relatedType string) error
 }
 
 // Service contains the business logic of the comment domain.
@@ -101,7 +101,7 @@ func (s *Service) ListByPost(postID string, currentUserID uint, currentUserRole 
 // Create creates a comment, applies moderation, and notifies the post author
 // and (for replies) the parent comment author. It returns the created comment
 // (with author preloaded) and the published comment count for the post.
-func (s *Service) Create(postID uint, userID uint, content string, parentID *uint) (*model.Comment, int64, error) {
+func (s *Service) Create(postID, userID uint, content string, parentID *uint) (*model.Comment, int64, error) {
 	config, err := s.moderationConfig()
 	if err != nil {
 		return nil, 0, err

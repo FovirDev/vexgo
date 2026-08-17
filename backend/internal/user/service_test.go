@@ -15,7 +15,7 @@ type fakeNotifier struct {
 	calls []string
 }
 
-func (f *fakeNotifier) CreateNotification(userID uint, notificationType string, title string, content string, relatedID string, relatedType string) error {
+func (f *fakeNotifier) CreateNotification(userID uint, notificationType, title, content, relatedID, relatedType string) error {
 	f.calls = append(f.calls, notificationType)
 	return nil
 }
@@ -55,7 +55,7 @@ func newTestService(t *testing.T) (*Service, *fakeNotifier, *fakeFiles) {
 	return svc, notifier, files
 }
 
-func seedUser(t *testing.T, db *gorm.DB, username string, role string) model.User {
+func seedUser(t *testing.T, db *gorm.DB, username, role string) model.User {
 	t.Helper()
 	u := model.User{Username: username, Email: username + "@example.com", Role: role}
 	if err := db.Create(&u).Error; err != nil {

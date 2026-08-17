@@ -83,7 +83,7 @@ func (s *Service) UnreadCount(userID uint) (int64, error) {
 
 // CreateNotification creates a notification for a user. It is called by other
 // domains (post, comment, user) when an event of interest occurs.
-func (s *Service) CreateNotification(userID uint, notificationType string, title string, content string, relatedID string, relatedType string) error {
+func (s *Service) CreateNotification(userID uint, notificationType, title, content, relatedID, relatedType string) error {
 	notification := model.Notification{
 		UserID:      userID,
 		Type:        notificationType,
