@@ -1,0 +1,98 @@
+package home
+
+import (
+	"testing"
+
+	"vexgo/backend/model"
+
+	"github.com/glebarez/sqlite"
+	"gorm.io/gorm"
+)
+
+func newTestService(t *testing.T) *Service {
+	t.Helper()
+	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
+	if err != nil {
+		t.Fatalf("failed to open test db: %v", err)
+	}
+	sqlDB, err := db.DB()
+	if err != nil {
+		t.Fatalf("failed to get sql.DB: %v", err)
+	}
+	sqlDB.SetMaxOpenConns(1)
+	if err := db.AutoMigrate(&model.Post{}, &model.User{}, &model.Category{}, &model.Tag{}, &model.Comment{}, &model.GeneralSettings{}); err != nil {
+		t.Fatalf("failed to migrate: %v", err)
+	}
+	return NewService(Deps{DB: db})
+}
+
+func TestStats_Counts(t *testing.T) {
+	svc := newTestService(t)
+	u := model.User{Username: "alice", Email: "alice@example.com", Role: model.RoleGuest}
+	if err := svc.db.Create(&u).Error; err != nil {
+		t.Fatalf("failed to seed user: %v", err)
+	}
+	if err := svc.db.Create(&model.Post{Title: "p", Content: "c", AuthorID: u.ID, Status: "published"}).Error; err != nil {
+		t.Fatalf("failed to seed post: %v", err)
+	}
+	if err := svc.db.Create(&model.Category{Name: "cat"}).Error; err != nil {
+		t.Fatalf("failed to seed category: %v", err)
+	}
+	if err := svc.db.Create(&model.Tag{Name: "tag"}).Error; err != nil {
+		t.Fatalf("failed to seed tag: %v", err)
+	}
+	if err := svc.db.Create(&model.Comment{PostID: 1, UserID: u.ID, Content: "c"}).Error; err != nil {
+		t.Fatalf("failed to seed comment: %v", err)
+	}
+
+	stats := svc.Stats("")
+	if stats.Posts != 1 || stats.Users != 1 || stats.Categories != 1 || stats.Tags != 1 || stats.Comments != 1 {
+		t.Errorf("expected all counts 1, got %+v", stats)
+	}
+}
+
+func TestStats_GuestViewDisabled(t *testing.T) {
+	svc := newTestService(t)
+	u := model.User{Username: "alice", Email: "alice@example.com", Role: model.RoleGuest}
+	if err := svc.db.Create(&u).Error; err != nil {
+		t.Fatalf("failed to seed user: %v", err)
+	}
+	if err := svc.db.Create(&model.Post{Title: "p", Content: "c", AuthorID: u.ID, Status: "published"}).Error; err != nil {
+		t.Fatalf("failed to seed post: %v", err)
+	}
+
+	// AllowGuestViewPosts carries gorm:"default:true"; seed true via Create,
+	// then flip to false with Save (which writes zero values correctly).
+	if err := svc.db.Create(&model.GeneralSettings{AllowGuestViewPosts: true}).Error; err != nil {
+		t.Fatalf("failed to seed settings: %v", err)
+	}
+	var settings model.GeneralSettings
+	if err := svc.db.First(&settings).Error; err != nil {
+		t.Fatalf("failed to load settings: %v", err)
+	}
+	settings.AllowGuestViewPosts = false
+	if err := svc.db.Save(&settings).Error; err != nil {
+		t.Fatalf("failed to disable guest view: %v", err)
+	}
+
+	// anonymous → empty stats
+	stats := svc.Stats("")
+	if stats.Posts != 0 {
+		t.Errorf("expected zero posts for anonymous viewer, got %+v", stats)
+	}
+
+	// logged-in user sees stats
+	stats = svc.Stats(model.RoleGuest)
+	if stats.Posts != 1 {
+		t.Errorf("expected 1 post for logged-in viewer, got %+v", stats)
+	}
+}
+
+func TestStats_NoSettingsDefaultsToAllowed(t *testing.T) {
+	svc := newTestService(t)
+	// no GeneralSettings row → guest viewing allowed by default
+	stats := svc.Stats("")
+	if stats.Posts != 0 {
+		t.Errorf("expected empty stats, got %+v", stats)
+	}
+}

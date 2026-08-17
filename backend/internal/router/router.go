@@ -2,11 +2,12 @@
 package router
 
 import (
-	"vexgo/backend/handler"
 	"vexgo/backend/internal/auth"
 	"vexgo/backend/internal/comment"
+	"vexgo/backend/internal/home"
 	"vexgo/backend/internal/message"
 	"vexgo/backend/internal/post"
+	"vexgo/backend/internal/settings"
 	"vexgo/backend/internal/sso"
 	"vexgo/backend/internal/upload"
 	"vexgo/backend/internal/user"
@@ -26,6 +27,8 @@ type Deps struct {
 	Verification verification.Deps
 	Auth         auth.Deps
 	SSO          sso.Deps
+	Home         home.Deps
+	Settings     settings.Deps
 }
 
 // RegisterAPIRoutes registers all routes under /api.
@@ -38,7 +41,6 @@ func RegisterAPIRoutes(r *gin.Engine, deps Deps) {
 	api.Use(middleware.RequestLogger())
 	api.Use(middleware.OptionalJWTAuth())
 
-	handler.RegisterAPIRoutes(api)
 	message.NewHandler(deps.Message).RegisterRoutes(api)
 	comment.NewHandler(deps.Comment).RegisterRoutes(api)
 	post.NewHandler(deps.Post).RegisterRoutes(api)
@@ -47,4 +49,6 @@ func RegisterAPIRoutes(r *gin.Engine, deps Deps) {
 	verification.NewHandler(deps.Verification).RegisterRoutes(api)
 	auth.NewHandler(deps.Auth).RegisterRoutes(api)
 	sso.NewHandler(deps.SSO).RegisterRoutes(api)
+	home.NewHandler(deps.Home).RegisterRoutes(api)
+	settings.NewHandler(deps.Settings).RegisterRoutes(api)
 }

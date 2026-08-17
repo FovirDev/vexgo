@@ -8,9 +8,11 @@ import (
 	"vexgo/backend/internal/comment"
 	"vexgo/backend/internal/config"
 	"vexgo/backend/internal/database"
+	"vexgo/backend/internal/home"
 	"vexgo/backend/internal/message"
 	"vexgo/backend/internal/post"
 	"vexgo/backend/internal/router"
+	"vexgo/backend/internal/settings"
 	"vexgo/backend/internal/sso"
 	"vexgo/backend/internal/upload"
 	"vexgo/backend/internal/user"
@@ -76,7 +78,7 @@ func main() {
 	// Set database connection to handler package
 	handler.SetDB(db)
 	// Set up the theme provider so the public package can read the active theme from DB
-	handler.SetupThemeProvider()
+	settings.SetupThemeProvider(db)
 
 	// 6. Create Gin engine instance (includes Logger and Recovery middleware by default)
 	r := gin.Default()
@@ -147,6 +149,12 @@ func main() {
 			DB:        db,
 			SSO:       &config.SSO,
 			JWTSecret: config.JWTSecret,
+		},
+		Home: home.Deps{
+			DB: db,
+		},
+		Settings: settings.Deps{
+			DB: db,
 		},
 	})
 
