@@ -91,7 +91,7 @@ cd frontend
 pnpm install
 pnpm run build
 cd ../backend
-go run backend/main.go
+go run main.go
 ```
 
 Then visit http://127.0.0.1:3001. The default super admin account is `admin@example.com` with password `password` — change it on your profile page.
