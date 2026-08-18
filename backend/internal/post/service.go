@@ -81,15 +81,16 @@ func (s *Service) List(userRole string, userID uint, page, limit int, categoryID
 	// Determine visible posts based on user role
 	switch userRole {
 	case "", model.RoleGuest:
-		query = query.Where("status = ?", "published")
+		query = query.Where("status = ?", model.PostStatusPublished)
 	case model.RoleContributor:
 		query = query.Where(
-			s.db.Where("status = ?", "published").Or("author_id = ? AND status != ?", userID, "rejected"),
+			s.db.Where("status = ?", model.PostStatusPublished).
+				Or("author_id = ? AND status != ?", userID, model.PostStatusRejected),
 		)
 	case model.RoleAuthor, model.RoleAdmin, model.RoleSuperAdmin:
-		query = query.Where("status != ?", "rejected")
+		query = query.Where("status != ?", model.PostStatusRejected)
 	default:
-		query = query.Where("status = ?", "published")
+		query = query.Where("status = ?", model.PostStatusPublished)
 	}
 
 	if status != "" {
@@ -182,7 +183,7 @@ type CreateRequest struct {
 	Tags       []string
 	Excerpt    string
 	CoverImage string
-	Status     string
+	Status     model.PostStatus
 }
 
 // Create creates a post, deriving the initial status from the user's role.
@@ -208,15 +209,15 @@ func (s *Service) Create(userRole string, userID uint, req CreateRequest) (*mode
 	}
 
 	// Determine initial post status based on user role
-	initialStatus := req.Status
+	initialStatus := model.PostStatus(req.Status)
 	if initialStatus == "" {
 		switch userRole {
 		case model.RoleContributor:
-			initialStatus = "pending"
+			initialStatus = model.PostStatusPending
 		case model.RoleAuthor, model.RoleAdmin, model.RoleSuperAdmin:
-			initialStatus = "published"
+			initialStatus = model.PostStatusPublished
 		default:
-			initialStatus = "draft"
+			initialStatus = model.PostStatusDraft
 		}
 	}
 
@@ -252,7 +253,7 @@ type UpdateRequest struct {
 	Tags       []string
 	Excerpt    string
 	CoverImage string
-	Status     string
+	Status     model.PostStatus
 }
 
 // Update modifies a post when the acting user is its author or an admin.
@@ -297,7 +298,7 @@ func (s *Service) Update(id string, userID uint, req UpdateRequest) (*model.Post
 		post.CoverImage = req.CoverImage
 	}
 	if req.Status != "" {
-		post.Status = req.Status
+		post.Status = model.PostStatus(req.Status)
 	}
 
 	if len(req.Tags) > 0 {
@@ -376,7 +377,7 @@ func (s *Service) MyPosts(userID uint, page, limit int, status string) ([]model.
 	query := s.db.Model(&model.Post{}).
 		Preload("Author").
 		Preload("Tags").
-		Where("author_id = ? AND status != ?", userID, "rejected")
+		Where("author_id = ? AND status != ?", userID, model.PostStatusRejected)
 
 	if status != "" {
 		query = query.Where("status = ?", status)
@@ -408,10 +409,10 @@ func (s *Service) Drafts(userRole string, userID uint, page, limit int) ([]model
 
 	if userRole != "" && (userRole == model.RoleAdmin || userRole == model.RoleSuperAdmin) {
 		// Admins and super admins can see all draft posts
-		query = query.Where("status = ?", "draft")
+		query = query.Where("status = ?", model.PostStatusDraft)
 	} else {
 		// Other users can only see their own draft posts
-		query = query.Where("author_id = ? AND status = ?", userID, "draft")
+		query = query.Where("author_id = ? AND status = ?", userID, model.PostStatusDraft)
 	}
 
 	var total int64
@@ -451,15 +452,15 @@ func (s *Service) UserPosts(userIDStr, currentUserRole string, currentUserID uin
 	// Determine visible posts based on user role
 	switch currentUserRole {
 	case "", model.RoleGuest:
-		query = query.Where("status = ?", "published")
+		query = query.Where("status = ?", model.PostStatusPublished)
 	case model.RoleContributor:
 		if uint(userID) != currentUserID {
-			query = query.Where("status = ?", "published")
+			query = query.Where("status = ?", model.PostStatusPublished)
 		} else {
-			query = query.Where("status != ?", "rejected")
+			query = query.Where("status != ?", model.PostStatusRejected)
 		}
 	default:
-		query = query.Where("status != ?", "rejected")
+		query = query.Where("status != ?", model.PostStatusRejected)
 	}
 
 	var total int64
@@ -493,7 +494,7 @@ func (s *Service) Popular(userRole string, limit int) ([]model.Post, error) {
 	}
 
 	var posts []model.Post
-	s.db.Where("status = ?", "published").
+	s.db.Where("status = ?", model.PostStatusPublished).
 		Preload("Author").
 		Preload("Tags").
 		Find(&posts)
@@ -531,7 +532,7 @@ func (s *Service) Latest(userRole string, limit int) ([]model.Post, error) {
 	}
 
 	var posts []model.Post
-	s.db.Where("status = ?", "published").
+	s.db.Where("status = ?", model.PostStatusPublished).
 		Order("created_at DESC").
 		Limit(limit).
 		Preload("Author").
@@ -590,7 +591,7 @@ func (s *Service) CreateTag(name string) (*model.Tag, error) {
 
 // ListModeration returns the paginated posts with the given status for the
 // moderation queue, with an optional search across title/content/username.
-func (s *Service) ListModeration(status string, page, limit int, search string) ([]model.Post, int64, error) {
+func (s *Service) ListModeration(status model.PostStatus, page, limit int, search string) ([]model.Post, int64, error) {
 	query := s.db.Model(&model.Post{}).
 		Preload("Author").
 		Preload("Tags").
@@ -625,7 +626,7 @@ func (s *Service) Approve(id string) (*model.Post, error) {
 		return nil, ErrPostNotFound
 	}
 
-	post.Status = "published"
+	post.Status = model.PostStatusPublished
 	s.db.Save(&post)
 
 	if err := s.notifier.CreateNotification(
@@ -649,7 +650,7 @@ func (s *Service) Reject(id, rejectionReason string) (*model.Post, error) {
 		return nil, ErrPostNotFound
 	}
 
-	post.Status = "rejected"
+	post.Status = model.PostStatusRejected
 	post.RejectionReason = rejectionReason
 	s.db.Save(&post)
 
@@ -675,11 +676,11 @@ func (s *Service) Resubmit(id string) (*model.Post, error) {
 	}
 
 	// Check if post status is rejected
-	if post.Status != "rejected" {
+	if post.Status != model.PostStatusRejected {
 		return nil, ErrBadRequest
 	}
 
-	post.Status = "pending"
+	post.Status = model.PostStatusPending
 	post.RejectionReason = ""
 	s.db.Save(&post)
 

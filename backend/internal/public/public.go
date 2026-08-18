@@ -354,7 +354,12 @@ func (r *Renderer) RegisterStaticRoutes(e *gin.Engine, s3Enabled bool) {
 
 		// Server-side rendering with proper data initialization
 		var posts []model.Post
-		r.db.Preload("Author").Preload("Tags").Where("status = ?", "published").Order("created_at DESC").Limit(10).Find(&posts)
+		r.db.Preload("Author").
+			Preload("Tags").
+			Where("status = ?", model.PostStatusPublished).
+			Order("created_at DESC").
+			Limit(10).
+			Find(&posts)
 		// Always render, even with empty posts or query errors
 		html, renderErr := RenderIndexHTML(posts, r.baseURL)
 		if renderErr == nil {

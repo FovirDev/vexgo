@@ -6,21 +6,30 @@ import (
 	"time"
 )
 
+type PostStatus string
+
+const (
+	PostStatusPending   PostStatus = "pending"
+	PostStatusPublished PostStatus = "published"
+	PostStatusDraft     PostStatus = "draft"
+	PostStatusRejected  PostStatus = "rejected"
+)
+
 type Post struct {
-	ID              uint      `json:"id" gorm:"primaryKey"`
-	Title           string    `json:"title" binding:"required" gorm:"size:255"`
-	Content         string    `json:"content" binding:"required" gorm:"type:text"`
-	Excerpt         string    `json:"excerpt" gorm:"type:text"`
-	CoverImage      string    `json:"coverImage" gorm:"size:500"`
-	ViewCount       int       `json:"viewCount" gorm:"default:0"`
-	AuthorID        uint      `json:"authorId"`
-	Author          User      `json:"author" gorm:"foreignKey:AuthorID"`
-	Category        string    `json:"category" gorm:"size:100"`
-	Tags            []Tag     `json:"tags" gorm:"many2many:post_tags;"`
-	Status          string    `json:"status" gorm:"size:50"`            // draft/published/pending/rejected
-	RejectionReason string    `json:"rejectionReason" gorm:"type:text"` // rejection reason
-	CreatedAt       time.Time `json:"createdAt"`
-	UpdatedAt       time.Time `json:"updatedAt"`
+	ID              uint       `json:"id" gorm:"primaryKey"`
+	Title           string     `json:"title" binding:"required" gorm:"size:255"`
+	Content         string     `json:"content" binding:"required" gorm:"type:text"`
+	Excerpt         string     `json:"excerpt" gorm:"type:text"`
+	CoverImage      string     `json:"coverImage" gorm:"size:500"`
+	ViewCount       int        `json:"viewCount" gorm:"default:0"`
+	AuthorID        uint       `json:"authorId"`
+	Author          User       `json:"author" gorm:"foreignKey:AuthorID"`
+	Category        string     `json:"category" gorm:"size:100"`
+	Tags            []Tag      `json:"tags" gorm:"many2many:post_tags;"`
+	Status          PostStatus `json:"status" gorm:"size:50"`            // draft/published/pending/rejected
+	RejectionReason string     `json:"rejectionReason" gorm:"type:text"` // rejection reason
+	CreatedAt       time.Time  `json:"createdAt"`
+	UpdatedAt       time.Time  `json:"updatedAt"`
 	// Non-database field: used to include like count and whether the current user has liked in API response
 	LikesCount int  `json:"likesCount" gorm:"-"`
 	IsLiked    bool `json:"isLiked" gorm:"-"`

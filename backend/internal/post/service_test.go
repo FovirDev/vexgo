@@ -69,7 +69,7 @@ func TestCreate_SavesDraftAndPublished(t *testing.T) {
 		Tags:       []string{"go", "gin"},
 		Excerpt:    "ex",
 		CoverImage: "/img.png",
-		Status:     "published",
+		Status:     model.PostStatusPublished,
 	})
 	if err != nil {
 		t.Fatalf("Create error: %v", err)
@@ -82,7 +82,7 @@ func TestCreate_SavesDraftAndPublished(t *testing.T) {
 	if err := svc.db.Preload("Tags").First(&stored, post.ID).Error; err != nil {
 		t.Fatalf("post not saved: %v", err)
 	}
-	if stored.Status != "published" {
+	if stored.Status != model.PostStatusPublished {
 		t.Errorf("status expected published, got %s", stored.Status)
 	}
 	if len(stored.Tags) != 2 {
@@ -98,7 +98,7 @@ func TestCreate_DerivesStatusByRole(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Create error: %v", err)
 	}
-	if post.Status != "pending" {
+	if post.Status != model.PostStatusPending {
 		t.Errorf("contributor post expected pending, got %s", post.Status)
 	}
 
@@ -107,7 +107,7 @@ func TestCreate_DerivesStatusByRole(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Create error: %v", err)
 	}
-	if post.Status != "published" {
+	if post.Status != model.PostStatusPublished {
 		t.Errorf("author post expected published, got %s", post.Status)
 	}
 }
@@ -125,14 +125,14 @@ func TestUpdate_ModifiesFields(t *testing.T) {
 	svc, _, _ := newTestService(t)
 	user := seedUser(t, svc.db, "tester", model.RoleContributor)
 
-	post, err := svc.Create(user.Role, user.ID, CreateRequest{Title: "A", Content: "B", Category: 1, Status: "draft"})
+	post, err := svc.Create(user.Role, user.ID, CreateRequest{Title: "A", Content: "B", Category: 1, Status: model.PostStatusDraft})
 	if err != nil {
 		t.Fatalf("Create error: %v", err)
 	}
 
 	updated, err := svc.Update(idString(post.ID), user.ID, UpdateRequest{
 		Title:  "New",
-		Status: "published",
+		Status: model.PostStatusPublished,
 		Tags:   []string{"foo"},
 	})
 	if err != nil {
@@ -141,7 +141,7 @@ func TestUpdate_ModifiesFields(t *testing.T) {
 	if updated.Title != "New" {
 		t.Errorf("title not updated")
 	}
-	if updated.Status != "published" {
+	if updated.Status != model.PostStatusPublished {
 		t.Errorf("status not updated")
 	}
 	if len(updated.Tags) != 1 || updated.Tags[0].Name != "foo" {
@@ -176,7 +176,7 @@ func TestDelete_RemovesFilesAndAssociations(t *testing.T) {
 		Content:    "![img](/uploads/a.jpg) and <img src=\"/uploads/b.jpg\">",
 		Category:   1,
 		CoverImage: "/uploads/cover.jpg",
-		Status:     "published",
+		Status:     model.PostStatusPublished,
 	})
 	if err != nil {
 		t.Fatalf("Create error: %v", err)
@@ -210,7 +210,7 @@ func TestDelete_RemovesFilesAndAssociations(t *testing.T) {
 	}
 
 	// other user cannot delete
-	post2, err := svc.Create(author.Role, author.ID, CreateRequest{Title: "B", Content: "b", Category: 1, Status: "published"})
+	post2, err := svc.Create(author.Role, author.ID, CreateRequest{Title: "B", Content: "b", Category: 1, Status: model.PostStatusPublished})
 	if err != nil {
 		t.Fatalf("Create error: %v", err)
 	}
@@ -234,7 +234,7 @@ func TestModeration_ApproveRejectResubmit(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Approve error: %v", err)
 	}
-	if approved.Status != "published" {
+	if approved.Status != model.PostStatusPublished {
 		t.Errorf("expected published, got %s", approved.Status)
 	}
 	if len(notifier.calls) == 0 || notifier.calls[0] != "review" {
@@ -246,7 +246,7 @@ func TestModeration_ApproveRejectResubmit(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Reject error: %v", err)
 	}
-	if rejected.Status != "rejected" || rejected.RejectionReason != "too short" {
+	if rejected.Status != model.PostStatusRejected || rejected.RejectionReason != "too short" {
 		t.Errorf("unexpected rejected post: %+v", rejected)
 	}
 
@@ -255,7 +255,7 @@ func TestModeration_ApproveRejectResubmit(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Resubmit error: %v", err)
 	}
-	if resubmitted.Status != "pending" || resubmitted.RejectionReason != "" {
+	if resubmitted.Status != model.PostStatusPending || resubmitted.RejectionReason != "" {
 		t.Errorf("unexpected resubmitted post: %+v", resubmitted)
 	}
 
@@ -270,7 +270,7 @@ func TestToggleLike(t *testing.T) {
 	author := seedUser(t, svc.db, "author", model.RoleAuthor)
 	liker := seedUser(t, svc.db, "liker", model.RoleGuest)
 
-	post, err := svc.Create(author.Role, author.ID, CreateRequest{Title: "t", Content: "c", Category: 1, Status: "published"})
+	post, err := svc.Create(author.Role, author.ID, CreateRequest{Title: "t", Content: "c", Category: 1, Status: model.PostStatusPublished})
 	if err != nil {
 		t.Fatalf("Create error: %v", err)
 	}
@@ -301,10 +301,10 @@ func TestList_RoleVisibility(t *testing.T) {
 	contributor := seedUser(t, svc.db, "contrib", model.RoleContributor)
 	svc.db.Create(&model.GeneralSettings{AllowGuestViewPosts: true})
 
-	if _, err := svc.Create(contributor.Role, contributor.ID, CreateRequest{Title: "pub", Content: "c", Category: 1, Status: "published"}); err != nil {
+	if _, err := svc.Create(contributor.Role, contributor.ID, CreateRequest{Title: "pub", Content: "c", Category: 1, Status: model.PostStatusPublished}); err != nil {
 		t.Fatalf("Create error: %v", err)
 	}
-	if _, err := svc.Create(contributor.Role, contributor.ID, CreateRequest{Title: "pend", Content: "c", Category: 1, Status: "pending"}); err != nil {
+	if _, err := svc.Create(contributor.Role, contributor.ID, CreateRequest{Title: "pend", Content: "c", Category: 1, Status: model.PostStatusPending}); err != nil {
 		t.Fatalf("Create error: %v", err)
 	}
 
@@ -319,7 +319,7 @@ func TestList_RoleVisibility(t *testing.T) {
 
 	// contributor: own non-rejected + others' published
 	other := seedUser(t, svc.db, "other", model.RoleAuthor)
-	if _, err := svc.Create(other.Role, other.ID, CreateRequest{Title: "otherpub", Content: "c", Category: 1, Status: "published"}); err != nil {
+	if _, err := svc.Create(other.Role, other.ID, CreateRequest{Title: "otherpub", Content: "c", Category: 1, Status: model.PostStatusPublished}); err != nil {
 		t.Fatalf("Create error: %v", err)
 	}
 
@@ -351,7 +351,7 @@ func TestList_GuestViewDenied(t *testing.T) {
 
 	// with an existing post, anonymous access is denied
 	author := seedUser(t, svc.db, "author", model.RoleAuthor)
-	post, err := svc.Create(author.Role, author.ID, CreateRequest{Title: "t", Content: "c", Category: 1, Status: "published"})
+	post, err := svc.Create(author.Role, author.ID, CreateRequest{Title: "t", Content: "c", Category: 1, Status: model.PostStatusPublished})
 	if err != nil {
 		t.Fatalf("Create error: %v", err)
 	}

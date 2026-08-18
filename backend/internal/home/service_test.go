@@ -32,7 +32,7 @@ func TestStats_Counts(t *testing.T) {
 	if err := svc.db.Create(&u).Error; err != nil {
 		t.Fatalf("failed to seed user: %v", err)
 	}
-	if err := svc.db.Create(&model.Post{Title: "p", Content: "c", AuthorID: u.ID, Status: "published"}).Error; err != nil {
+	if err := svc.db.Create(&model.Post{Title: "p", Content: "c", AuthorID: u.ID, Status: model.PostStatusPublished}).Error; err != nil {
 		t.Fatalf("failed to seed post: %v", err)
 	}
 	if err := svc.db.Create(&model.Category{Name: "cat"}).Error; err != nil {
@@ -57,7 +57,7 @@ func TestStats_GuestViewDisabled(t *testing.T) {
 	if err := svc.db.Create(&u).Error; err != nil {
 		t.Fatalf("failed to seed user: %v", err)
 	}
-	if err := svc.db.Create(&model.Post{Title: "p", Content: "c", AuthorID: u.ID, Status: "published"}).Error; err != nil {
+	if err := svc.db.Create(&model.Post{Title: "p", Content: "c", AuthorID: u.ID, Status: model.PostStatusPublished}).Error; err != nil {
 		t.Fatalf("failed to seed post: %v", err)
 	}
 

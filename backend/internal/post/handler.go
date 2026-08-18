@@ -6,6 +6,7 @@ import (
 	"strconv"
 
 	"vexgo/backend/internal/middleware"
+	"vexgo/backend/internal/model"
 
 	"github.com/gin-gonic/gin"
 )
@@ -130,7 +131,7 @@ func (h *Handler) CreatePost(c *gin.Context) {
 		Tags:       req.Tags,
 		Excerpt:    req.Excerpt,
 		CoverImage: req.CoverImage,
-		Status:     req.Status,
+		Status:     model.PostStatus(req.Status),
 	})
 	if err != nil {
 		if errors.Is(err, ErrForbidden) {
@@ -171,7 +172,7 @@ func (h *Handler) UpdatePost(c *gin.Context) {
 		Tags:       req.Tags,
 		Excerpt:    req.Excerpt,
 		CoverImage: req.CoverImage,
-		Status:     req.Status,
+		Status:     model.PostStatus(req.Status),
 	})
 	if err != nil {
 		switch {
@@ -381,21 +382,21 @@ func (h *Handler) CreateTag(c *gin.Context) {
 
 // GetPendingPosts gets pending posts for moderation.
 func (h *Handler) GetPendingPosts(c *gin.Context) {
-	h.listModeration(c, "pending")
+	h.listModeration(c, model.PostStatusPending)
 }
 
 // GetApprovedPosts gets approved posts list.
 func (h *Handler) GetApprovedPosts(c *gin.Context) {
-	h.listModeration(c, "published")
+	h.listModeration(c, model.PostStatusPublished)
 }
 
 // GetRejectedPosts gets rejected posts list.
 func (h *Handler) GetRejectedPosts(c *gin.Context) {
-	h.listModeration(c, "rejected")
+	h.listModeration(c, model.PostStatusRejected)
 }
 
 // listModeration renders the moderation queue for a given post status.
-func (h *Handler) listModeration(c *gin.Context, status string) {
+func (h *Handler) listModeration(c *gin.Context, status model.PostStatus) {
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "10"))
 	search := c.DefaultQuery("search", "")

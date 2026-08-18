@@ -56,7 +56,7 @@ func seedUser(t *testing.T, db *gorm.DB, username, role string) model.User {
 
 func seedPost(t *testing.T, db *gorm.DB, authorID uint) model.Post {
 	t.Helper()
-	p := model.Post{Title: "Post", Content: "body", Category: "1", AuthorID: authorID, Status: "published"}
+	p := model.Post{Title: "Post", Content: "body", Category: "1", AuthorID: authorID, Status: model.PostStatusPublished}
 	if err := db.Create(&p).Error; err != nil {
 		t.Fatalf("failed to seed post: %v", err)
 	}

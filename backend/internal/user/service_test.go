@@ -131,7 +131,7 @@ func TestDeleteUser_CascadeAndPermissions(t *testing.T) {
 	otherAdmin := seedUser(t, svc.db, "other-admin", model.RoleAdmin)
 
 	// seed content belonging to the target
-	post := model.Post{Title: "p", Content: "c", Category: "1", AuthorID: target.ID, Status: "published", CoverImage: "/uploads/cover.jpg"}
+	post := model.Post{Title: "p", Content: "c", Category: "1", AuthorID: target.ID, Status: model.PostStatusPublished, CoverImage: "/uploads/cover.jpg"}
 	if err := svc.db.Create(&post).Error; err != nil {
 		t.Fatalf("failed to seed post: %v", err)
 	}
