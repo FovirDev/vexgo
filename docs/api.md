@@ -2,8 +2,10 @@
 
 Base URL: `/api`
 
-Authentication: JWT Bearer token (except for public endpoints)
-All authenticated requests should include: `Authorization: Bearer <token>`
+Authentication: JWT Bearer token (except for public endpoints).
+All authenticated requests must include: `Authorization: Bearer <token>`
+
+Roles: `super_admin`, `admin`, `author`, `contributor`, `guest`. Endpoints marked "admin only" require the `admin` or `super_admin` role (`super_admin` always passes the permission check).
 
 ---
 
@@ -16,13 +18,15 @@ All authenticated requests should include: `Authorization: Bearer <token>`
 - [Comments](#comments)
 - [Likes](#likes)
 - [File Upload](#file-upload)
+- [Messages (Notifications)](#messages-notifications)
 - [Moderation](#moderation)
 - [User Management](#user-management)
+- [Creator Applications](#creator-applications)
 - [Configuration](#configuration)
-- [Themes](#themes)
-- [Statistics](#statistics)
-- [Categories & Tags](#categories--tags)
-- [Captcha](#captcha)
+- [Error Responses](#error-responses)
+- [Pagination](#pagination)
+- [Data Types](#data-types)
+- [Notes](#notes)
 
 ---
 
@@ -30,58 +34,48 @@ All authenticated requests should include: `Authorization: Bearer <token>`
 
 ### GET /posts
 
-Get paginated list of posts with filtering support.
+Get a paginated list of posts with filtering support.
 
 **Query Parameters:**
 
 - `page` (int, default: 1): Page number
 - `limit` (int, default: 10, max: 100): Items per page
-- `category` (string): Filter by category ID
-- `status` (string): Filter by status (published, pending, rejected, draft)
+- `category` (string): Filter by category name
+- `status` (string): Filter by status (`published`, `pending`, `rejected`, `draft`)
 - `search` (string): Search in title and content
 
 **Response:**
 
 ```json
 {
-  "pagination": { "limit": 10, "page": 1, "total": 1, "totalPages": 1 },
   "posts": [
     {
       "id": 1,
-      "title": "tests",
-      "content": "testdvsdf\n# safsf\n",
+      "title": "My Post",
+      "content": "Post content",
       "excerpt": "",
       "coverImage": "",
       "viewCount": 5,
       "authorId": 1,
-      "author": {
-        "id": 1,
-        "username": "admin",
-        "email": "admin@example.com",
-        "role": "super_admin",
-        "email_verified": true,
-        "verification_token": "",
-        "token_expires_at": null,
-        "createdAt": "2026-03-16T22:10:01.484631752+08:00",
-        "profile_visibility": "public"
-      },
-      "category": "test1",
+      "author": { "id": 1, "username": "admin", "role": "super_admin" },
+      "category": "tech",
       "tags": [],
       "status": "published",
       "rejectionReason": "",
-      "createdAt": "2026-03-17T21:14:35.026603945+08:00",
-      "updatedAt": "2026-03-17T21:14:35.026603945+08:00",
+      "createdAt": "2026-03-17T21:14:35Z",
+      "updatedAt": "2026-03-17T21:14:35Z",
       "likesCount": 0,
       "isLiked": false,
       "commentsCount": 0
     }
-  ]
+  ],
+  "pagination": { "total": 1, "page": 1, "limit": 10, "totalPages": 1 }
 }
 ```
 
 **Notes:**
 
-- Guests can only see published posts (if `allow_guest_view_posts` is enabled)
+- Guests can only see published posts (when `allowGuestViewPosts` is enabled)
 - Non-admin users can only see published posts from other users
 - Admins can see all posts regardless of status
 
@@ -97,185 +91,25 @@ Get a single post by ID.
 {
   "post": {
     "id": 1,
-    "title": "tests",
-    "content": "testdvsdf\n# safsf\n",
-    "excerpt": "",
-    "coverImage": "",
-    "viewCount": 5,
-    "authorId": 1,
-    "author": {
-      "id": 1,
-      "username": "admin",
-      "email": "admin@example.com",
-      "role": "super_admin",
-      "email_verified": true,
-      "verification_token": "",
-      "token_expires_at": null,
-      "createdAt": "2026-03-16T22:10:01.484631752+08:00",
-      "profile_visibility": "public"
-    },
-    "category": "test1",
+    "title": "My Post",
+    "content": "Post content",
+    "category": "tech",
     "tags": [],
     "status": "published",
-    "rejectionReason": "",
-    "createdAt": "2026-03-17T21:14:35.026603945+08:00",
-    "updatedAt": "2026-03-17T21:14:35.026603945+08:00",
+    "author": { "id": 1, "username": "admin", "role": "super_admin" },
     "likesCount": 0,
     "isLiked": false,
-    "commentsCount": 0
+    "commentsCount": 0,
+    "createdAt": "2026-03-17T21:14:35Z",
+    "updatedAt": "2026-03-17T21:14:35Z"
   }
-}
-```
-
----
-
-### GET /verify-email
-
-Verify email address using token.
-
-**Query Parameters:**
-
-- `token` (string, required): Verification token
-
-**Response (email verification):**
-
-```json
-{
-  "message": "Email verification successful! You can now log in."
-}
-```
-
-**Response (email change - success with user found):**
-
-```json
-{
-  "message": "Email change successful! Your new email is now active.",
-  "require_relogin": true,
-  "new_email": "newemail@example.com"
-}
-```
-
-**Response (email change - success but user not found):**
-
-```json
-{
-  "message": "Email change successful! Your new email is now active.",
-  "require_relogin": true
-}
-```
-
-**Error Response:**
-
-```json
-{
-  "error": "Verification token cannot be empty"
-}
-```
-
-**Notes:**
-
-- Token prefix `email-change-` indicates email change verification
-- Normal tokens are for initial email verification
-- After email change, user needs to re-login (`require_relogin: true`)
-
----
-
-### GET /captcha
-
-Generate a sliding puzzle captcha.
-
-**Response:**
-
-```json
-{
-  "id": "uuid",
-  "token": "captcha_token",
-  "bg_image": "data:image/png;base64,...",
-  "puzzle_img": "data:image/png;base64,...",
-  "y": 100,
-  "expires_at": "2024-01-01T00:00:00Z"
-}
-```
-
-**Field Descriptions:**
-
-- `id`: Captcha unique identifier
-- `token`: Verification token (used with `/captcha/verify`)
-- `bg_image`: Base64 encoded background image with缺口 (missing puzzle piece area)
-- `puzzle_img`: Base64 encoded puzzle piece image (the draggable piece)
-- `y`: Y coordinate of the puzzle position (for reference, not used in verification)
-- `expires_at`: Expiration timestamp (5 minutes from generation)
-
-**Notes:**
-
-- Only the X coordinate (`x`) is verified; Y is provided for frontend reference
-- Images are returned as Base64 encoded PNG data URLs
-- Captcha can only be verified once and expires after 5 minutes
-
----
-
-### POST /captcha/verify
-
-Verify captcha token and position.
-
-**Request:**
-
-```json
-{
-  "id": "uuid",
-  "token": "token",
-  "x": 150
-}
-```
-
-**Response (success):**
-
-```json
-{
-  "success": true,
-  "message": "Verification successful"
 }
 ```
 
 **Error Responses:**
 
-Verification failed (wrong position):
-
-```json
-{
-  "error": "Verification failed, please try again"
-}
-```
-
-Captcha already used:
-
-```json
-{
-  "error": "Captcha already used"
-}
-```
-
-Captcha expired:
-
-```json
-{
-  "error": "Captcha has expired"
-}
-```
-
-Captcha not found:
-
-```json
-{
-  "error": "Captcha does not exist or has expired"
-}
-```
-
-**Notes:**
-
-- X coordinate verification allows ±10 pixel tolerance
-- Captcha can only be verified once
-- Captcha expires after 5 minutes
+- `403`: `{"error": "You must be logged in to view this post"}` (guest viewing disabled)
+- `404`: `{"error": "Post does not exist", "postId": "<id>", "details": "..."}`
 
 ---
 
@@ -288,23 +122,16 @@ Get all categories.
 ```json
 {
   "categories": [
-    {
-      "id": 1,
-      "name": "Default",
-      "description": "Default category for articles without a specified category"
-    },
-    { "id": 2, "name": "test", "description": "" },
-    { "id": 3, "name": "test1", "description": "" },
-    { "id": 4, "name": "12", "description": "" }
+    { "id": 1, "name": "Default", "description": "Default category" },
+    { "id": 2, "name": "tech", "description": "" }
   ]
 }
 ```
 
 **Notes:**
 
-- Returns all categories from database
-- Guests can view categories only if `allow_guest_view_posts` is enabled
-- If guest viewing is disabled and user is not logged in, returns empty array
+- Guests can view categories only when `allowGuestViewPosts` is enabled
+- If guest viewing is disabled and the user is not logged in, returns an empty array
 
 ---
 
@@ -316,26 +143,17 @@ Get all tags.
 
 ```json
 {
-  "tags": [
-    {
-      "id": 1,
-      "name": "golang"
-    }
-  ]
+  "tags": [{ "id": 1, "name": "golang" }]
 }
 ```
 
-**Notes:**
-
-- Returns all tags from database
-- Guests can view tags only if `allow_guest_view_posts` is enabled
-- If guest viewing is disabled and user is not logged in, returns empty array
+Same guest-visibility rules as `/categories`.
 
 ---
 
 ### GET /stats
 
-Get site statistics.
+Get aggregate site statistics.
 
 **Response:**
 
@@ -355,7 +173,7 @@ Get site statistics.
 
 ### GET /stats/popular-posts
 
-Get most popular posts by like count.
+Get most popular posts (ranked by likes and views).
 
 **Query Parameters:**
 
@@ -364,9 +182,7 @@ Get most popular posts by like count.
 **Response:**
 
 ```json
-{
-  "posts": [...]
-}
+{ "posts": [...] }
 ```
 
 ---
@@ -382,9 +198,7 @@ Get latest posts by creation date.
 **Response:**
 
 ```json
-{
-  "posts": [...]
-}
+{ "posts": [...] }
 ```
 
 ---
@@ -400,29 +214,35 @@ Get all available themes.
   "themes": [
     {
       "id": "default",
-      "name": "Default Theme",
-      "description": "Default VexGo theme",
-      "author": "VexGo Team",
+      "name": "vexgo default theme",
+      "author": "vexgo",
       "version": "1.0.0",
-      "preview": "/path/to/preview.png"
+      "description": "vexgo default theme",
+      "url": "https://github.com/vexgo/vexgo"
     }
   ]
 }
 ```
 
+The embedded default theme is always returned. Additional themes installed under the data directory (`data/theme/<id>/vexgo-theme.json`) are appended.
+
 ---
 
 ### GET /theme/:id/preview
 
-Get preview image for a specific theme.
+Get the preview image for a specific theme.
 
 **Response:** Image file (PNG/JPG)
+
+**Error Responses:**
+
+- `404`: `{"error": "theme not found"}` / `{"error": "preview not specified"}` / `{"error": "preview image not found"}`
 
 ---
 
 ### GET /comments/post/:id
 
-Get published comments for a post.
+Get published comments for a post (optional login, applies author privacy filtering).
 
 **Response:**
 
@@ -431,12 +251,14 @@ Get published comments for a post.
   "comments": [
     {
       "id": 1,
+      "postId": 1,
+      "userId": 2,
+      "user": { "id": 2, "username": "user1" },
       "content": "Comment text",
-      "user": {
-        "id": 1,
-        "username": "user1"
-      },
-      "created_at": "2024-01-01T00:00:00Z"
+      "status": "published",
+      "parentId": null,
+      "createdAt": "2026-03-17T21:14:35Z",
+      "updatedAt": "2026-03-17T21:14:35Z"
     }
   ]
 }
@@ -446,23 +268,19 @@ Get published comments for a post.
 
 ### GET /likes/:postId
 
-Get like status and count for a post.
+Get like status and count for a post (optional login).
 
 **Response:**
 
 ```json
-{
-  "postId": 1,
-  "likesCount": 42,
-  "isLiked": false
-}
+{ "postId": 1, "likesCount": 42, "isLiked": false }
 ```
 
 ---
 
 ### GET /posts/user/:id
 
-Get posts by a specific user.
+Get published posts of a specific user.
 
 **Query Parameters:**
 
@@ -474,20 +292,104 @@ Get posts by a specific user.
 ```json
 {
   "posts": [...],
-  "pagination": {
-    "total": 20,
-    "page": 1,
-    "limit": 10,
-    "totalPages": 2
-  }
+  "pagination": { "total": 20, "page": 1, "limit": 10, "totalPages": 2 }
 }
 ```
 
 ---
 
-## Authentication
+### GET /verify-email
 
-All endpoints under `/api/auth` are for authentication and user management.
+Verify an email address using a token.
+
+**Query Parameters:**
+
+- `token` (string, required): Verification token
+
+**Response (initial verification):**
+
+```json
+{ "message": "Email verification successful! You can now log in." }
+```
+
+**Response (email change - user found):**
+
+```json
+{
+  "message": "Email change successful! Your new email is now active.",
+  "require_relogin": true,
+  "new_email": "newemail@example.com"
+}
+```
+
+**Response (email change - user not found):**
+
+```json
+{
+  "message": "Email change successful! Your new email is now active.",
+  "require_relogin": true
+}
+```
+
+**Notes:**
+
+- Tokens prefixed with `email-change-` verify an email change; other tokens verify the initial email
+- After an email change the user must log in again (`require_relogin: true`)
+
+---
+
+### GET /captcha
+
+Generate a sliding puzzle captcha.
+
+**Response:**
+
+```json
+{
+  "id": "uuid",
+  "token": "captcha_token",
+  "bg_image": "data:image/png;base64,...",
+  "puzzle_img": "data:image/png;base64,...",
+  "y": 100,
+  "expires_at": "2026-03-17T21:14:35Z"
+}
+```
+
+**Notes:**
+
+- Only the X coordinate is verified; `y` is returned for the frontend
+- A captcha can be verified only once and expires after 5 minutes
+
+---
+
+### POST /captcha/verify
+
+Verify a captcha token and position.
+
+**Request:**
+
+```json
+{ "id": "uuid", "token": "token", "x": 150 }
+```
+
+**Response (success):**
+
+```json
+{ "success": true, "message": "Verification successful" }
+```
+
+**Error Responses:**
+
+- `404`: `{"error": "Captcha does not exist or has expired"}`
+- `400`: `{"error": "Captcha already used"}`
+- `400`: `{"error": "Captcha has expired"}`
+- `400`: `{"error": "Verification failed, please try again"}`
+
+X position verification allows ±10 pixel tolerance.
+
+---
+
+## Authentication
 
 ### POST /auth/register
 
@@ -506,27 +408,32 @@ Register a new user account.
 }
 ```
 
-**Response (Success):**
+**Response (201):**
 
 ```json
 {
-  "message": "Registration successful! Please check your email to verify your account."
+  "message": "Registration successful! Please verify your email address before logging in. Check your inbox and click the verification link.",
+  "user": {
+    "id": 1,
+    "username": "username",
+    "email": "user@example.com",
+    "role": "guest"
+  },
+  "email_verified": false,
+  "requires_verification": true
 }
 ```
 
-**Response (Error):**
+**Error Responses:**
 
-```json
-{
-  "error": "User already exists"
-}
-```
+- `409`: `{"error": "user already exists"}`
+- `403`: `{"error": "registration is disabled, please contact administrator"}`
+- `400`: captcha required / captcha expired / captcha mismatch
 
 **Notes:**
 
-- Registration may be disabled by admin
-- Captcha verification required if enabled
-- Email verification required before login
+- Captcha fields are required when `captchaEnabled` is turned on in general settings
+- `captcha_id`, `captcha_token` and `captcha_x` may be empty strings / 0 when captcha is disabled
 
 ---
 
@@ -546,33 +453,28 @@ Login with email and password.
 }
 ```
 
-**Response (Success):**
+**Response (200):**
 
 ```json
 {
   "token": "jwt_token_here",
   "user": {
     "id": 1,
-    "email": "user@example.com",
     "username": "username",
-    "role": "user",
-    "email_verified": true
+    "email": "user@example.com",
+    "role": "admin",
+    "avatar": "",
+    "bio": "",
+    "birthday": ""
   }
 }
 ```
 
-**Response (Error):**
+**Error Responses:**
 
-```json
-{
-  "error": "Invalid credentials"
-}
-```
-
-**Notes:**
-
-- Captcha may be required based on settings
-- Returns JWT token for authenticated requests
+- `401`: `{"message": "invalid email or password"}`
+- `403`: `{"message": "Please verify your email address first. ...", "email_verified": false}`
+- `400`: `{"error": "please complete the captcha verification"}`
 
 ---
 
@@ -588,12 +490,12 @@ Get current user information (requires authentication).
     "id": 1,
     "email": "user@example.com",
     "username": "username",
-    "role": "user",
+    "role": "admin",
     "email_verified": true,
     "avatar": "url_to_avatar",
     "bio": "My bio",
     "birthday": "2023-01-01",
-    "created_at": "2024-01-01T00:00:00Z",
+    "createdAt": "2026-03-17T21:14:35Z",
     "profile_visibility": "public",
     "hide_email": false,
     "hide_birthday": false,
@@ -606,13 +508,13 @@ Get current user information (requires authentication).
 
 ### GET /auth/user
 
-Alias for `/auth/me` (requires authentication).
+Alias of `/auth/me` (requires authentication).
 
 ---
 
 ### PUT /auth/profile
 
-Update user profile (requires authentication).
+Update the current user's profile (requires authentication). All fields are optional.
 
 **Request:**
 
@@ -631,18 +533,10 @@ Update user profile (requires authentication).
 {
   "user": {
     "id": 1,
-    "email": "user@example.com",
     "username": "new_username",
-    "role": "user",
-    "email_verified": true,
-    "avatar": "url_to_avatar",
     "bio": "My bio",
-    "birthday": "2023-01-01",
-    "created_at": "2024-01-01T00:00:00Z",
-    "profile_visibility": "public",
-    "hide_email": false,
-    "hide_birthday": false,
-    "hide_bio": false
+    "avatar": "url_to_avatar",
+    "birthday": "2023-01-01"
   }
 }
 ```
@@ -651,37 +545,32 @@ Update user profile (requires authentication).
 
 ### PUT /auth/password
 
-Change user password (requires authentication).
+Change the current user's password (requires authentication).
 
 **Request:**
 
 ```json
-{
-  "current_password": "old_password",
-  "new_password": "new_password"
-}
+{ "oldPassword": "old_password", "newPassword": "new_password" }
 ```
 
 **Response:**
 
 ```json
-{
-  "message": "Password changed successfully"
-}
+{ "message": "Password changed successfully" }
 ```
+
+`newPassword` must be at least 6 characters. Changing the password invalidates previously issued tokens.
 
 ---
 
 ### PUT /auth/email
 
-Request email change (requires authentication).
+Request an email change (requires authentication). A verification email is sent to the new address.
 
 **Request:**
 
 ```json
-{
-  "email": "newemail@example.com"
-}
+{ "email": "newemail@example.com" }
 ```
 
 **Response:**
@@ -697,7 +586,7 @@ Request email change (requires authentication).
 
 ### PUT /auth/settings
 
-Update user settings (requires authentication).
+Update the current user's privacy settings (requires authentication).
 
 **Request:**
 
@@ -717,14 +606,6 @@ Update user settings (requires authentication).
   "message": "Settings updated successfully",
   "user": {
     "id": 1,
-    "email": "user@example.com",
-    "username": "username",
-    "role": "user",
-    "email_verified": true,
-    "avatar": "url_to_avatar",
-    "bio": "My bio",
-    "birthday": "2023-01-01",
-    "created_at": "2024-01-01T00:00:00Z",
     "profile_visibility": "public",
     "hide_email": true,
     "hide_birthday": false,
@@ -737,74 +618,50 @@ Update user settings (requires authentication).
 
 ### POST /auth/request-password-reset
 
-Request password reset email.
+Request a password reset email (public).
 
 **Request:**
 
 ```json
-{
-  "email": "user@example.com"
-}
+{ "email": "user@example.com" }
 ```
 
 **Response:**
 
 ```json
-{
-  "message": "If the email exists, a reset link has been sent"
-}
+{ "message": "If the email exists, reset link has been sent" }
 ```
 
 ---
 
 ### POST /auth/reset-password
 
-Reset password with token.
+Reset a password with the emailed token (public).
 
 **Request:**
 
 ```json
-{
-  "token": "reset_token",
-  "new_password": "new_password"
-}
+{ "token": "reset_token", "password": "new_password" }
 ```
 
 **Response:**
 
 ```json
-{
-  "message": "Password reset successful"
-}
+{ "message": "Password reset successfully" }
 ```
+
+`password` must be at least 6 characters.
 
 ---
 
 ### GET /auth/verification-status
 
-Get email verification status (requires authentication).
+Get the current user's email verification status (requires authentication).
 
 **Response:**
 
 ```json
-{
-  "email_verified": true,
-  "email": "user@example.com"
-}
-```
-
----
-
-### POST /auth/resend-verification
-
-Resend verification email (requires authentication).
-
-**Response:**
-
-```json
-{
-  "message": "Verification email sent"
-}
+{ "email_verified": true, "email": "user@example.com" }
 ```
 
 ---
@@ -813,60 +670,52 @@ Resend verification email (requires authentication).
 
 ### GET /sso/providers
 
-Get enabled SSO providers.
+Get the enabled SSO providers (public).
 
 **Response:**
 
 ```json
-{
-  "providers": [
-    {
-      "name": "github",
-      "display_name": "GitHub",
-      "icon": "/path/to/github.svg",
-      "enabled": true
-    },
-    {
-      "name": "google",
-      "display_name": "Google",
-      "icon": "/path/to/google.svg",
-      "enabled": true
-    }
-  ]
-}
+{ "providers": ["github", "google"], "allow_local_login": true }
 ```
+
+`providers` contains only enabled providers (GitHub, Google, and OIDC are supported). `allow_local_login` is `false` when password login is disabled.
 
 ---
 
 ### GET /sso/:provider/login
 
-Initiate SSO login (redirects to provider).
+Initiate an SSO login (redirects to the provider).
 
 **Query Parameters:**
 
-- `method` (string, optional): `sso_get_token` or `get_sso_id`
+- `method` (string, optional, default: `sso_get_token`):
+  - `sso_get_token` — full login; a JWT is issued on callback
+  - `get_sso_id` — returns only the provider-side ID (used to bind SSO to an existing account from the settings page)
 
-**Response:** Redirect to SSO provider
+**Response:** `302` redirect to the OAuth2/OIDC provider.
 
 ---
 
 ### GET /sso/:provider/callback
 
-SSO callback endpoint (provider redirects here).
+SSO callback endpoint; the provider redirects here.
 
 **Query Parameters:**
 
 - `code` (string): Authorization code
-- `state` (string): State parameter for CSRF protection
-- `method` (string): Same as in login request
+- `state` (string): CSRF state parameter
+- `method` (string): Same value as the login request
 
-**Response:** Redirects to frontend with token or SSO ID
+**Response:** An HTML page (not JSON). The result is written to `localStorage` under the key `sso_callback_result` and the popup window closes. The opener page reads the result via the `storage` event:
+
+- On success, the payload is a JSON string, e.g. `{"token": "<jwt>"}` (for `sso_get_token`) or `{"sso_id": "<provider user id>"}` (for `get_sso_id`)
+- On error, the payload is `{"error": "<message>"}` and the response status is `400`
 
 ---
 
 ## Posts Management
 
-### POST /api/posts
+### POST /posts
 
 Create a new post (requires authentication).
 
@@ -876,36 +725,48 @@ Create a new post (requires authentication).
 {
   "title": "My Post",
   "content": "Post content in markdown...",
-  "category": 1,
+  "category": "tech",
   "tags": ["golang", "programming"],
   "excerpt": "Post excerpt",
   "coverImage": "/uploads/image.jpg",
-  "status": "draft" | "published"
+  "status": "draft"
 }
 ```
 
-**Response:**
+`title`, `content` and `category` are required. `category` accepts a category name or ID; `status` is one of `draft` / `pending` / `published`.
+
+**Response (201):**
 
 ```json
 {
   "message": "Post created successfully",
-  "post": {
-    "id": 1,
-    "title": "My Post",
-    "content": "Post content...",
-    "status": "draft",
-    "category": 1,
-    "tags": [...],
-    "created_at": "2024-01-01T00:00:00Z"
-  }
+  "post": { "id": 1, "title": "My Post", "status": "draft" }
 }
 ```
 
 ---
 
-### GET /api/posts/user/my-posts
+### GET /posts/user/my-posts
 
-Get current user's posts (requires authentication).
+Get the current user's posts (requires authentication).
+
+**Query Parameters:**
+
+- `page` (int, default: 1)
+- `limit` (int, default: 10)
+- `status` (string, optional): Filter by post status
+
+**Response:**
+
+```json
+{ "posts": [...], "pagination": { "total": 10, "page": 1, "limit": 10, "totalPages": 1 } }
+```
+
+---
+
+### GET /posts/drafts
+
+Get the current user's draft posts (requires authentication).
 
 **Query Parameters:**
 
@@ -915,162 +776,122 @@ Get current user's posts (requires authentication).
 **Response:**
 
 ```json
-{
-  "posts": [...],
-  "pagination": {...}
-}
+{ "posts": [...], "pagination": { "total": 3, "page": 1, "limit": 10, "totalPages": 1 } }
 ```
 
 ---
 
-### GET /api/posts/drafts
+### PUT /posts/:id
 
-Get current user's draft posts (requires authentication).
+Update a post (requires authentication; author or admin only).
 
-**Query Parameters:**
-
-- `page` (int, default: 1)
-- `limit` (int, default: 10)
-
-**Response:**
-
-```json
-{
-  "posts": [...],
-  "pagination": {...}
-}
-```
-
----
-
-### PUT /api/posts/:id
-
-Update a post (requires authentication, author only).
-
-**Request:**
-
-```json
-{
-  "title": "Updated Title",
-  "content": "Updated content...",
-  "category": 1,
-  "tags": ["golang", "programming"],
-  "excerpt": "Post excerpt",
-  "coverImage": "/uploads/image.jpg",
-  "status": "draft" | "published"
-}
-```
+**Request:** Same fields as `POST /posts`; all optional.
 
 **Response:**
 
 ```json
 {
   "message": "Post updated successfully",
-  "post": {
-    "id": 1,
-    "title": "Updated Title",
-    "content": "Updated content...",
-    "status": "published",
-    "updated_at": "2024-01-01T00:00:00Z"
-  }
+  "post": { "id": 1, "title": "Updated Title", "status": "published" }
 }
 ```
 
+**Error Responses:**
+
+- `404`: `{"error": "Post does not exist"}`
+- `403`: `{"error": "Not authorized to modify this post"}`
+
 ---
 
-### DELETE /api/posts/:id
+### DELETE /posts/:id
 
-Delete a post (requires authentication, author or admin only).
+Delete a post (requires authentication; author or admin only).
 
 **Response:**
 
 ```json
-{
-  "message": "Post deleted successfully"
-}
+{ "message": "Post deleted successfully" }
 ```
 
 ---
 
 ## Comments
 
-### POST /api/comments
+### POST /comments
 
 Create a comment (requires authentication).
 
 **Request:**
 
 ```json
-{
-  "postId": 1,
-  "content": "This is a comment",
-  "parentId": null
-}
+{ "postId": 1, "content": "This is a comment", "parentId": null }
 ```
 
-**Response:**
+`postId` accepts a number or a numeric string; `content` is limited to 100 characters; `parentId` is optional for reply comments.
+
+**Response (201):**
 
 ```json
 {
   "message": "Comment created successfully",
   "comment": {
     "id": 1,
+    "postId": 1,
+    "userId": 1,
     "content": "This is a comment",
-    "post_id": 1,
-    "user_id": 1,
-    "parent_id": null,
     "status": "published",
-    "created_at": "2024-01-01T00:00:00Z"
+    "parentId": null,
+    "createdAt": "2026-03-17T21:14:35Z"
   },
   "commentsCount": 1,
   "requiresModeration": false
 }
 ```
 
-**Notes:**
-
-- Comment content limited to 100 characters
-- `parentId` is optional for reply comments
+`requiresModeration` is `true` when the comment was created with status `pending` (moderation enabled).
 
 ---
 
-### DELETE /api/comments/:id
+### DELETE /comments/:id
 
-Delete a comment (requires authentication, comment author or admin only).
+Delete a comment (requires authentication; comment author or admin only).
 
 **Response:**
 
 ```json
-{
-  "message": "Comment deleted",
-  "commentsCount": 1
-}
+{ "message": "Comment deleted", "commentsCount": 1 }
 ```
 
 ---
 
 ## Likes
 
-### POST /api/likes/:postId
+### POST /likes/:postId
 
-Toggle like on a post (requires authentication).
+Toggle a like on a post (requires authentication).
 
 **Response:**
 
 ```json
 {
-  "message": "Liked successfully" | "Like removed",
+  "message": "Liked successfully",
   "postId": 1,
-  "isLiked": true | false,
+  "isLiked": true,
   "likesCount": 42
 }
+```
+
+Calling it again removes the like:
+
+```json
+{ "message": "Like removed", "postId": 1, "isLiked": false, "likesCount": 41 }
 ```
 
 ---
 
 ## File Upload
 
-### POST /api/upload/file
+### POST /upload/file
 
 Upload a single file (requires authentication).
 
@@ -1088,26 +909,23 @@ Upload a single file (requires authentication).
     "url": "/uploads/uuid.ext",
     "size": 1024,
     "type": "image/jpeg",
-    "user_id": 1,
-    "created_at": "2024-01-01T00:00:00Z"
+    "userId": 1,
+    "createdAt": "2026-03-17T21:14:35Z"
   }
 }
 ```
 
-**Notes:**
-
-- Supports local storage or S3 (based on configuration)
-- Files are stored with UUID filename to avoid conflicts
+Files are stored with a UUID filename. Storage is local disk or S3 depending on configuration.
 
 ---
 
-### POST /api/upload/files
+### POST /upload/files
 
 Upload multiple files (requires authentication).
 
 **Form Data:**
 
-- `files[]` (files): Multiple files
+- `files` (file[]): Multiple files
 
 **Response:**
 
@@ -1115,31 +933,17 @@ Upload multiple files (requires authentication).
 {
   "message": "File upload completed",
   "files": [
-    {
-      "id": 1,
-      "url": "/uploads/uuid1.ext",
-      "size": 1024,
-      "type": "unknown",
-      "user_id": 1,
-      "created_at": "2024-01-01T00:00:00Z"
-    },
-    {
-      "id": 2,
-      "url": "/uploads/uuid2.ext",
-      "size": 2048,
-      "type": "unknown",
-      "user_id": 1,
-      "created_at": "2024-01-01T00:00:00Z"
-    }
+    { "id": 1, "url": "/uploads/uuid1.ext", "size": 1024, "userId": 1 },
+    { "id": 2, "url": "/uploads/uuid2.ext", "size": 2048, "userId": 1 }
   ]
 }
 ```
 
 ---
 
-### GET /api/upload/my-files
+### GET /upload/my-files
 
-Get current user's uploaded files (requires authentication).
+Get the current user's uploaded files (requires authentication).
 
 **Response:**
 
@@ -1150,9 +954,9 @@ Get current user's uploaded files (requires authentication).
       "id": 1,
       "url": "/uploads/uuid.ext",
       "size": 1024,
-      "type": "unknown",
-      "user_id": 1,
-      "created_at": "2024-01-01T00:00:00Z"
+      "type": "image/jpeg",
+      "userId": 1,
+      "createdAt": "2026-03-17T21:14:35Z"
     }
   ]
 }
@@ -1160,27 +964,110 @@ Get current user's uploaded files (requires authentication).
 
 ---
 
-### DELETE /api/upload/:id
+### DELETE /upload/:id
 
-Delete a file (requires authentication, file owner or admin only).
+Delete an uploaded file (requires authentication; uploader or admin only).
+
+**Response:**
+
+```json
+{ "message": "File deleted" }
+```
+
+---
+
+## Messages (Notifications)
+
+### GET /messages
+
+Get the current user's notifications (requires authentication).
+
+**Query Parameters:**
+
+- `page` (int, default: 1)
+- `limit` (int, default: 10)
+- `type` (string, optional): Filter by message type (`comment`, `like`, `reply`, `review`, `role`)
+- `is_read` (string, optional): Filter by read status (`true` or `false`)
 
 **Response:**
 
 ```json
 {
-  "message": "File deleted"
+  "notifications": [
+    {
+      "id": 1,
+      "user_id": 1,
+      "type": "comment",
+      "title": "Post Commented",
+      "content": "User \"alice\" commented on your post \"Hello\": ...",
+      "related_id": "1",
+      "related_type": "post",
+      "is_read": false,
+      "created_at": "2026-03-17T21:14:35Z",
+      "updated_at": "2026-03-17T21:14:35Z"
+    }
+  ],
+  "pagination": { "total": 20, "page": 1, "limit": 10, "totalPages": 2 }
 }
+```
+
+---
+
+### GET /messages/unread-count
+
+Get the current user's unread notification count (requires authentication).
+
+**Response:**
+
+```json
+{ "unreadCount": 5 }
+```
+
+---
+
+### PUT /messages/:id/read
+
+Mark a message as read (requires authentication).
+
+**Response:**
+
+```json
+{ "message": "Message marked as read" }
+```
+
+---
+
+### PUT /messages/read-all
+
+Mark all messages as read (requires authentication).
+
+**Response:**
+
+```json
+{ "message": "All messages marked as read" }
+```
+
+---
+
+### DELETE /messages/:id
+
+Delete a message (requires authentication; message owner only).
+
+**Response:**
+
+```json
+{ "message": "Message deleted" }
 ```
 
 ---
 
 ## Moderation
 
-All moderation endpoints require `admin` or `super_admin` role.
+All moderation endpoints require the `admin` or `super_admin` role.
 
 ### Comments Moderation
 
-#### GET /api/moderation/comments/pending
+#### GET /moderation/comments/pending
 
 Get pending comments for moderation.
 
@@ -1197,175 +1084,135 @@ Get pending comments for moderation.
     {
       "id": 1,
       "content": "Comment to moderate",
-      "user": {...},
-      "post": {...},
-      "created_at": "2024-01-01T00:00:00Z"
+      "user": { "id": 2, "username": "user1" },
+      "post": { "id": 1, "title": "My Post" },
+      "status": "pending",
+      "createdAt": "2026-03-17T21:14:35Z"
     }
   ],
-  "pagination": {...}
+  "pagination": { "total": 1, "page": 1, "limit": 10, "totalPages": 1 }
 }
 ```
 
----
+#### GET /moderation/comments/approved
 
-#### GET /api/moderation/comments/approved
+Get approved (`published`) comments. Same parameters and shape as above.
 
-Get approved comments.
+#### GET /moderation/comments/rejected
 
----
+Get rejected comments. Same parameters and shape as above.
 
-#### GET /api/moderation/comments/rejected
+#### PUT /moderation/comments/approve/:id
 
-Get rejected comments.
+Approve a comment (status → `published`).
 
----
+**Response:**
 
-#### PUT /api/moderation/comments/approve/:id
+```json
+{ "message": "Comment approved", "comment": { "id": 1, "status": "published" } }
+```
 
-Approve a comment.
+#### PUT /moderation/comments/reject/:id
+
+Reject a comment (status → `rejected`). No request body.
+
+**Response:**
+
+```json
+{ "message": "Comment rejected", "comment": { "id": 1, "status": "rejected" } }
+```
+
+#### GET /moderation/comments/config
+
+Get the comment moderation configuration (API key masked).
 
 **Response:**
 
 ```json
 {
-  "message": "Comment approved"
+  "enabled": false,
+  "modelProvider": "",
+  "apiKey": "",
+  "apiEndpoint": "",
+  "modelName": "gpt-3.5-turbo",
+  "moderationPrompt": "Please review the following comment for compliance. ...",
+  "blockKeywords": "spam,advertisement",
+  "autoApproveEnabled": true,
+  "minScoreThreshold": 0.5
 }
 ```
 
----
+**Notes:**
 
-#### PUT /api/moderation/comments/reject/:id
+- When `enabled` is `true`, new comments are created with status `pending` and run through the moderation engine
+- When `autoApproveEnabled` is `true`, comments pass automatically when moderation is disabled
+- The current moderation engine is keyword-based (blocked keywords plus simple content checks); an AI API integration is planned
 
-Reject a comment.
+#### PUT /moderation/comments/config
 
-**Request:**
+Update the comment moderation configuration.
 
-```json
-{
-  "rejection_reason": "Reason for rejection"
-}
-```
+**Request:** Same fields as the GET response, plus `apiKey` (leave empty to keep the existing key).
 
 **Response:**
 
 ```json
 {
-  "message": "Comment rejected"
+  "message": "Comment moderation configuration updated successfully",
+  "config": {
+    "enabled": true,
+    "modelProvider": "openai",
+    "modelName": "gpt-3.5-turbo",
+    "autoApproveEnabled": true,
+    "minScoreThreshold": 0.5
+  }
 }
 ```
-
----
-
-#### GET /api/moderation/comments/config
-
-Get comment moderation configuration.
-
-**Response:**
-
-```json
-{
-  "enabled": true,
-  "model_provider": "openai",
-  "api_endpoint": "https://api.openai.com/v1/chat/completions",
-  "model_name": "gpt-3.5-turbo",
-  "moderation_prompt": "Please review...",
-  "block_keywords": "spam,advertisement",
-  "auto_approve_enabled": true,
-  "min_score_threshold": 0.5
-}
-```
-
----
-
-#### PUT /api/moderation/comments/config
-
-Update comment moderation configuration.
-
-**Request:**
-
-```json
-{
-  "enabled": true,
-  "model_provider": "openai",
-  "api_key": "new_api_key",
-  "api_endpoint": "https://api.openai.com/v1/chat/completions",
-  "model_name": "gpt-3.5-turbo",
-  "moderation_prompt": "Please review...",
-  "block_keywords": "spam,advertisement",
-  "auto_approve_enabled": true,
-  "min_score_threshold": 0.5
-}
-```
-
-**Response:**
-
-```json
-{
-  "message": "Configuration updated"
-}
-```
-
----
 
 ### Posts Moderation
 
-#### GET /api/moderation/pending
+#### GET /moderation/pending
 
-Get pending posts for moderation.
+Get posts with status `pending`.
 
 **Query Parameters:**
 
 - `page` (int, default: 1)
 - `limit` (int, default: 10)
+- `search` (string, optional)
 
 **Response:**
 
 ```json
-{
-  "posts": [...],
-  "pagination": {...}
-}
+{ "posts": [...], "pagination": { "total": 2, "page": 1, "limit": 10, "totalPages": 1 } }
 ```
 
----
+#### GET /moderation/approved
 
-#### GET /api/moderation/approved
+Get posts with status `published`. Same parameters and shape as above.
 
-Get approved posts.
+#### GET /moderation/rejected
 
----
+Get posts with status `rejected`. Same parameters and shape as above.
 
-#### GET /api/moderation/rejected
+#### PUT /moderation/approve/:id
 
-Get rejected posts.
-
----
-
-#### PUT /api/moderation/approve/:id
-
-Approve a post (status changes to `published`).
+Approve a post (status → `published`).
 
 **Response:**
 
 ```json
-{
-  "message": "Post approved",
-  "post": {...}
-}
+{ "message": "Post approved", "post": { "id": 1, "status": "published" } }
 ```
 
----
+#### PUT /moderation/reject/:id
 
-#### PUT /api/moderation/reject/:id
-
-Reject a post.
+Reject a post (status → `rejected`).
 
 **Request:**
 
 ```json
-{
-  "rejection_reason": "Reason for rejection"
-}
+{ "rejectionReason": "Reason for rejection" }
 ```
 
 **Response:**
@@ -1373,38 +1220,40 @@ Reject a post.
 ```json
 {
   "message": "Post has been rejected",
-  "post": {...}
+  "post": { "id": 1, "status": "rejected" }
 }
 ```
 
----
+#### PUT /moderation/resubmit/:id
 
-#### PUT /api/moderation/resubmit/:id
-
-Resubmit a rejected post (status changes back to `pending`).
+Resubmit a rejected post (status → `pending`).
 
 **Response:**
 
 ```json
 {
-  "message": "Post resubmitted for review"
+  "message": "Post resubmitted for moderation",
+  "post": { "id": 1, "status": "pending" }
 }
 ```
+
+Only rejected posts can be resubmitted.
 
 ---
 
 ## User Management
 
-All user management endpoints require `admin` or `super_admin` role.
+All endpoints in this section require the `admin` or `super_admin` role.
 
-### GET /api/users
+### GET /users
 
-Get user list with pagination.
+Get a paginated user list.
 
 **Query Parameters:**
 
 - `page` (int, default: 1)
-- `limit` (int, default: 10)
+- `limit` (int, default: 10, max: 100)
+- `search` (string, optional): Search by username or email
 
 **Response:**
 
@@ -1415,72 +1264,143 @@ Get user list with pagination.
       "id": 1,
       "username": "user1",
       "email": "user@example.com",
-      "role": "user",
+      "role": "admin",
       "email_verified": true,
-      "created_at": "2024-01-01T00:00:00Z"
+      "createdAt": "2026-03-17T21:14:35Z"
     }
   ],
-  "pagination": {...}
+  "pagination": { "total": 1, "page": 1, "limit": 10, "totalPages": 1 }
 }
 ```
 
----
+### PUT /users/:id/role
 
-### PUT /api/users/:id/role
-
-Update user role.
+Update a user's role.
 
 **Request:**
 
 ```json
-{
-  "role": "admin" | "user" | "contributor" | "super_admin"
-}
+{ "role": "admin" }
 ```
+
+Valid roles: `super_admin`, `admin`, `author`, `contributor`, `guest`.
 
 **Response:**
 
 ```json
 {
-  "message": "User role updated"
+  "message": "User role updated successfully",
+  "user": { "id": 2, "role": "admin" }
 }
 ```
 
 **Notes:**
 
-- Cannot modify own role
-- Super admin can only be assigned/deassigned by another super admin
+- A user cannot modify their own role
+- Only a `super_admin` can modify a `super_admin` account
+
+### DELETE /users/:id
+
+Delete a user and all their posts and comments.
+
+**Response:**
+
+```json
+{ "message": "User deleted successfully" }
+```
+
+**Notes:**
+
+- A user cannot delete their own account
+- A non-`super_admin` cannot delete a `super_admin` account
 
 ---
 
-### DELETE /api/users/:id
+## Creator Applications
 
-Delete a user.
+### POST /users/apply-creator
+
+Submit a creator application (requires authentication).
+
+Only users with the `guest` or `contributor` role can apply for a role upgrade.
+
+**Request:**
+
+```json
+{ "reason": "I want to publish posts" }
+```
+
+**Response:**
+
+```json
+{ "message": "Application submitted successfully", "applicationId": 1 }
+```
+
+**Error Responses:**
+
+- `400`: `{"error": "only guest and contributor users can apply for role upgrade"}`
+- `400`: `{"error": "..."}` (an application is already pending)
+
+### GET /users/creator-applications
+
+Get creator applications for review (admin only).
+
+**Query Parameters:**
+
+- `page` (int, default: 1)
+- `limit` (int, default: 10, max: 100)
+- `status` (string, default: `pending`): `pending`, `approved`, `rejected`
 
 **Response:**
 
 ```json
 {
-  "message": "User deleted successfully"
+  "applications": [
+    {
+      "id": 1,
+      "userId": 2,
+      "username": "user1",
+      "email": "user@example.com",
+      "currentRole": "contributor",
+      "status": "pending",
+      "reason": "I want to publish posts",
+      "createdAt": "2026-03-17T21:14:35Z",
+      "updatedAt": "2026-03-17T21:14:35Z"
+    }
+  ],
+  "pagination": { "total": 1, "page": 1, "limit": 10, "totalPages": 1 }
 }
 ```
 
-**Notes:**
+### PUT /users/creator-applications/:id/review
 
-- Cannot delete self
-- Super admin cannot be deleted by non-super admin
+Review a creator application (admin only).
+
+**Request:**
+
+```json
+{ "action": "approve", "reason": "Optional review note" }
+```
+
+`action` is `approve` or `reject`.
+
+**Response:**
+
+```json
+{ "message": "Application reviewed successfully" }
+```
 
 ---
 
 ## Configuration
 
-All configuration endpoints require `admin` or `super_admin` role.
+All endpoints in this section require the `admin` or `super_admin` role, except `GET /config/general` and `GET /config/theme`, which are public.
 
 ### SMTP Configuration
 
-#### GET /api/config/smtp
+#### GET /config/smtp
 
-Get SMTP configuration (password not returned).
+Get the SMTP configuration (password not returned).
 
 **Response:**
 
@@ -1490,16 +1410,16 @@ Get SMTP configuration (password not returned).
   "host": "smtp.example.com",
   "port": 587,
   "username": "user@example.com",
-  "from_email": "noreply@example.com",
-  "from_name": "VexGo"
+  "password": "",
+  "fromEmail": "noreply@example.com",
+  "fromName": "VexGo",
+  "testEmail": ""
 }
 ```
 
----
+#### PUT /config/smtp
 
-#### PUT /api/config/smtp
-
-Update SMTP configuration.
+Update the SMTP configuration. Returns the updated config.
 
 **Request:**
 
@@ -1509,67 +1429,51 @@ Update SMTP configuration.
   "host": "smtp.example.com",
   "port": 587,
   "username": "user@example.com",
-  "password": "password", // optional, leave empty to keep existing
-  "from_email": "noreply@example.com",
-  "from_name": "VexGo"
+  "password": "password",
+  "fromEmail": "noreply@example.com",
+  "fromName": "VexGo",
+  "testEmail": "test@example.com"
 }
 ```
+
+Leave `password` empty to keep the existing one.
+
+**Response:** The updated SMTP configuration (same shape as `GET /config/smtp`).
+
+#### POST /config/smtp/test
+
+Send a test email. No request body — the recipient is the configured `testEmail`, falling back to the acting admin's email.
 
 **Response:**
 
 ```json
 {
-  "message": "SMTP configuration updated"
+  "message": "Test email has been sent to your inbox",
+  "to": "test@example.com"
 }
 ```
-
----
-
-#### POST /api/config/smtp/test
-
-Test SMTP connection.
-
-**Request:**
-
-```json
-{
-  "test_email": "test@example.com"
-}
-```
-
-**Response:**
-
-```json
-{
-  "message": "Test email sent successfully"
-}
-```
-
----
 
 ### AI Configuration
 
-#### GET /api/config/ai
+#### GET /config/ai
 
-Get AI configuration (API key not returned).
+Get the AI configuration (API key not returned).
 
 **Response:**
 
 ```json
 {
-  "enabled": true,
+  "enabled": false,
   "provider": "openai",
-  "api_endpoint": "https://api.openai.com/v1/chat/completions",
-  "api_key": "",
-  "model_name": "gpt-3.5-turbo"
+  "apiEndpoint": "",
+  "apiKey": "",
+  "modelName": "gpt-3.5-turbo"
 }
 ```
 
----
+#### PUT /config/ai
 
-#### PUT /api/config/ai
-
-Update AI configuration.
+Update the AI configuration.
 
 **Request:**
 
@@ -1577,173 +1481,150 @@ Update AI configuration.
 {
   "enabled": true,
   "provider": "openai",
-  "api_key": "sk-...",
-  "api_endpoint": "https://api.openai.com/v1/chat/completions",
-  "model_name": "gpt-3.5-turbo"
+  "apiEndpoint": "https://api.openai.com/v1",
+  "apiKey": "sk-...",
+  "modelName": "gpt-3.5-turbo"
 }
 ```
+
+Leave `apiKey` empty to keep the existing one.
 
 **Response:**
 
 ```json
 {
-  "message": "AI configuration updated"
+  "message": "AI config updated successfully",
+  "aiConfig": {
+    "enabled": true,
+    "provider": "openai",
+    "apiEndpoint": "https://api.openai.com/v1",
+    "apiKey": "",
+    "modelName": "gpt-3.5-turbo"
+  }
 }
 ```
 
----
+#### POST /config/ai/test
 
-#### POST /api/config/ai/test
+Test the AI connection. No request body; uses a built-in test prompt.
 
-Test AI connection.
-
-**Request:**
+**Response:**
 
 ```json
-{
-  "test_prompt": "Hello, AI!"
-}
+{ "message": "AI connection test successful!", "response": "This is a test." }
 ```
+
+#### GET /config/ai/models
+
+List the models available from the configured AI endpoint.
 
 **Response:**
 
 ```json
 {
-  "response": "Hello! How can I help you today?"
+  "message": "Models fetched successfully",
+  "models": [
+    {
+      "id": "gpt-3.5-turbo",
+      "object": "model",
+      "created": 1677610602,
+      "owned_by": "openai"
+    }
+  ]
 }
 ```
-
----
-
-#### GET /api/config/ai/models
-
-Get available AI models (for configured provider).
-
-**Response:**
-
-```json
-{
-  "models": ["gpt-3.5-turbo", "gpt-4"]
-}
-```
-
----
 
 ### General Settings
 
-#### GET /api/config/general
+#### GET /config/general
 
-Get general settings (public access).
-
-**Response:**
-
-```json
-{
-  "site_name": "VexGo",
-  "site_description": "A modern blog platform",
-  "registration_enabled": true,
-  "allow_guest_view_posts": true,
-  "captcha_enabled": false,
-  "default_language": "en"
-}
-```
-
----
-
-#### PUT /api/config/general
-
-Update general settings (admin only).
-
-**Request:**
-
-```json
-{
-  "site_name": "VexGo",
-  "site_description": "...",
-  "registration_enabled": true,
-  "allow_guest_view_posts": true,
-  "captcha_enabled": false,
-  "default_language": "en"
-}
-```
+Get the general settings (public access).
 
 **Response:**
 
 ```json
 {
-  "message": "Settings updated"
+  "captchaEnabled": false,
+  "registrationEnabled": true,
+  "allowGuestViewPosts": true,
+  "siteName": "VexGo",
+  "siteDescription": "",
+  "siteIcon": "",
+  "itemsPerPage": 20
 }
 ```
 
----
+#### PUT /config/general
+
+Update the general settings (admin only).
+
+**Request:** Same fields as the GET response.
+
+**Response:**
+
+```json
+{
+  "message": "General settings updated successfully",
+  "generalSettings": {
+    "siteName": "VexGo",
+    "registrationEnabled": true,
+    "allowGuestViewPosts": true,
+    "captchaEnabled": false,
+    "itemsPerPage": 20
+  }
+}
+```
 
 ### Theme Configuration
 
-### GET /api/config/theme
+#### GET /config/theme
 
-Get current theme configuration.
+Get the currently active theme (public access).
 
 **Response:**
 
 ```json
-{
-  "active_theme": "default"
-}
+{ "activeTheme": "default" }
 ```
 
----
+#### PUT /config/theme
 
-### PUT /api/config/theme
-
-Set active theme.
+Set the globally active theme (admin only).
 
 **Request:**
 
 ```json
-{
-  "active_theme": "theme_id"
-}
+{ "activeTheme": "theme_id" }
 ```
 
 **Response:**
 
 ```json
-{
-  "message": "Theme updated successfully",
-  "active_theme": "theme_id"
-}
+{ "message": "Theme updated successfully", "activeTheme": "theme_id" }
 ```
 
----
-
-#### POST /api/themes/upload
+#### POST /themes/upload
 
 Upload and install a new theme (admin only).
 
 **Form Data:**
 
-- `theme` (file): ZIP archive containing theme files
+- `theme` (file): ZIP archive containing the theme files and a `vexgo-theme.json` metadata file
 
 **Response:**
 
 ```json
-{
-  "message": "Theme uploaded successfully"
-}
+{ "message": "Theme uploaded successfully" }
 ```
 
-**Theme Structure:**
+**Theme structure:**
 
-```
+```text
 theme.zip
 └── theme-id/
-    ├── vexgo-theme.json (metadata)
+    ├── vexgo-theme.json (metadata, required)
     ├── preview.png (optional preview image)
-    ├── assets/
-    │   ├── style.css
-    │   └── script.js
-    └── templates/
-        └── ...
+    └── dist/ (built frontend assets, index.html, ...)
 ```
 
 **vexgo-theme.json:**
@@ -1759,186 +1640,7 @@ theme.zip
 }
 ```
 
----
-
-## Statistics
-
-### GET /api/stats
-
-Get site statistics (total counts).
-
-**Response:**
-
-```json
-{
-  "stats": {
-    "posts": 100,
-    "users": 50,
-    "comments": 200,
-    "categories": 10,
-    "tags": 30
-  }
-}
-```
-
----
-
-### GET /api/stats/popular-posts
-
-Get most popular posts by like count.
-
-**Query Parameters:**
-
-- `limit` (int, default: 5)
-
-**Response:**
-
-```json
-{
-  "posts": [
-    {
-      "id": 1,
-      "title": "Popular Post",
-      "likes_count": 100,
-      ...
-    }
-  ]
-}
-```
-
----
-
-### GET /api/stats/latest-posts
-
-Get latest posts by creation date.
-
-**Query Parameters:**
-
-- `limit` (int, default: 5)
-
-**Response:**
-
-```json
-{
-  "posts": [...]
-}
-```
-
----
-
-## Categories & Tags
-
-### POST /api/categories
-
-Create a new category (admin only).
-
-**Request:**
-
-```json
-{
-  "name": "Technology",
-  "slug": "technology",
-  "description": "Tech related posts"
-}
-```
-
-**Response:**
-
-```json
-{
-  "id": 1,
-  "name": "Technology",
-  "slug": "technology",
-  "description": "Tech related posts"
-}
-```
-
----
-
-### POST /api/tags
-
-Create a new tag (admin only).
-
-**Request:**
-
-```json
-{
-  "name": "golang"
-}
-```
-
-**Response:**
-
-```json
-{
-  "message": "Tag created successfully",
-  "tag": {
-    "id": 1,
-    "name": "golang"
-  }
-}
-```
-
----
-
-## Captcha
-
-### GET /api/captcha
-
-Generate a sliding puzzle captcha.
-
-**Response:**
-
-```json
-{
-  "id": "uuid",
-  "token": "captcha_token",
-  "bg_image": "base64_encoded_image",
-  "puzzle_img": "base64_encoded_image",
-  "y": 100,
-  "expires_at": "2024-01-01T00:00:00Z"
-}
-```
-
-**Fields:**
-
-- `id`: Captcha ID for verification
-- `token`: Token for verification
-- `bg_image`: Base64 encoded background image with缺口
-- `puzzle_img`: Base64 encoded puzzle piece image
-- `y`: Y coordinate of the puzzle position (for reference, not used in verification)
-- `expires_at`: Expiration timestamp (5 minutes from generation)
-
----
-
-### POST /api/captcha/verify
-
-Verify captcha solution.
-
-**Request:**
-
-```json
-{
-  "id": "uuid",
-  "token": "token",
-  "x": 150
-}
-```
-
-**Response:**
-
-```json
-{
-  "success": true,
-  "message": "Verification successful"
-}
-```
-
-**Notes:**
-
-- Captcha can only be verified once (marked as used after first verification)
-- Captcha expires after configured time (default 5 minutes)
-- X position verification allows ±10 pixel tolerance
+Installed themes are extracted to `data/theme/<id>/` and served by the renderer; the embedded default theme (`default`) is always available.
 
 ---
 
@@ -1949,74 +1651,55 @@ All endpoints may return the following error responses:
 **400 Bad Request:**
 
 ```json
-{
-  "error": "Invalid request parameters"
-}
+{ "error": "Invalid request parameters" }
 ```
 
 **401 Unauthorized:**
 
 ```json
-{
-  "error": "Unauthorized"
-}
+{ "error": "Unauthorized" }
 ```
 
 **403 Forbidden:**
 
 ```json
-{
-  "error": "Insufficient permissions"
-}
+{ "error": "Insufficient permissions" }
 ```
 
 **404 Not Found:**
 
 ```json
-{
-  "error": "Resource not found"
-}
+{ "error": "Resource not found" }
 ```
 
 **409 Conflict:**
 
 ```json
-{
-  "error": "Resource already exists"
-}
+{ "error": "Resource already exists" }
 ```
 
 **500 Internal Server Error:**
 
 ```json
-{
-  "error": "Internal server error"
-}
+{ "error": "Internal server error" }
 ```
 
----
-
-## Rate Limiting
-
-Currently no rate limiting is implemented. Consider adding rate limiting in production.
+Note: some endpoints return `{"message": ...}` for auth-related failures instead of `{"error": ...}` — see the individual endpoint sections.
 
 ---
 
 ## Pagination
 
-All paginated endpoints accept `page` and `limit` query parameters and return:
+Paginated endpoints accept `page` and `limit` query parameters and return:
 
 ```json
 {
   "data": [...],
-  "pagination": {
-    "total": 100,
-    "page": 1,
-    "limit": 10,
-    "totalPages": 10
-  }
+  "pagination": { "total": 100, "page": 1, "limit": 10, "totalPages": 10 }
 }
 ```
+
+The actual list key varies per endpoint (`posts`, `comments`, `users`, `notifications`, `applications`).
 
 ---
 
@@ -2024,137 +1707,35 @@ All paginated endpoints accept `page` and `limit` query parameters and return:
 
 ### User Role Types
 
-- `user`: Regular user
+- `super_admin`: Super administrator (highest privilege, bypasses all permission checks)
 - `admin`: Administrator
-- `super_admin`: Super administrator (highest privilege)
-- `guest`: Guest user (limited access)
+- `author`: Author (can publish posts)
+- `contributor`: Contributor (can apply for a role upgrade)
+- `guest`: Guest / newly registered user (limited access)
 
 ### Post Status
 
-- `draft`: Draft (only visible to author)
+- `draft`: Draft (only visible to the author)
 - `pending`: Pending moderation
 - `published`: Published and visible
-- `rejected`: Rejected by moderator
+- `rejected`: Rejected by a moderator
 
 ### Comment Status
 
 - `published`: Approved and visible
-- `pending`: Pending moderation (if AI moderation enabled)
-- `rejected`: Rejected by moderator
+- `pending`: Pending moderation (when moderation is enabled)
+- `rejected`: Rejected by a moderator
 
 ---
 
 ## Notes
 
 1. All timestamps are in RFC 3339 format (ISO 8601 with timezone)
-2. Authentication middleware validates JWT tokens and sets `userID` and `user` in context
-3. Permission middleware checks user role against required roles
-4. Privacy filtering is applied to user data based on viewer's role and target user's privacy settings
+2. Authentication middleware validates JWT tokens and sets `userID` and `user` in the Gin context
+3. Permission middleware checks the user's role (from the database) against the required roles; `super_admin` always passes
+4. Privacy filtering is applied to user data based on the viewer's role and the target user's privacy settings
 5. File uploads support both local storage and S3 (configurable)
-6. SSO implementation supports GitHub and Google OAuth2
-7. AI moderation can be enabled for comments and posts
-8. Theme system allows custom frontend themes via ZIP upload
-
----
-
-## Messages
-
-### GET /api/messages
-
-Get current user's messages (requires authentication).
-
-**Query Parameters:**
-
-- `page` (int, default: 1)
-- `limit` (int, default: 10)
-- `type` (string, optional): Filter by message type
-- `is_read` (string, optional): Filter by read status ('true' or 'false')
-
-**Response:**
-
-```json
-{
-  "notifications": [
-    {
-      "id": 1,
-      "title": "New notification",
-      "content": "You have a new notification",
-      "type": "comment",
-      "related_id": "1",
-      "related_type": "post",
-      "is_read": false,
-      "created_at": "2024-01-01T00:00:00Z"
-    }
-  ],
-  "pagination": {
-    "total": 20,
-    "page": 1,
-    "limit": 10,
-    "totalPages": 2
-  }
-}
-```
-
----
-
-### GET /api/messages/unread-count
-
-Get unread message count for current user (requires authentication).
-
-**Response:**
-
-```json
-{
-  "unreadCount": 5
-}
-```
-
----
-
-### PUT /api/messages/:id/read
-
-Mark a message as read (requires authentication).
-
-**Response:**
-
-```json
-{
-  "message": "Message marked as read"
-}
-```
-
----
-
-### PUT /api/messages/read-all
-
-Mark all messages as read (requires authentication).
-
-**Response:**
-
-```json
-{
-  "message": "All messages marked as read"
-}
-```
-
----
-
-### DELETE /api/messages/:id
-
-Delete a message (requires authentication, message owner only).
-
-**Response:**
-
-```json
-{
-  "message": "Message deleted"
-}
-```
-
----
-
-## Version
-
-API Version: 0.4.0
-
-Last Updated: 2026-03-25
+6. SSO supports GitHub, Google, and any OpenID Connect (OIDC) provider
+7. Comment moderation is configurable; the current engine is keyword-based, with an AI API integration planned
+8. The theme system allows custom frontend themes via ZIP upload
+9. Currently no rate limiting is implemented

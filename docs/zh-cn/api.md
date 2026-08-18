@@ -1,343 +1,161 @@
-# VexGo API Documentation
+# VexGo API 文档
 
-Base URL: `/api`
+基础 URL：`/api`
 
-Authentication: JWT Bearer token (except for public endpoints)
-All authenticated requests should include: `Authorization: Bearer <token>`
+认证：JWT Bearer token（公开端点除外）。
+所有需要认证的请求都必须携带：`Authorization: Bearer <token>`
 
----
-
-## Table of Contents
-
-- [Public APIs](#public-apis)
-- [Authentication](#authentication)
-- [SSO (Single Sign-On)](#sso-single-sign-on)
-- [Posts Management](#posts-management)
-- [Comments](#comments)
-- [Likes](#likes)
-- [File Upload](#file-upload)
-- [Moderation](#moderation)
-- [User Management](#user-management)
-- [Configuration](#configuration)
-- [Themes](#themes)
-- [Statistics](#statistics)
-- [Categories & Tags](#categories--tags)
-- [Captcha](#captcha)
+角色：`super_admin`、`admin`、`author`、`contributor`、`guest`。标记为「仅管理员」的端点需要 `admin` 或 `super_admin` 角色（`super_admin` 始终通过权限检查）。
 
 ---
 
-## Public APIs
+## 目录
+
+- [公开 API](#公开-api)
+- [认证](#认证)
+- [SSO（单点登录）](#sso-单点登录)
+- [帖子管理](#帖子管理)
+- [评论](#评论)
+- [点赞](#点赞)
+- [文件上传](#文件上传)
+- [消息（通知）](#消息-通知)
+- [审核](#审核)
+- [用户管理](#用户管理)
+- [创作者申请](#创作者申请)
+- [配置](#配置)
+- [错误响应](#错误响应)
+- [分页](#分页)
+- [数据类型](#数据类型)
+- [备注](#备注)
+
+---
+
+## 公开 API
 
 ### GET /posts
 
-Get paginated list of posts with filtering support.
+获取支持筛选的分页帖子列表。
 
-**Query Parameters:**
+**查询参数：**
 
-- `page` (int, default: 1): Page number
-- `limit` (int, default: 10, max: 100): Items per page
-- `category` (string): Filter by category ID
-- `status` (string): Filter by status (published, pending, rejected, draft)
-- `search` (string): Search in title and content
+- `page`（int，默认：1）：页码
+- `limit`（int，默认：10，最大：100）：每页条数
+- `category`（string）：按分类名称筛选
+- `status`（string）：按状态筛选（`published`、`pending`、`rejected`、`draft`）
+- `search`（string）：在标题和内容中搜索
 
-**Response:**
+**响应：**
 
 ```json
 {
-  "pagination": { "limit": 10, "page": 1, "total": 1, "totalPages": 1 },
   "posts": [
     {
       "id": 1,
-      "title": "tests",
-      "content": "testdvsdf\n# safsf\n",
+      "title": "My Post",
+      "content": "Post content",
       "excerpt": "",
       "coverImage": "",
       "viewCount": 5,
       "authorId": 1,
-      "author": {
-        "id": 1,
-        "username": "admin",
-        "email": "admin@example.com",
-        "role": "super_admin",
-        "email_verified": true,
-        "verification_token": "",
-        "token_expires_at": null,
-        "createdAt": "2026-03-16T22:10:01.484631752+08:00",
-        "profile_visibility": "public"
-      },
-      "category": "test1",
+      "author": { "id": 1, "username": "admin", "role": "super_admin" },
+      "category": "tech",
       "tags": [],
       "status": "published",
       "rejectionReason": "",
-      "createdAt": "2026-03-17T21:14:35.026603945+08:00",
-      "updatedAt": "2026-03-17T21:14:35.026603945+08:00",
+      "createdAt": "2026-03-17T21:14:35Z",
+      "updatedAt": "2026-03-17T21:14:35Z",
       "likesCount": 0,
       "isLiked": false,
       "commentsCount": 0
     }
-  ]
+  ],
+  "pagination": { "total": 1, "page": 1, "limit": 10, "totalPages": 1 }
 }
 ```
 
-**Notes:**
+**备注：**
 
-- Guests can only see published posts (if `allow_guest_view_posts` is enabled)
-- Non-admin users can only see published posts from other users
-- Admins can see all posts regardless of status
+- 游客只能看到已发布的帖子（当 `allowGuestViewPosts` 启用时）
+- 非管理员用户只能看到其他用户已发布的帖子
+- 管理员可以查看所有状态的帖子
 
 ---
 
 ### GET /posts/:id
 
-Get a single post by ID.
+按 ID 获取单个帖子。
 
-**Response:**
+**响应：**
 
 ```json
 {
   "post": {
     "id": 1,
-    "title": "tests",
-    "content": "testdvsdf\n# safsf\n",
-    "excerpt": "",
-    "coverImage": "",
-    "viewCount": 5,
-    "authorId": 1,
-    "author": {
-      "id": 1,
-      "username": "admin",
-      "email": "admin@example.com",
-      "role": "super_admin",
-      "email_verified": true,
-      "verification_token": "",
-      "token_expires_at": null,
-      "createdAt": "2026-03-16T22:10:01.484631752+08:00",
-      "profile_visibility": "public"
-    },
-    "category": "test1",
+    "title": "My Post",
+    "content": "Post content",
+    "category": "tech",
     "tags": [],
     "status": "published",
-    "rejectionReason": "",
-    "createdAt": "2026-03-17T21:14:35.026603945+08:00",
-    "updatedAt": "2026-03-17T21:14:35.026603945+08:00",
+    "author": { "id": 1, "username": "admin", "role": "super_admin" },
     "likesCount": 0,
     "isLiked": false,
-    "commentsCount": 0
+    "commentsCount": 0,
+    "createdAt": "2026-03-17T21:14:35Z",
+    "updatedAt": "2026-03-17T21:14:35Z"
   }
 }
 ```
 
----
+**错误响应：**
 
-### GET /verify-email
-
-Verify email address using token.
-
-**Query Parameters:**
-
-- `token` (string, required): Verification token
-
-**Response (email verification):**
-
-```json
-{
-  "message": "Email verification successful! You can now log in."
-}
-```
-
-**Response (email change - success with user found):**
-
-```json
-{
-  "message": "Email change successful! Your new email is now active.",
-  "require_relogin": true,
-  "new_email": "newemail@example.com"
-}
-```
-
-**Response (email change - success but user not found):**
-
-```json
-{
-  "message": "Email change successful! Your new email is now active.",
-  "require_relogin": true
-}
-```
-
-**Error Response:**
-
-```json
-{
-  "error": "Verification token cannot be empty"
-}
-```
-
-**Notes:**
-
-- Token prefix `email-change-` indicates email change verification
-- Normal tokens are for initial email verification
-- After email change, user needs to re-login (`require_relogin: true`)
-
----
-
-### GET /captcha
-
-Generate a sliding puzzle captcha.
-
-**Response:**
-
-```json
-{
-  "id": "uuid",
-  "token": "captcha_token",
-  "bg_image": "data:image/png;base64,...",
-  "puzzle_img": "data:image/png;base64,...",
-  "y": 100,
-  "expires_at": "2024-01-01T00:00:00Z"
-}
-```
-
-**Field Descriptions:**
-
-- `id`: Captcha unique identifier
-- `token`: Verification token (used with `/captcha/verify`)
-- `bg_image`: Base64 encoded background image with缺口 (missing puzzle piece area)
-- `puzzle_img`: Base64 encoded puzzle piece image (the draggable piece)
-- `y`: Y coordinate of the puzzle position (for reference, not used in verification)
-- `expires_at`: Expiration timestamp (5 minutes from generation)
-
-**Notes:**
-
-- Only the X coordinate (`x`) is verified; Y is provided for frontend reference
-- Images are returned as Base64 encoded PNG data URLs
-- Captcha can only be verified once and expires after 5 minutes
-
----
-
-### POST /captcha/verify
-
-Verify captcha token and position.
-
-**Request:**
-
-```json
-{
-  "id": "uuid",
-  "token": "token",
-  "x": 150
-}
-```
-
-**Response (success):**
-
-```json
-{
-  "success": true,
-  "message": "Verification successful"
-}
-```
-
-**Error Responses:**
-
-Verification failed (wrong position):
-
-```json
-{
-  "error": "Verification failed, please try again"
-}
-```
-
-Captcha already used:
-
-```json
-{
-  "error": "Captcha already used"
-}
-```
-
-Captcha expired:
-
-```json
-{
-  "error": "Captcha has expired"
-}
-```
-
-Captcha not found:
-
-```json
-{
-  "error": "Captcha does not exist or has expired"
-}
-```
-
-**Notes:**
-
-- X coordinate verification allows ±10 pixel tolerance
-- Captcha can only be verified once
-- Captcha expires after 5 minutes
+- `403`：`{"error": "You must be logged in to view this post"}`（游客浏览被禁用）
+- `404`：`{"error": "Post does not exist", "postId": "<id>", "details": "..."}`
 
 ---
 
 ### GET /categories
 
-Get all categories.
+获取所有分类。
 
-**Response:**
+**响应：**
 
 ```json
 {
   "categories": [
-    {
-      "id": 1,
-      "name": "Default",
-      "description": "Default category for articles without a specified category"
-    },
-    { "id": 2, "name": "test", "description": "" },
-    { "id": 3, "name": "test1", "description": "" },
-    { "id": 4, "name": "12", "description": "" }
+    { "id": 1, "name": "Default", "description": "Default category" },
+    { "id": 2, "name": "tech", "description": "" }
   ]
 }
 ```
 
-**Notes:**
+**备注：**
 
-- Returns all categories from database
-- Guests can view categories only if `allow_guest_view_posts` is enabled
-- If guest viewing is disabled and user is not logged in, returns empty array
+- 仅当 `allowGuestViewPosts` 启用时游客才能查看分类
+- 如果游客浏览被禁用且用户未登录，返回空数组
 
 ---
 
 ### GET /tags
 
-Get all tags.
+获取所有标签。
 
-**Response:**
+**响应：**
 
 ```json
 {
-  "tags": [
-    {
-      "id": 1,
-      "name": "golang"
-    }
-  ]
+  "tags": [{ "id": 1, "name": "golang" }]
 }
 ```
 
-**Notes:**
-
-- Returns all tags from database
-- Guests can view tags only if `allow_guest_view_posts` is enabled
-- If guest viewing is disabled and user is not logged in, returns empty array
+与 `/categories` 相同的游客可见性规则。
 
 ---
 
 ### GET /stats
 
-Get site statistics.
+获取站点聚合统计。
 
-**Response:**
+**响应：**
 
 ```json
 {
@@ -355,88 +173,92 @@ Get site statistics.
 
 ### GET /stats/popular-posts
 
-Get most popular posts by like count.
+获取最热门的帖子（按点赞数和浏览量排序）。
 
-**Query Parameters:**
+**查询参数：**
 
-- `limit` (int, default: 5): Number of posts to return
+- `limit`（int，默认：5）：返回的帖子数量
 
-**Response:**
+**响应：**
 
 ```json
-{
-  "posts": [...]
-}
+{ "posts": [...] }
 ```
 
 ---
 
 ### GET /stats/latest-posts
 
-Get latest posts by creation date.
+按创建时间获取最新帖子。
 
-**Query Parameters:**
+**查询参数：**
 
-- `limit` (int, default: 5): Number of posts to return
+- `limit`（int，默认：5）：返回的帖子数量
 
-**Response:**
+**响应：**
 
 ```json
-{
-  "posts": [...]
-}
+{ "posts": [...] }
 ```
 
 ---
 
 ### GET /themes
 
-Get all available themes.
+获取所有可用主题。
 
-**Response:**
+**响应：**
 
 ```json
 {
   "themes": [
     {
       "id": "default",
-      "name": "Default Theme",
-      "description": "Default VexGo theme",
-      "author": "VexGo Team",
+      "name": "vexgo default theme",
+      "author": "vexgo",
       "version": "1.0.0",
-      "preview": "/path/to/preview.png"
+      "description": "vexgo default theme",
+      "url": "https://github.com/vexgo/vexgo"
     }
   ]
 }
 ```
 
+内置默认主题始终返回。安装在数据目录（`data/theme/<id>/vexgo-theme.json`）下的其他主题会被追加。
+
 ---
 
 ### GET /theme/:id/preview
 
-Get preview image for a specific theme.
+获取指定主题的预览图。
 
-**Response:** Image file (PNG/JPG)
+**响应：** 图片文件（PNG/JPG）
+
+**错误响应：**
+
+- `404`：`{"error": "theme not found"}` / `{"error": "preview not specified"}` / `{"error": "preview image not found"}`
 
 ---
 
 ### GET /comments/post/:id
 
-Get published comments for a post.
+获取帖子的已发布评论（可选登录，应用作者隐私过滤）。
 
-**Response:**
+**响应：**
 
 ```json
 {
   "comments": [
     {
       "id": 1,
+      "postId": 1,
+      "userId": 2,
+      "user": { "id": 2, "username": "user1" },
       "content": "Comment text",
-      "user": {
-        "id": 1,
-        "username": "user1"
-      },
-      "created_at": "2024-01-01T00:00:00Z"
+      "status": "published",
+      "parentId": null,
+      "createdAt": "2026-03-17T21:14:35Z",
+      "updatedAt": "2026-03-17T21:14:35Z"
     }
   ]
 }
@@ -446,54 +268,134 @@ Get published comments for a post.
 
 ### GET /likes/:postId
 
-Get like status and count for a post.
+获取帖子的点赞状态和数量（可选登录）。
 
-**Response:**
+**响应：**
 
 ```json
-{
-  "postId": 1,
-  "likesCount": 42,
-  "isLiked": false
-}
+{ "postId": 1, "likesCount": 42, "isLiked": false }
 ```
 
 ---
 
 ### GET /posts/user/:id
 
-Get posts by a specific user.
+获取指定用户已发布的帖子。
 
-**Query Parameters:**
+**查询参数：**
 
-- `page` (int, default: 1)
-- `limit` (int, default: 10)
+- `page`（int，默认：1）
+- `limit`（int，默认：10）
 
-**Response:**
+**响应：**
 
 ```json
 {
   "posts": [...],
-  "pagination": {
-    "total": 20,
-    "page": 1,
-    "limit": 10,
-    "totalPages": 2
-  }
+  "pagination": { "total": 20, "page": 1, "limit": 10, "totalPages": 2 }
 }
 ```
 
 ---
 
-## Authentication
+### GET /verify-email
 
-All endpoints under `/api/auth` are for authentication and user management.
+使用 token 验证邮箱地址。
+
+**查询参数：**
+
+- `token`（string，必填）：验证 token
+
+**响应（初始验证）：**
+
+```json
+{ "message": "Email verification successful! You can now log in." }
+```
+
+**响应（更改邮箱 - 找到用户）：**
+
+```json
+{
+  "message": "Email change successful! Your new email is now active.",
+  "require_relogin": true,
+  "new_email": "newemail@example.com"
+}
+```
+
+**响应（更改邮箱 - 未找到用户）：**
+
+```json
+{
+  "message": "Email change successful! Your new email is now active.",
+  "require_relogin": true
+}
+```
+
+**备注：**
+
+- 以 `email-change-` 为前缀的 token 验证邮箱更改；其他 token 验证初始邮箱
+- 更改邮箱后用户必须重新登录（`require_relogin: true`）
+
+---
+
+### GET /captcha
+
+生成滑块拼图验证码。
+
+**响应：**
+
+```json
+{
+  "id": "uuid",
+  "token": "captcha_token",
+  "bg_image": "data:image/png;base64,...",
+  "puzzle_img": "data:image/png;base64,...",
+  "y": 100,
+  "expires_at": "2026-03-17T21:14:35Z"
+}
+```
+
+**备注：**
+
+- 只验证 X 坐标；`y` 返回给前端使用
+- 验证码只能验证一次，5 分钟后过期
+
+---
+
+### POST /captcha/verify
+
+验证验证码 token 和位置。
+
+**请求：**
+
+```json
+{ "id": "uuid", "token": "token", "x": 150 }
+```
+
+**响应（成功）：**
+
+```json
+{ "success": true, "message": "Verification successful" }
+```
+
+**错误响应：**
+
+- `404`：`{"error": "Captcha does not exist or has expired"}`
+- `400`：`{"error": "Captcha already used"}`
+- `400`：`{"error": "Captcha has expired"}`
+- `400`：`{"error": "Verification failed, please try again"}`
+
+X 位置验证允许 ±10 像素容差。
+
+---
+
+## 认证
 
 ### POST /auth/register
 
-Register a new user account.
+注册新用户账户。
 
-**Request:**
+**请求：**
 
 ```json
 {
@@ -506,35 +408,40 @@ Register a new user account.
 }
 ```
 
-**Response (Success):**
+**响应（201）：**
 
 ```json
 {
-  "message": "Registration successful! Please check your email to verify your account."
+  "message": "Registration successful! Please verify your email address before logging in. Check your inbox and click the verification link.",
+  "user": {
+    "id": 1,
+    "username": "username",
+    "email": "user@example.com",
+    "role": "guest"
+  },
+  "email_verified": false,
+  "requires_verification": true
 }
 ```
 
-**Response (Error):**
+**错误响应：**
 
-```json
-{
-  "error": "User already exists"
-}
-```
+- `409`：`{"error": "user already exists"}`
+- `403`：`{"error": "registration is disabled, please contact administrator"}`
+- `400`：需要验证码 / 验证码过期 / 验证码不匹配
 
-**Notes:**
+**备注：**
 
-- Registration may be disabled by admin
-- Captcha verification required if enabled
-- Email verification required before login
+- 当通用设置中启用了 `captchaEnabled` 时，验证码字段为必填
+- 当验证码被禁用时，`captcha_id`、`captcha_token` 和 `captcha_x` 可以是空字符串 / 0
 
 ---
 
 ### POST /auth/login
 
-Login with email and password.
+使用邮箱和密码登录。
 
-**Request:**
+**请求：**
 
 ```json
 {
@@ -546,41 +453,36 @@ Login with email and password.
 }
 ```
 
-**Response (Success):**
+**响应（200）：**
 
 ```json
 {
   "token": "jwt_token_here",
   "user": {
     "id": 1,
-    "email": "user@example.com",
     "username": "username",
-    "role": "user",
-    "email_verified": true
+    "email": "user@example.com",
+    "role": "admin",
+    "avatar": "",
+    "bio": "",
+    "birthday": ""
   }
 }
 ```
 
-**Response (Error):**
+**错误响应：**
 
-```json
-{
-  "error": "Invalid credentials"
-}
-```
-
-**Notes:**
-
-- Captcha may be required based on settings
-- Returns JWT token for authenticated requests
+- `401`：`{"message": "invalid email or password"}`
+- `403`：`{"message": "Please verify your email address first. ...", "email_verified": false}`
+- `400`：`{"error": "please complete the captcha verification"}`
 
 ---
 
 ### GET /auth/me
 
-Get current user information (requires authentication).
+获取当前用户信息（需要认证）。
 
-**Response:**
+**响应：**
 
 ```json
 {
@@ -588,12 +490,12 @@ Get current user information (requires authentication).
     "id": 1,
     "email": "user@example.com",
     "username": "username",
-    "role": "user",
+    "role": "admin",
     "email_verified": true,
     "avatar": "url_to_avatar",
     "bio": "My bio",
     "birthday": "2023-01-01",
-    "created_at": "2024-01-01T00:00:00Z",
+    "createdAt": "2026-03-17T21:14:35Z",
     "profile_visibility": "public",
     "hide_email": false,
     "hide_birthday": false,
@@ -606,15 +508,15 @@ Get current user information (requires authentication).
 
 ### GET /auth/user
 
-Alias for `/auth/me` (requires authentication).
+`/auth/me` 的别名（需要认证）。
 
 ---
 
 ### PUT /auth/profile
 
-Update user profile (requires authentication).
+更新当前用户的个人资料（需要认证）。所有字段均为可选。
 
-**Request:**
+**请求：**
 
 ```json
 {
@@ -625,24 +527,16 @@ Update user profile (requires authentication).
 }
 ```
 
-**Response:**
+**响应：**
 
 ```json
 {
   "user": {
     "id": 1,
-    "email": "user@example.com",
     "username": "new_username",
-    "role": "user",
-    "email_verified": true,
-    "avatar": "url_to_avatar",
     "bio": "My bio",
-    "birthday": "2023-01-01",
-    "created_at": "2024-01-01T00:00:00Z",
-    "profile_visibility": "public",
-    "hide_email": false,
-    "hide_birthday": false,
-    "hide_bio": false
+    "avatar": "url_to_avatar",
+    "birthday": "2023-01-01"
   }
 }
 ```
@@ -651,40 +545,35 @@ Update user profile (requires authentication).
 
 ### PUT /auth/password
 
-Change user password (requires authentication).
+更改当前用户的密码（需要认证）。
 
-**Request:**
-
-```json
-{
-  "current_password": "old_password",
-  "new_password": "new_password"
-}
-```
-
-**Response:**
+**请求：**
 
 ```json
-{
-  "message": "Password changed successfully"
-}
+{ "oldPassword": "old_password", "newPassword": "new_password" }
 ```
+
+**响应：**
+
+```json
+{ "message": "Password changed successfully" }
+```
+
+`newPassword` 至少需要 6 个字符。更改密码会使之前签发的 token 失效。
 
 ---
 
 ### PUT /auth/email
 
-Request email change (requires authentication).
+请求更改邮箱（需要认证）。验证邮件会发送到新地址。
 
-**Request:**
+**请求：**
 
 ```json
-{
-  "email": "newemail@example.com"
-}
+{ "email": "newemail@example.com" }
 ```
 
-**Response:**
+**响应：**
 
 ```json
 {
@@ -697,9 +586,9 @@ Request email change (requires authentication).
 
 ### PUT /auth/settings
 
-Update user settings (requires authentication).
+更新当前用户的隐私设置（需要认证）。
 
-**Request:**
+**请求：**
 
 ```json
 {
@@ -710,21 +599,13 @@ Update user settings (requires authentication).
 }
 ```
 
-**Response:**
+**响应：**
 
 ```json
 {
   "message": "Settings updated successfully",
   "user": {
     "id": 1,
-    "email": "user@example.com",
-    "username": "username",
-    "role": "user",
-    "email_verified": true,
-    "avatar": "url_to_avatar",
-    "bio": "My bio",
-    "birthday": "2023-01-01",
-    "created_at": "2024-01-01T00:00:00Z",
     "profile_visibility": "public",
     "hide_email": true,
     "hide_birthday": false,
@@ -737,348 +618,288 @@ Update user settings (requires authentication).
 
 ### POST /auth/request-password-reset
 
-Request password reset email.
+请求密码重置邮件（公开）。
 
-**Request:**
+**请求：**
 
 ```json
-{
-  "email": "user@example.com"
-}
+{ "email": "user@example.com" }
 ```
 
-**Response:**
+**响应：**
 
 ```json
-{
-  "message": "If the email exists, a reset link has been sent"
-}
+{ "message": "If the email exists, reset link has been sent" }
 ```
 
 ---
 
 ### POST /auth/reset-password
 
-Reset password with token.
+使用邮件中的 token 重置密码（公开）。
 
-**Request:**
-
-```json
-{
-  "token": "reset_token",
-  "new_password": "new_password"
-}
-```
-
-**Response:**
+**请求：**
 
 ```json
-{
-  "message": "Password reset successful"
-}
+{ "token": "reset_token", "password": "new_password" }
 ```
+
+**响应：**
+
+```json
+{ "message": "Password reset successfully" }
+```
+
+`password` 至少需要 6 个字符。
 
 ---
 
 ### GET /auth/verification-status
 
-Get email verification status (requires authentication).
+获取当前用户的邮箱验证状态（需要认证）。
 
-**Response:**
+**响应：**
 
 ```json
-{
-  "email_verified": true,
-  "email": "user@example.com"
-}
+{ "email_verified": true, "email": "user@example.com" }
 ```
 
 ---
 
-### POST /auth/resend-verification
-
-Resend verification email (requires authentication).
-
-**Response:**
-
-```json
-{
-  "message": "Verification email sent"
-}
-```
-
----
-
-## SSO (Single Sign-On)
+## SSO（单点登录）
 
 ### GET /sso/providers
 
-Get enabled SSO providers.
+获取已启用的 SSO 提供商（公开）。
 
-**Response:**
+**响应：**
 
 ```json
-{
-  "providers": [
-    {
-      "name": "github",
-      "display_name": "GitHub",
-      "icon": "/path/to/github.svg",
-      "enabled": true
-    },
-    {
-      "name": "google",
-      "display_name": "Google",
-      "icon": "/path/to/google.svg",
-      "enabled": true
-    }
-  ]
-}
+{ "providers": ["github", "google"], "allow_local_login": true }
 ```
+
+`providers` 只包含已启用的提供商（支持 GitHub、Google 和 OIDC）。当密码登录被禁用时，`allow_local_login` 为 `false`。
 
 ---
 
 ### GET /sso/:provider/login
 
-Initiate SSO login (redirects to provider).
+发起 SSO 登录（重定向到提供商）。
 
-**Query Parameters:**
+**查询参数：**
 
-- `method` (string, optional): `sso_get_token` or `get_sso_id`
+- `method`（string，可选，默认：`sso_get_token`）：
+  - `sso_get_token` — 完整登录；回调时签发 JWT
+  - `get_sso_id` — 只返回提供商侧的 ID（用于在设置页将 SSO 绑定到已有账户）
 
-**Response:** Redirect to SSO provider
+**响应：** `302` 重定向到 OAuth2/OIDC 提供商。
 
 ---
 
 ### GET /sso/:provider/callback
 
-SSO callback endpoint (provider redirects here).
+SSO 回调端点；提供商重定向到这里。
 
-**Query Parameters:**
+**查询参数：**
 
-- `code` (string): Authorization code
-- `state` (string): State parameter for CSRF protection
-- `method` (string): Same as in login request
+- `code`（string）：授权码
+- `state`（string）：CSRF state 参数
+- `method`（string）：与登录请求中的值相同
 
-**Response:** Redirects to frontend with token or SSO ID
+**响应：** 一个 HTML 页面（不是 JSON）。结果写入 `localStorage` 的 `sso_callback_result` 键下，然后弹窗关闭。打开者页面通过 `storage` 事件读取结果：
+
+- 成功时，payload 是一个 JSON 字符串，例如 `{"token": "<jwt>"}`（针对 `sso_get_token`）或 `{"sso_id": "<provider user id>"}`（针对 `get_sso_id`）
+- 出错时，payload 是 `{"error": "<message>"}`，响应状态为 `400`
 
 ---
 
-## Posts Management
+## 帖子管理
 
-### POST /api/posts
+### POST /posts
 
-Create a new post (requires authentication).
+创建新帖子（需要认证）。
 
-**Request:**
+**请求：**
 
 ```json
 {
   "title": "My Post",
   "content": "Post content in markdown...",
-  "category": 1,
+  "category": "tech",
   "tags": ["golang", "programming"],
   "excerpt": "Post excerpt",
   "coverImage": "/uploads/image.jpg",
-  "status": "draft" | "published"
+  "status": "draft"
 }
 ```
 
-**Response:**
+`title`、`content` 和 `category` 为必填。`category` 接受分类名称或 ID；`status` 是 `draft` / `pending` / `published` 之一。
+
+**响应（201）：**
 
 ```json
 {
   "message": "Post created successfully",
-  "post": {
-    "id": 1,
-    "title": "My Post",
-    "content": "Post content...",
-    "status": "draft",
-    "category": 1,
-    "tags": [...],
-    "created_at": "2024-01-01T00:00:00Z"
-  }
+  "post": { "id": 1, "title": "My Post", "status": "draft" }
 }
 ```
 
 ---
 
-### GET /api/posts/user/my-posts
+### GET /posts/user/my-posts
 
-Get current user's posts (requires authentication).
+获取当前用户的帖子（需要认证）。
 
-**Query Parameters:**
+**查询参数：**
 
-- `page` (int, default: 1)
-- `limit` (int, default: 10)
+- `page`（int，默认：1）
+- `limit`（int，默认：10）
+- `status`（string，可选）：按帖子状态筛选
 
-**Response:**
+**响应：**
 
 ```json
-{
-  "posts": [...],
-  "pagination": {...}
-}
+{ "posts": [...], "pagination": { "total": 10, "page": 1, "limit": 10, "totalPages": 1 } }
 ```
 
 ---
 
-### GET /api/posts/drafts
+### GET /posts/drafts
 
-Get current user's draft posts (requires authentication).
+获取当前用户的草稿帖子（需要认证）。
 
-**Query Parameters:**
+**查询参数：**
 
-- `page` (int, default: 1)
-- `limit` (int, default: 10)
+- `page`（int，默认：1）
+- `limit`（int，默认：10）
 
-**Response:**
+**响应：**
 
 ```json
-{
-  "posts": [...],
-  "pagination": {...}
-}
+{ "posts": [...], "pagination": { "total": 3, "page": 1, "limit": 10, "totalPages": 1 } }
 ```
 
 ---
 
-### PUT /api/posts/:id
+### PUT /posts/:id
 
-Update a post (requires authentication, author only).
+更新帖子（需要认证；仅作者或管理员）。
 
-**Request:**
+**请求：** 与 `POST /posts` 相同的字段；全部可选。
 
-```json
-{
-  "title": "Updated Title",
-  "content": "Updated content...",
-  "category": 1,
-  "tags": ["golang", "programming"],
-  "excerpt": "Post excerpt",
-  "coverImage": "/uploads/image.jpg",
-  "status": "draft" | "published"
-}
-```
-
-**Response:**
+**响应：**
 
 ```json
 {
   "message": "Post updated successfully",
-  "post": {
-    "id": 1,
-    "title": "Updated Title",
-    "content": "Updated content...",
-    "status": "published",
-    "updated_at": "2024-01-01T00:00:00Z"
-  }
+  "post": { "id": 1, "title": "Updated Title", "status": "published" }
 }
+```
+
+**错误响应：**
+
+- `404`：`{"error": "Post does not exist"}`
+- `403`：`{"error": "Not authorized to modify this post"}`
+
+---
+
+### DELETE /posts/:id
+
+删除帖子（需要认证；仅作者或管理员）。
+
+**响应：**
+
+```json
+{ "message": "Post deleted successfully" }
 ```
 
 ---
 
-### DELETE /api/posts/:id
+## 评论
 
-Delete a post (requires authentication, author or admin only).
+### POST /comments
 
-**Response:**
+创建评论（需要认证）。
 
-```json
-{
-  "message": "Post deleted successfully"
-}
-```
-
----
-
-## Comments
-
-### POST /api/comments
-
-Create a comment (requires authentication).
-
-**Request:**
+**请求：**
 
 ```json
-{
-  "postId": 1,
-  "content": "This is a comment",
-  "parentId": null
-}
+{ "postId": 1, "content": "This is a comment", "parentId": null }
 ```
 
-**Response:**
+`postId` 接受数字或数字字符串；`content` 限制为 100 个字符；`parentId` 可选，用于回复评论。
+
+**响应（201）：**
 
 ```json
 {
   "message": "Comment created successfully",
   "comment": {
     "id": 1,
+    "postId": 1,
+    "userId": 1,
     "content": "This is a comment",
-    "post_id": 1,
-    "user_id": 1,
-    "parent_id": null,
     "status": "published",
-    "created_at": "2024-01-01T00:00:00Z"
+    "parentId": null,
+    "createdAt": "2026-03-17T21:14:35Z"
   },
   "commentsCount": 1,
   "requiresModeration": false
 }
 ```
 
-**Notes:**
-
-- Comment content limited to 100 characters
-- `parentId` is optional for reply comments
+当评论以 `pending` 状态创建（启用了审核）时，`requiresModeration` 为 `true`。
 
 ---
 
-### DELETE /api/comments/:id
+### DELETE /comments/:id
 
-Delete a comment (requires authentication, comment author or admin only).
+删除评论（需要认证；仅评论作者或管理员）。
 
-**Response:**
+**响应：**
 
 ```json
-{
-  "message": "Comment deleted",
-  "commentsCount": 1
-}
+{ "message": "Comment deleted", "commentsCount": 1 }
 ```
 
 ---
 
-## Likes
+## 点赞
 
-### POST /api/likes/:postId
+### POST /likes/:postId
 
-Toggle like on a post (requires authentication).
+切换帖子的点赞状态（需要认证）。
 
-**Response:**
+**响应：**
 
 ```json
 {
-  "message": "Liked successfully" | "Like removed",
+  "message": "Liked successfully",
   "postId": 1,
-  "isLiked": true | false,
+  "isLiked": true,
   "likesCount": 42
 }
 ```
 
+再次调用会取消点赞：
+
+```json
+{ "message": "Like removed", "postId": 1, "isLiked": false, "likesCount": 41 }
+```
+
 ---
 
-## File Upload
+## 文件上传
 
-### POST /api/upload/file
+### POST /upload/file
 
-Upload a single file (requires authentication).
+上传单个文件（需要认证）。
 
-**Form Data:**
+**表单数据：**
 
-- `file` (file): The file to upload
+- `file`（file）：要上传的文件
 
-**Response:**
+**响应：**
 
 ```json
 {
@@ -1088,60 +909,43 @@ Upload a single file (requires authentication).
     "url": "/uploads/uuid.ext",
     "size": 1024,
     "type": "image/jpeg",
-    "user_id": 1,
-    "created_at": "2024-01-01T00:00:00Z"
+    "userId": 1,
+    "createdAt": "2026-03-17T21:14:35Z"
   }
 }
 ```
 
-**Notes:**
-
-- Supports local storage or S3 (based on configuration)
-- Files are stored with UUID filename to avoid conflicts
+文件以 UUID 文件名存储。存储根据配置使用本地磁盘或 S3。
 
 ---
 
-### POST /api/upload/files
+### POST /upload/files
 
-Upload multiple files (requires authentication).
+上传多个文件（需要认证）。
 
-**Form Data:**
+**表单数据：**
 
-- `files[]` (files): Multiple files
+- `files`（file[]）：多个文件
 
-**Response:**
+**响应：**
 
 ```json
 {
   "message": "File upload completed",
   "files": [
-    {
-      "id": 1,
-      "url": "/uploads/uuid1.ext",
-      "size": 1024,
-      "type": "unknown",
-      "user_id": 1,
-      "created_at": "2024-01-01T00:00:00Z"
-    },
-    {
-      "id": 2,
-      "url": "/uploads/uuid2.ext",
-      "size": 2048,
-      "type": "unknown",
-      "user_id": 1,
-      "created_at": "2024-01-01T00:00:00Z"
-    }
+    { "id": 1, "url": "/uploads/uuid1.ext", "size": 1024, "userId": 1 },
+    { "id": 2, "url": "/uploads/uuid2.ext", "size": 2048, "userId": 1 }
   ]
 }
 ```
 
 ---
 
-### GET /api/upload/my-files
+### GET /upload/my-files
 
-Get current user's uploaded files (requires authentication).
+获取当前用户上传的文件（需要认证）。
 
-**Response:**
+**响应：**
 
 ```json
 {
@@ -1150,9 +954,9 @@ Get current user's uploaded files (requires authentication).
       "id": 1,
       "url": "/uploads/uuid.ext",
       "size": 1024,
-      "type": "unknown",
-      "user_id": 1,
-      "created_at": "2024-01-01T00:00:00Z"
+      "type": "image/jpeg",
+      "userId": 1,
+      "createdAt": "2026-03-17T21:14:35Z"
     }
   ]
 }
@@ -1160,36 +964,119 @@ Get current user's uploaded files (requires authentication).
 
 ---
 
-### DELETE /api/upload/:id
+### DELETE /upload/:id
 
-Delete a file (requires authentication, file owner or admin only).
+删除上传的文件（需要认证；仅上传者或管理员）。
 
-**Response:**
+**响应：**
+
+```json
+{ "message": "File deleted" }
+```
+
+---
+
+## 消息（通知）
+
+### GET /messages
+
+获取当前用户的通知（需要认证）。
+
+**查询参数：**
+
+- `page`（int，默认：1）
+- `limit`（int，默认：10）
+- `type`（string，可选）：按消息类型筛选（`comment`、`like`、`reply`、`review`、`role`）
+- `is_read`（string，可选）：按已读状态筛选（`true` 或 `false`）
+
+**响应：**
 
 ```json
 {
-  "message": "File deleted"
+  "notifications": [
+    {
+      "id": 1,
+      "user_id": 1,
+      "type": "comment",
+      "title": "Post Commented",
+      "content": "User \"alice\" commented on your post \"Hello\": ...",
+      "related_id": "1",
+      "related_type": "post",
+      "is_read": false,
+      "created_at": "2026-03-17T21:14:35Z",
+      "updated_at": "2026-03-17T21:14:35Z"
+    }
+  ],
+  "pagination": { "total": 20, "page": 1, "limit": 10, "totalPages": 2 }
 }
 ```
 
 ---
 
-## Moderation
+### GET /messages/unread-count
 
-All moderation endpoints require `admin` or `super_admin` role.
+获取当前用户的未读通知数（需要认证）。
 
-### Comments Moderation
+**响应：**
 
-#### GET /api/moderation/comments/pending
+```json
+{ "unreadCount": 5 }
+```
 
-Get pending comments for moderation.
+---
 
-**Query Parameters:**
+### PUT /messages/:id/read
 
-- `page` (int, default: 1)
-- `limit` (int, default: 10)
+将消息标记为已读（需要认证）。
 
-**Response:**
+**响应：**
+
+```json
+{ "message": "Message marked as read" }
+```
+
+---
+
+### PUT /messages/read-all
+
+将所有消息标记为已读（需要认证）。
+
+**响应：**
+
+```json
+{ "message": "All messages marked as read" }
+```
+
+---
+
+### DELETE /messages/:id
+
+删除消息（需要认证；仅消息所有者）。
+
+**响应：**
+
+```json
+{ "message": "Message deleted" }
+```
+
+---
+
+## 审核
+
+所有审核端点都需要 `admin` 或 `super_admin` 角色。
+
+### 评论审核
+
+#### GET /moderation/comments/pending
+
+获取待审核的评论。
+
+**查询参数：**
+
+- `page`（int，默认：1）
+- `limit`（int，默认：10）
+
+**响应：**
 
 ```json
 {
@@ -1197,216 +1084,178 @@ Get pending comments for moderation.
     {
       "id": 1,
       "content": "Comment to moderate",
-      "user": {...},
-      "post": {...},
-      "created_at": "2024-01-01T00:00:00Z"
+      "user": { "id": 2, "username": "user1" },
+      "post": { "id": 1, "title": "My Post" },
+      "status": "pending",
+      "createdAt": "2026-03-17T21:14:35Z"
     }
   ],
-  "pagination": {...}
+  "pagination": { "total": 1, "page": 1, "limit": 10, "totalPages": 1 }
 }
 ```
 
----
+#### GET /moderation/comments/approved
 
-#### GET /api/moderation/comments/approved
+获取已批准（`published`）的评论。参数和结构与上面相同。
 
-Get approved comments.
+#### GET /moderation/comments/rejected
 
----
+获取已拒绝的评论。参数和结构与上面相同。
 
-#### GET /api/moderation/comments/rejected
+#### PUT /moderation/comments/approve/:id
 
-Get rejected comments.
+批准评论（状态 → `published`）。
 
----
+**响应：**
 
-#### PUT /api/moderation/comments/approve/:id
+```json
+{ "message": "Comment approved", "comment": { "id": 1, "status": "published" } }
+```
 
-Approve a comment.
+#### PUT /moderation/comments/reject/:id
 
-**Response:**
+拒绝评论（状态 → `rejected`）。无请求体。
+
+**响应：**
+
+```json
+{ "message": "Comment rejected", "comment": { "id": 1, "status": "rejected" } }
+```
+
+#### GET /moderation/comments/config
+
+获取评论审核配置（API 密钥已掩码）。
+
+**响应：**
 
 ```json
 {
-  "message": "Comment approved"
+  "enabled": false,
+  "modelProvider": "",
+  "apiKey": "",
+  "apiEndpoint": "",
+  "modelName": "gpt-3.5-turbo",
+  "moderationPrompt": "Please review the following comment for compliance. ...",
+  "blockKeywords": "spam,advertisement",
+  "autoApproveEnabled": true,
+  "minScoreThreshold": 0.5
 }
 ```
 
----
+**备注：**
 
-#### PUT /api/moderation/comments/reject/:id
+- 当 `enabled` 为 `true` 时，新评论以 `pending` 状态创建并通过审核引擎处理
+- 当 `autoApproveEnabled` 为 `true` 且审核被禁用时，评论自动通过
+- 当前的审核引擎基于关键词（屏蔽关键词加简单内容检查）；AI API 集成计划中
 
-Reject a comment.
+#### PUT /moderation/comments/config
 
-**Request:**
+更新评论审核配置。
+
+**请求：** 与 GET 响应相同的字段，外加 `apiKey`（留空以保留现有密钥）。
+
+**响应：**
 
 ```json
 {
-  "rejection_reason": "Reason for rejection"
+  "message": "Comment moderation configuration updated successfully",
+  "config": {
+    "enabled": true,
+    "modelProvider": "openai",
+    "modelName": "gpt-3.5-turbo",
+    "autoApproveEnabled": true,
+    "minScoreThreshold": 0.5
+  }
 }
 ```
 
-**Response:**
+### 帖子审核
+
+#### GET /moderation/pending
+
+获取状态为 `pending` 的帖子。
+
+**查询参数：**
+
+- `page`（int，默认：1）
+- `limit`（int，默认：10）
+- `search`（string，可选）
+
+**响应：**
 
 ```json
-{
-  "message": "Comment rejected"
-}
+{ "posts": [...], "pagination": { "total": 2, "page": 1, "limit": 10, "totalPages": 1 } }
 ```
 
----
+#### GET /moderation/approved
 
-#### GET /api/moderation/comments/config
+获取状态为 `published` 的帖子。参数和结构与上面相同。
 
-Get comment moderation configuration.
+#### GET /moderation/rejected
 
-**Response:**
+获取状态为 `rejected` 的帖子。参数和结构与上面相同。
+
+#### PUT /moderation/approve/:id
+
+批准帖子（状态 → `published`）。
+
+**响应：**
 
 ```json
-{
-  "enabled": true,
-  "model_provider": "openai",
-  "api_endpoint": "https://api.openai.com/v1/chat/completions",
-  "model_name": "gpt-3.5-turbo",
-  "moderation_prompt": "Please review...",
-  "block_keywords": "spam,advertisement",
-  "auto_approve_enabled": true,
-  "min_score_threshold": 0.5
-}
+{ "message": "Post approved", "post": { "id": 1, "status": "published" } }
 ```
 
----
+#### PUT /moderation/reject/:id
 
-#### PUT /api/moderation/comments/config
+拒绝帖子（状态 → `rejected`）。
 
-Update comment moderation configuration.
-
-**Request:**
+**请求：**
 
 ```json
-{
-  "enabled": true,
-  "model_provider": "openai",
-  "api_key": "new_api_key",
-  "api_endpoint": "https://api.openai.com/v1/chat/completions",
-  "model_name": "gpt-3.5-turbo",
-  "moderation_prompt": "Please review...",
-  "block_keywords": "spam,advertisement",
-  "auto_approve_enabled": true,
-  "min_score_threshold": 0.5
-}
+{ "rejectionReason": "Reason for rejection" }
 ```
 
-**Response:**
-
-```json
-{
-  "message": "Configuration updated"
-}
-```
-
----
-
-### Posts Moderation
-
-#### GET /api/moderation/pending
-
-Get pending posts for moderation.
-
-**Query Parameters:**
-
-- `page` (int, default: 1)
-- `limit` (int, default: 10)
-
-**Response:**
-
-```json
-{
-  "posts": [...],
-  "pagination": {...}
-}
-```
-
----
-
-#### GET /api/moderation/approved
-
-Get approved posts.
-
----
-
-#### GET /api/moderation/rejected
-
-Get rejected posts.
-
----
-
-#### PUT /api/moderation/approve/:id
-
-Approve a post (status changes to `published`).
-
-**Response:**
-
-```json
-{
-  "message": "Post approved",
-  "post": {...}
-}
-```
-
----
-
-#### PUT /api/moderation/reject/:id
-
-Reject a post.
-
-**Request:**
-
-```json
-{
-  "rejection_reason": "Reason for rejection"
-}
-```
-
-**Response:**
+**响应：**
 
 ```json
 {
   "message": "Post has been rejected",
-  "post": {...}
+  "post": { "id": 1, "status": "rejected" }
 }
 ```
 
----
+#### PUT /moderation/resubmit/:id
 
-#### PUT /api/moderation/resubmit/:id
+重新提交被拒绝的帖子（状态 → `pending`）。
 
-Resubmit a rejected post (status changes back to `pending`).
-
-**Response:**
+**响应：**
 
 ```json
 {
-  "message": "Post resubmitted for review"
+  "message": "Post resubmitted for moderation",
+  "post": { "id": 1, "status": "pending" }
 }
 ```
 
+只有被拒绝的帖子才能重新提交。
+
 ---
 
-## User Management
+## 用户管理
 
-All user management endpoints require `admin` or `super_admin` role.
+本节所有端点都需要 `admin` 或 `super_admin` 角色。
 
-### GET /api/users
+### GET /users
 
-Get user list with pagination.
+获取分页用户列表。
 
-**Query Parameters:**
+**查询参数：**
 
-- `page` (int, default: 1)
-- `limit` (int, default: 10)
+- `page`（int，默认：1）
+- `limit`（int，默认：10，最大：100）
+- `search`（string，可选）：按用户名或邮箱搜索
 
-**Response:**
+**响应：**
 
 ```json
 {
@@ -1415,74 +1264,145 @@ Get user list with pagination.
       "id": 1,
       "username": "user1",
       "email": "user@example.com",
-      "role": "user",
+      "role": "admin",
       "email_verified": true,
-      "created_at": "2024-01-01T00:00:00Z"
+      "createdAt": "2026-03-17T21:14:35Z"
     }
   ],
-  "pagination": {...}
+  "pagination": { "total": 1, "page": 1, "limit": 10, "totalPages": 1 }
 }
+```
+
+### PUT /users/:id/role
+
+更新用户角色。
+
+**请求：**
+
+```json
+{ "role": "admin" }
+```
+
+有效角色：`super_admin`、`admin`、`author`、`contributor`、`guest`。
+
+**响应：**
+
+```json
+{
+  "message": "User role updated successfully",
+  "user": { "id": 2, "role": "admin" }
+}
+```
+
+**备注：**
+
+- 用户不能修改自己的角色
+- 只有 `super_admin` 才能修改 `super_admin` 账户
+
+### DELETE /users/:id
+
+删除用户及其所有帖子和评论。
+
+**响应：**
+
+```json
+{ "message": "User deleted successfully" }
+```
+
+**备注：**
+
+- 用户不能删除自己的账户
+- 非 `super_admin` 不能删除 `super_admin` 账户
+
+---
+
+## 创作者申请
+
+### POST /users/apply-creator
+
+提交创作者申请（需要认证）。
+
+只有 `guest` 或 `contributor` 角色的用户可以申请角色升级。
+
+**请求：**
+
+```json
+{ "reason": "I want to publish posts" }
+```
+
+**响应：**
+
+```json
+{ "message": "Application submitted successfully", "applicationId": 1 }
+```
+
+**错误响应：**
+
+- `400`：`{"error": "only guest and contributor users can apply for role upgrade"}`
+- `400`：`{"error": "..."}`（已有待处理的申请）
+
+### GET /users/creator-applications
+
+获取待审核的创作者申请（仅管理员）。
+
+**查询参数：**
+
+- `page`（int，默认：1）
+- `limit`（int，默认：10，最大：100）
+- `status`（string，默认：`pending`）：`pending`、`approved`、`rejected`
+
+**响应：**
+
+```json
+{
+  "applications": [
+    {
+      "id": 1,
+      "userId": 2,
+      "username": "user1",
+      "email": "user@example.com",
+      "currentRole": "contributor",
+      "status": "pending",
+      "reason": "I want to publish posts",
+      "createdAt": "2026-03-17T21:14:35Z",
+      "updatedAt": "2026-03-17T21:14:35Z"
+    }
+  ],
+  "pagination": { "total": 1, "page": 1, "limit": 10, "totalPages": 1 }
+}
+```
+
+### PUT /users/creator-applications/:id/review
+
+审核创作者申请（仅管理员）。
+
+**请求：**
+
+```json
+{ "action": "approve", "reason": "Optional review note" }
+```
+
+`action` 为 `approve` 或 `reject`。
+
+**响应：**
+
+```json
+{ "message": "Application reviewed successfully" }
 ```
 
 ---
 
-### PUT /api/users/:id/role
+## 配置
 
-Update user role.
+本节所有端点都需要 `admin` 或 `super_admin` 角色，`GET /config/general` 和 `GET /config/theme` 除外，它们是公开的。
 
-**Request:**
+### SMTP 配置
 
-```json
-{
-  "role": "admin" | "user" | "contributor" | "super_admin"
-}
-```
+#### GET /config/smtp
 
-**Response:**
+获取 SMTP 配置（不返回密码）。
 
-```json
-{
-  "message": "User role updated"
-}
-```
-
-**Notes:**
-
-- Cannot modify own role
-- Super admin can only be assigned/deassigned by another super admin
-
----
-
-### DELETE /api/users/:id
-
-Delete a user.
-
-**Response:**
-
-```json
-{
-  "message": "User deleted successfully"
-}
-```
-
-**Notes:**
-
-- Cannot delete self
-- Super admin cannot be deleted by non-super admin
-
----
-
-## Configuration
-
-All configuration endpoints require `admin` or `super_admin` role.
-
-### SMTP Configuration
-
-#### GET /api/config/smtp
-
-Get SMTP configuration (password not returned).
-
-**Response:**
+**响应：**
 
 ```json
 {
@@ -1490,18 +1410,18 @@ Get SMTP configuration (password not returned).
   "host": "smtp.example.com",
   "port": 587,
   "username": "user@example.com",
-  "from_email": "noreply@example.com",
-  "from_name": "VexGo"
+  "password": "",
+  "fromEmail": "noreply@example.com",
+  "fromName": "VexGo",
+  "testEmail": ""
 }
 ```
 
----
+#### PUT /config/smtp
 
-#### PUT /api/config/smtp
+更新 SMTP 配置。返回更新后的配置。
 
-Update SMTP configuration.
-
-**Request:**
+**请求：**
 
 ```json
 {
@@ -1509,244 +1429,205 @@ Update SMTP configuration.
   "host": "smtp.example.com",
   "port": 587,
   "username": "user@example.com",
-  "password": "password", // optional, leave empty to keep existing
-  "from_email": "noreply@example.com",
-  "from_name": "VexGo"
+  "password": "password",
+  "fromEmail": "noreply@example.com",
+  "fromName": "VexGo",
+  "testEmail": "test@example.com"
 }
 ```
 
-**Response:**
+`password` 留空以保留现有密码。
+
+**响应：** 更新后的 SMTP 配置（与 `GET /config/smtp` 结构相同）。
+
+#### POST /config/smtp/test
+
+发送测试邮件。无请求体 — 收件人是配置的 `testEmail`，回退到操作管理员自己的邮箱。
+
+**响应：**
 
 ```json
 {
-  "message": "SMTP configuration updated"
+  "message": "Test email has been sent to your inbox",
+  "to": "test@example.com"
 }
 ```
 
----
+### AI 配置
 
-#### POST /api/config/smtp/test
+#### GET /config/ai
 
-Test SMTP connection.
+获取 AI 配置（不返回 API 密钥）。
 
-**Request:**
+**响应：**
 
 ```json
 {
-  "test_email": "test@example.com"
+  "enabled": false,
+  "provider": "openai",
+  "apiEndpoint": "",
+  "apiKey": "",
+  "modelName": "gpt-3.5-turbo"
 }
 ```
 
-**Response:**
+#### PUT /config/ai
 
-```json
-{
-  "message": "Test email sent successfully"
-}
-```
+更新 AI 配置。
 
----
-
-### AI Configuration
-
-#### GET /api/config/ai
-
-Get AI configuration (API key not returned).
-
-**Response:**
+**请求：**
 
 ```json
 {
   "enabled": true,
   "provider": "openai",
-  "api_endpoint": "https://api.openai.com/v1/chat/completions",
-  "api_key": "",
-  "model_name": "gpt-3.5-turbo"
+  "apiEndpoint": "https://api.openai.com/v1",
+  "apiKey": "sk-...",
+  "modelName": "gpt-3.5-turbo"
 }
 ```
 
----
+`apiKey` 留空以保留现有密钥。
 
-#### PUT /api/config/ai
-
-Update AI configuration.
-
-**Request:**
+**响应：**
 
 ```json
 {
-  "enabled": true,
-  "provider": "openai",
-  "api_key": "sk-...",
-  "api_endpoint": "https://api.openai.com/v1/chat/completions",
-  "model_name": "gpt-3.5-turbo"
+  "message": "AI config updated successfully",
+  "aiConfig": {
+    "enabled": true,
+    "provider": "openai",
+    "apiEndpoint": "https://api.openai.com/v1",
+    "apiKey": "",
+    "modelName": "gpt-3.5-turbo"
+  }
 }
 ```
 
-**Response:**
+#### POST /config/ai/test
+
+测试 AI 连接。无请求体；使用内置测试提示词。
+
+**响应：**
+
+```json
+{ "message": "AI connection test successful!", "response": "This is a test." }
+```
+
+#### GET /config/ai/models
+
+列出配置的 AI 端点可用的模型。
+
+**响应：**
 
 ```json
 {
-  "message": "AI configuration updated"
+  "message": "Models fetched successfully",
+  "models": [
+    {
+      "id": "gpt-3.5-turbo",
+      "object": "model",
+      "created": 1677610602,
+      "owned_by": "openai"
+    }
+  ]
 }
 ```
 
----
+### 通用设置
 
-#### POST /api/config/ai/test
+#### GET /config/general
 
-Test AI connection.
+获取通用设置（公开访问）。
 
-**Request:**
+**响应：**
 
 ```json
 {
-  "test_prompt": "Hello, AI!"
+  "captchaEnabled": false,
+  "registrationEnabled": true,
+  "allowGuestViewPosts": true,
+  "siteName": "VexGo",
+  "siteDescription": "",
+  "siteIcon": "",
+  "itemsPerPage": 20
 }
 ```
 
-**Response:**
+#### PUT /config/general
+
+更新通用设置（仅管理员）。
+
+**请求：** 与 GET 响应相同的字段。
+
+**响应：**
 
 ```json
 {
-  "response": "Hello! How can I help you today?"
+  "message": "General settings updated successfully",
+  "generalSettings": {
+    "siteName": "VexGo",
+    "registrationEnabled": true,
+    "allowGuestViewPosts": true,
+    "captchaEnabled": false,
+    "itemsPerPage": 20
+  }
 }
 ```
 
----
+### 主题配置
 
-#### GET /api/config/ai/models
+#### GET /config/theme
 
-Get available AI models (for configured provider).
+获取当前启用的主题（公开访问）。
 
-**Response:**
+**响应：**
 
 ```json
-{
-  "models": ["gpt-3.5-turbo", "gpt-4"]
-}
+{ "activeTheme": "default" }
 ```
 
----
+#### PUT /config/theme
 
-### General Settings
+设置全局启用的主题（仅管理员）。
 
-#### GET /api/config/general
-
-Get general settings (public access).
-
-**Response:**
+**请求：**
 
 ```json
-{
-  "site_name": "VexGo",
-  "site_description": "A modern blog platform",
-  "registration_enabled": true,
-  "allow_guest_view_posts": true,
-  "captcha_enabled": false,
-  "default_language": "en"
-}
+{ "activeTheme": "theme_id" }
 ```
 
----
-
-#### PUT /api/config/general
-
-Update general settings (admin only).
-
-**Request:**
+**响应：**
 
 ```json
-{
-  "site_name": "VexGo",
-  "site_description": "...",
-  "registration_enabled": true,
-  "allow_guest_view_posts": true,
-  "captcha_enabled": false,
-  "default_language": "en"
-}
+{ "message": "Theme updated successfully", "activeTheme": "theme_id" }
 ```
 
-**Response:**
+#### POST /themes/upload
+
+上传并安装新主题（仅管理员）。
+
+**表单数据：**
+
+- `theme`（file）：包含主题文件和 `vexgo-theme.json` 元数据文件的 ZIP 压缩包
+
+**响应：**
 
 ```json
-{
-  "message": "Settings updated"
-}
+{ "message": "Theme uploaded successfully" }
 ```
 
----
+**主题结构：**
 
-### Theme Configuration
-
-### GET /api/config/theme
-
-Get current theme configuration.
-
-**Response:**
-
-```json
-{
-  "active_theme": "default"
-}
-```
-
----
-
-### PUT /api/config/theme
-
-Set active theme.
-
-**Request:**
-
-```json
-{
-  "active_theme": "theme_id"
-}
-```
-
-**Response:**
-
-```json
-{
-  "message": "Theme updated successfully",
-  "active_theme": "theme_id"
-}
-```
-
----
-
-#### POST /api/themes/upload
-
-Upload and install a new theme (admin only).
-
-**Form Data:**
-
-- `theme` (file): ZIP archive containing theme files
-
-**Response:**
-
-```json
-{
-  "message": "Theme uploaded successfully"
-}
-```
-
-**Theme Structure:**
-
-```
+```text
 theme.zip
 └── theme-id/
-    ├── vexgo-theme.json (metadata)
+    ├── vexgo-theme.json (metadata, required)
     ├── preview.png (optional preview image)
-    ├── assets/
-    │   ├── style.css
-    │   └── script.js
-    └── templates/
-        └── ...
+    └── dist/ (built frontend assets, index.html, ...)
 ```
 
-**vexgo-theme.json:**
+**vexgo-theme.json：**
 
 ```json
 {
@@ -1759,402 +1640,102 @@ theme.zip
 }
 ```
 
----
-
-## Statistics
-
-### GET /api/stats
-
-Get site statistics (total counts).
-
-**Response:**
-
-```json
-{
-  "stats": {
-    "posts": 100,
-    "users": 50,
-    "comments": 200,
-    "categories": 10,
-    "tags": 30
-  }
-}
-```
+安装的主题会解压到 `data/theme/<id>/` 并由渲染器提供服务；内置默认主题（`default`）始终可用。
 
 ---
 
-### GET /api/stats/popular-posts
+## 错误响应
 
-Get most popular posts by like count.
+所有端点都可能返回以下错误响应：
 
-**Query Parameters:**
-
-- `limit` (int, default: 5)
-
-**Response:**
+**400 Bad Request：**
 
 ```json
-{
-  "posts": [
-    {
-      "id": 1,
-      "title": "Popular Post",
-      "likes_count": 100,
-      ...
-    }
-  ]
-}
+{ "error": "Invalid request parameters" }
 ```
+
+**401 Unauthorized：**
+
+```json
+{ "error": "Unauthorized" }
+```
+
+**403 Forbidden：**
+
+```json
+{ "error": "Insufficient permissions" }
+```
+
+**404 Not Found：**
+
+```json
+{ "error": "Resource not found" }
+```
+
+**409 Conflict：**
+
+```json
+{ "error": "Resource already exists" }
+```
+
+**500 Internal Server Error：**
+
+```json
+{ "error": "Internal server error" }
+```
+
+注意：部分端点在认证相关失败时返回 `{"message": ...}` 而不是 `{"error": ...}` — 参见各端点章节。
 
 ---
 
-### GET /api/stats/latest-posts
+## 分页
 
-Get latest posts by creation date.
-
-**Query Parameters:**
-
-- `limit` (int, default: 5)
-
-**Response:**
-
-```json
-{
-  "posts": [...]
-}
-```
-
----
-
-## Categories & Tags
-
-### POST /api/categories
-
-Create a new category (admin only).
-
-**Request:**
-
-```json
-{
-  "name": "Technology",
-  "slug": "technology",
-  "description": "Tech related posts"
-}
-```
-
-**Response:**
-
-```json
-{
-  "id": 1,
-  "name": "Technology",
-  "slug": "technology",
-  "description": "Tech related posts"
-}
-```
-
----
-
-### POST /api/tags
-
-Create a new tag (admin only).
-
-**Request:**
-
-```json
-{
-  "name": "golang"
-}
-```
-
-**Response:**
-
-```json
-{
-  "message": "Tag created successfully",
-  "tag": {
-    "id": 1,
-    "name": "golang"
-  }
-}
-```
-
----
-
-## Captcha
-
-### GET /api/captcha
-
-Generate a sliding puzzle captcha.
-
-**Response:**
-
-```json
-{
-  "id": "uuid",
-  "token": "captcha_token",
-  "bg_image": "base64_encoded_image",
-  "puzzle_img": "base64_encoded_image",
-  "y": 100,
-  "expires_at": "2024-01-01T00:00:00Z"
-}
-```
-
-**Fields:**
-
-- `id`: Captcha ID for verification
-- `token`: Token for verification
-- `bg_image`: Base64 encoded background image with缺口
-- `puzzle_img`: Base64 encoded puzzle piece image
-- `y`: Y coordinate of the puzzle position (for reference, not used in verification)
-- `expires_at`: Expiration timestamp (5 minutes from generation)
-
----
-
-### POST /api/captcha/verify
-
-Verify captcha solution.
-
-**Request:**
-
-```json
-{
-  "id": "uuid",
-  "token": "token",
-  "x": 150
-}
-```
-
-**Response:**
-
-```json
-{
-  "success": true,
-  "message": "Verification successful"
-}
-```
-
-**Notes:**
-
-- Captcha can only be verified once (marked as used after first verification)
-- Captcha expires after configured time (default 5 minutes)
-- X position verification allows ±10 pixel tolerance
-
----
-
-## Error Responses
-
-All endpoints may return the following error responses:
-
-**400 Bad Request:**
-
-```json
-{
-  "error": "Invalid request parameters"
-}
-```
-
-**401 Unauthorized:**
-
-```json
-{
-  "error": "Unauthorized"
-}
-```
-
-**403 Forbidden:**
-
-```json
-{
-  "error": "Insufficient permissions"
-}
-```
-
-**404 Not Found:**
-
-```json
-{
-  "error": "Resource not found"
-}
-```
-
-**409 Conflict:**
-
-```json
-{
-  "error": "Resource already exists"
-}
-```
-
-**500 Internal Server Error:**
-
-```json
-{
-  "error": "Internal server error"
-}
-```
-
----
-
-## Rate Limiting
-
-Currently no rate limiting is implemented. Consider adding rate limiting in production.
-
----
-
-## Pagination
-
-All paginated endpoints accept `page` and `limit` query parameters and return:
+分页端点接受 `page` 和 `limit` 查询参数并返回：
 
 ```json
 {
   "data": [...],
-  "pagination": {
-    "total": 100,
-    "page": 1,
-    "limit": 10,
-    "totalPages": 10
-  }
+  "pagination": { "total": 100, "page": 1, "limit": 10, "totalPages": 10 }
 }
 ```
 
----
-
-## Data Types
-
-### User Role Types
-
-- `user`: Regular user
-- `admin`: Administrator
-- `super_admin`: Super administrator (highest privilege)
-- `guest`: Guest user (limited access)
-
-### Post Status
-
-- `draft`: Draft (only visible to author)
-- `pending`: Pending moderation
-- `published`: Published and visible
-- `rejected`: Rejected by moderator
-
-### Comment Status
-
-- `published`: Approved and visible
-- `pending`: Pending moderation (if AI moderation enabled)
-- `rejected`: Rejected by moderator
+实际列表键因端点而异（`posts`、`comments`、`users`、`notifications`、`applications`）。
 
 ---
 
-## Notes
+## 数据类型
 
-1. All timestamps are in RFC 3339 format (ISO 8601 with timezone)
-2. Authentication middleware validates JWT tokens and sets `userID` and `user` in context
-3. Permission middleware checks user role against required roles
-4. Privacy filtering is applied to user data based on viewer's role and target user's privacy settings
-5. File uploads support both local storage and S3 (configurable)
-6. SSO implementation supports GitHub and Google OAuth2
-7. AI moderation can be enabled for comments and posts
-8. Theme system allows custom frontend themes via ZIP upload
+### 用户角色类型
 
----
+- `super_admin`：超级管理员（最高权限，绕过所有权限检查）
+- `admin`：管理员
+- `author`：作者（可以发布帖子）
+- `contributor`：贡献者（可以申请角色升级）
+- `guest`：游客 / 新注册用户（访问受限）
 
-## Messages
+### 帖子状态
 
-### GET /api/messages
+- `draft`：草稿（仅作者可见）
+- `pending`：待审核
+- `published`：已发布并可见
+- `rejected`：被管理员拒绝
 
-Get current user's messages (requires authentication).
+### 评论状态
 
-**Query Parameters:**
-
-- `page` (int, default: 1)
-- `limit` (int, default: 10)
-- `type` (string, optional): Filter by message type
-- `is_read` (string, optional): Filter by read status ('true' or 'false')
-
-**Response:**
-
-```json
-{
-  "notifications": [
-    {
-      "id": 1,
-      "title": "New notification",
-      "content": "You have a new notification",
-      "type": "comment",
-      "related_id": "1",
-      "related_type": "post",
-      "is_read": false,
-      "created_at": "2024-01-01T00:00:00Z"
-    }
-  ],
-  "pagination": {
-    "total": 20,
-    "page": 1,
-    "limit": 10,
-    "totalPages": 2
-  }
-}
-```
+- `published`：已批准并可见
+- `pending`：待审核（启用审核时）
+- `rejected`：被管理员拒绝
 
 ---
 
-### GET /api/messages/unread-count
+## 备注
 
-Get unread message count for current user (requires authentication).
-
-**Response:**
-
-```json
-{
-  "unreadCount": 5
-}
-```
-
----
-
-### PUT /api/messages/:id/read
-
-Mark a message as read (requires authentication).
-
-**Response:**
-
-```json
-{
-  "message": "Message marked as read"
-}
-```
-
----
-
-### PUT /api/messages/read-all
-
-Mark all messages as read (requires authentication).
-
-**Response:**
-
-```json
-{
-  "message": "All messages marked as read"
-}
-```
-
----
-
-### DELETE /api/messages/:id
-
-Delete a message (requires authentication, message owner only).
-
-**Response:**
-
-```json
-{
-  "message": "Message deleted"
-}
-```
-
----
-
-## Version
-
-API Version: 0.4.0
-
-Last Updated: 2026-03-25
+1. 所有时间戳均为 RFC 3339 格式（带时区的 ISO 8601）
+2. 认证中间件验证 JWT token，并在 Gin 上下文中设置 `userID` 和 `user`
+3. 权限中间件根据用户角色（来自数据库）检查所需角色；`super_admin` 始终通过
+4. 根据查看者的角色和目标用户的隐私设置，对用户数据应用隐私过滤
+5. 文件上传支持本地存储和 S3（可配置）
+6. SSO 支持 GitHub、Google 以及任何 OpenID Connect (OIDC) 提供商
+7. 评论审核可配置；当前引擎基于关键词，AI API 集成计划中
+8. 主题系统允许通过 ZIP 上传自定义前端主题
+9. 目前未实现速率限制
