@@ -106,12 +106,23 @@ export function WritePostPage() {
   const loadCategories = async () => {
     try {
       const response = await categoriesApi.getCategories();
+      if (!response || response.data.categories.length === 0) {
+        throw Error("no default category");
+      }
+
       // Ensure category ids are strings so they match the Select options (the backend may return numeric ids)
       const normalized = (response.data.categories || []).map((c) => ({
         ...c,
         id: String(c.id),
       }));
       setCategories(normalized);
+
+      if (!isEditMode) {
+        const def = normalized.find((c) => c.name.toLowerCase() === "default");
+        if (def) {
+          setCategory(def.name);
+        }
+      }
     } catch (error) {
       console.error("Failed to load categories:", error);
     }
