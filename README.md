@@ -431,7 +431,7 @@ postgres=# CREATE DATABASE vexgo_db OWNER vexgo_user ENCODING 'UTF8' LC_COLLATE 
 Run backend with this command:
 
 ```bash
-go run main.go -c ../examples/config-postgres.yml
+go run backend/main.go -c ../examples/config-postgres.yml
 ```
 
 ### Mysql
@@ -457,7 +457,7 @@ mysql> FLUSH PRIVILEGES;
 Run backend with this command:
 
 ```bash
-go run main.go -c ../examples/config-mysql.yml
+go run backend/main.go -c ../examples/config-mysql.yml
 ```
 
 ## Development
@@ -621,7 +621,7 @@ cd vexgo/frontend
 pnpm install
 pnpm run build
 cd ../backend
-go run main.go
+go run backend/main.go
 ```
 
 Then, visit http://127.0.0.1:3001

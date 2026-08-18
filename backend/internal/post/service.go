@@ -37,7 +37,7 @@ type Deps struct {
 
 // Notifier is the seam for creating notifications; implemented by the message domain.
 type Notifier interface {
-	CreateNotification(userID uint, notificationType string, title string, content string, relatedID string, relatedType string) error
+	CreateNotification(userID uint, notificationType, title, content, relatedID, relatedType string) error
 }
 
 // FileRemover deletes a stored file by its public URL; implemented by upload.Storage.
@@ -136,7 +136,7 @@ func (s *Service) List(userRole string, userID uint, page, limit int, categoryID
 
 // Get returns a single post with privacy filtering, view-count increment and
 // like/comment counts.
-func (s *Service) Get(id string, currentUserRole string, currentUserID uint) (*model.Post, error) {
+func (s *Service) Get(id, currentUserRole string, currentUserID uint) (*model.Post, error) {
 	var post model.Post
 	if err := s.db.Preload("Author").Preload("Tags").First(&post, id).Error; err != nil {
 		return nil, fmt.Errorf("post load: %w", err)
@@ -178,7 +178,7 @@ func (s *Service) Get(id string, currentUserRole string, currentUserID uint) (*m
 type CreateRequest struct {
 	Title      string
 	Content    string
-	Category   interface{}
+	Category   any
 	Tags       []string
 	Excerpt    string
 	CoverImage string
@@ -248,7 +248,7 @@ func (s *Service) Create(userRole string, userID uint, req CreateRequest) (*mode
 type UpdateRequest struct {
 	Title      string
 	Content    string
-	Category   interface{}
+	Category   any
 	Tags       []string
 	Excerpt    string
 	CoverImage string
@@ -433,7 +433,7 @@ func (s *Service) Drafts(userRole string, userID uint, page, limit int) ([]model
 }
 
 // UserPosts returns the posts of a specific user with role-based visibility.
-func (s *Service) UserPosts(userIDStr string, currentUserRole string, currentUserID uint, page, limit int) ([]model.Post, int64, error) {
+func (s *Service) UserPosts(userIDStr, currentUserRole string, currentUserID uint, page, limit int) ([]model.Post, int64, error) {
 	userID, err := strconv.Atoi(userIDStr)
 	if err != nil {
 		return nil, 0, ErrBadRequest
@@ -816,7 +816,7 @@ func extractImageURLs(content string) []string {
 		if len(match) >= 2 {
 			ref := strings.TrimSpace(match[1])
 			reDef := regexp.MustCompile(`^\s*\[` + regexp.QuoteMeta(ref) + `\]:\s*(\S+)`)
-			for _, line := range strings.Split(content, "\n") {
+			for line := range strings.SplitSeq(content, "\n") {
 				if defMatch := reDef.FindStringSubmatch(line); len(defMatch) >= 2 {
 					url := strings.TrimSpace(defMatch[1])
 					if url != "" {

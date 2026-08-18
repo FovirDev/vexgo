@@ -21,7 +21,7 @@ func (h *Handler) GetStats(c *gin.Context) {
 	// Get current user role
 	var userRole string
 	if userContext, exists := c.Get("user"); exists {
-		if userMap, ok := userContext.(map[string]interface{}); ok {
+		if userMap, ok := userContext.(map[string]any); ok {
 			if role, ok := userMap["role"].(string); ok {
 				userRole = role
 			}

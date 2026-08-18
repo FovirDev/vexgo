@@ -55,7 +55,7 @@ func TestCreateNotification(t *testing.T) {
 func TestList_PaginationAndFilters(t *testing.T) {
 	svc := newTestService(t)
 
-	for i := 0; i < 5; i++ {
+	for range 5 {
 		if err := svc.CreateNotification(1, "comment", "c", "content", "", ""); err != nil {
 			t.Fatalf("failed to seed: %v", err)
 		}

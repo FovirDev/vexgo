@@ -39,7 +39,7 @@ func (h *Handler) GetComments(c *gin.Context) {
 		}
 	}
 	if userContext, exists := c.Get("user"); exists {
-		if userMap, ok := userContext.(map[string]interface{}); ok {
+		if userMap, ok := userContext.(map[string]any); ok {
 			if role, ok := userMap["role"].(string); ok {
 				currentUserRole = role
 			}
@@ -55,9 +55,9 @@ func (h *Handler) GetComments(c *gin.Context) {
 func (h *Handler) CreateComment(c *gin.Context) {
 	// Support postId as number or string from frontend
 	var req struct {
-		PostID   interface{} `json:"postId" binding:"required"`
-		Content  string      `json:"content" binding:"required"`
-		ParentID *uint       `json:"parentId"`
+		PostID   any    `json:"postId" binding:"required"`
+		Content  string `json:"content" binding:"required"`
+		ParentID *uint  `json:"parentId"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {

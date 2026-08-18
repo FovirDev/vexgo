@@ -15,6 +15,7 @@ import (
 	"strings"
 	"time"
 
+	"vexgo/backend/internal/mailer"
 	"vexgo/backend/internal/model"
 	"vexgo/backend/internal/public"
 
@@ -177,7 +178,6 @@ func (s *Service) TestSMTP(adminEmail string) (string, error) {
 	}
 
 	// Send test email
-	subject := "SMTP Configuration Test Email"
 	textBody := fmt.Sprintf(`
 Dear %s,
 
@@ -229,35 +229,19 @@ Time: %s
 </html>
 	`, config.FromName, config.Host, config.Port, config.FromName, config.FromEmail, time.Now().Format("2006-01-02 15:04:05"))
 
-	// Build email message
-	from := fmt.Sprintf("%s <%s>", config.FromName, config.FromEmail)
-	to := recipientEmail
-
-	headers := make(map[string]string)
-	headers["From"] = from
-	headers["To"] = to
-	headers["Subject"] = subject
-	headers["MIME-Version"] = "1.0"
-	headers["Content-Type"] = "multipart/alternative; boundary=\"boundary\""
-
-	message := ""
-	for k, v := range headers {
-		message += fmt.Sprintf("%s: %s\r\n", k, v)
-	}
-	message += "\r\n"
-	message += "--boundary\r\n"
-	message += "Content-Type: text/plain; charset=UTF-8\r\n\r\n"
-	message += strings.TrimSpace(textBody) + "\r\n\r\n"
-	message += "--boundary\r\n"
-	message += "Content-Type: text/html; charset=UTF-8\r\n\r\n"
-	message += strings.TrimSpace(htmlBody) + "\r\n\r\n"
-	message += "--boundary--\r\n"
+	// Build email
+	message := mailer.BuildMailMessage(&mailer.MailMessageArgs{
+		To:       recipientEmail,
+		Subject:  "SMTP Configuration Test Email",
+		TextBody: textBody,
+		HTMLBody: htmlBody,
+	}, &config)
 
 	// Connect to SMTP server
 	addr := fmt.Sprintf("%s:%d", config.Host, config.Port)
 	auth := smtp.PlainAuth("", config.Username, config.Password, config.Host)
 
-	if err := smtp.SendMail(addr, auth, config.FromEmail, []string{to}, []byte(message)); err != nil {
+	if err := smtp.SendMail(addr, auth, config.FromEmail, []string{recipientEmail}, []byte(message)); err != nil {
 		return "", fmt.Errorf("failed to send test email: %w", err)
 	}
 
@@ -414,7 +398,7 @@ func (s *Service) UpdateAIConfig(req AIConfigRequest) (model.AIConfig, error) {
 // AIResult carries the outcome of an AI connection test or model listing.
 type AIResult struct {
 	Message  string
-	Response interface{}
+	Response any
 }
 
 // TestAI verifies the AI configuration by calling the chat completions
@@ -447,8 +431,8 @@ func (s *Service) TestAI() (*AIResult, error) {
 		baseURL = strings.TrimSuffix(baseURL, "/chat/completions")
 		baseURL = strings.TrimSuffix(baseURL, "/v1")
 		baseURL = baseURL + "/v1"
-	} else if strings.HasSuffix(baseURL, "/chat/completions") {
-		baseURL = strings.TrimSuffix(baseURL, "/chat/completions")
+	} else if before, ok := strings.CutSuffix(baseURL, "/chat/completions"); ok {
+		baseURL = before
 	}
 
 	// Ensure baseURL ends with /v1
@@ -475,7 +459,7 @@ func (s *Service) TestAI() (*AIResult, error) {
 	}
 
 	// Step 2: Test chat completion functionality
-	requestBody := map[string]interface{}{
+	requestBody := map[string]any{
 		"model": config.ModelName,
 		"messages": []map[string]string{
 			{
@@ -517,7 +501,7 @@ func (s *Service) TestAI() (*AIResult, error) {
 	}
 
 	// Parse response
-	var result map[string]interface{}
+	var result map[string]any
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
 		return nil, fmt.Errorf("failed to parse AI response: %w", err)
 	}
@@ -529,9 +513,9 @@ func (s *Service) TestAI() (*AIResult, error) {
 
 	// Extract AI response content
 	var aiResponse string
-	if choices, ok := result["choices"].([]interface{}); ok && len(choices) > 0 {
-		if choice, ok := choices[0].(map[string]interface{}); ok {
-			if message, ok := choice["message"].(map[string]interface{}); ok {
+	if choices, ok := result["choices"].([]any); ok && len(choices) > 0 {
+		if choice, ok := choices[0].(map[string]any); ok {
+			if message, ok := choice["message"].(map[string]any); ok {
 				if content, ok := message["content"].(string); ok {
 					aiResponse = content
 				}
@@ -574,8 +558,8 @@ func (s *Service) AIModels() (*AIResult, error) {
 		baseURL = strings.TrimSuffix(baseURL, "/chat/completions")
 		baseURL = strings.TrimSuffix(baseURL, "/v1")
 		baseURL = baseURL + "/v1"
-	} else if strings.HasSuffix(baseURL, "/chat/completions") {
-		baseURL = strings.TrimSuffix(baseURL, "/chat/completions")
+	} else if before, ok := strings.CutSuffix(baseURL, "/chat/completions"); ok {
+		baseURL = before
 	}
 
 	// Ensure baseURL ends with /v1
@@ -611,7 +595,7 @@ func (s *Service) AIModels() (*AIResult, error) {
 	}
 
 	// Parse response
-	var result map[string]interface{}
+	var result map[string]any
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
 		return nil, fmt.Errorf("failed to parse models response: %w", err)
 	}
@@ -622,11 +606,11 @@ func (s *Service) AIModels() (*AIResult, error) {
 	}
 
 	// Extract models list
-	var models []map[string]interface{}
-	if data, ok := result["data"].([]interface{}); ok {
+	var models []map[string]any
+	if data, ok := result["data"].([]any); ok {
 		for _, model := range data {
-			if modelMap, ok := model.(map[string]interface{}); ok {
-				modelInfo := map[string]interface{}{
+			if modelMap, ok := model.(map[string]any); ok {
+				modelInfo := map[string]any{
 					"id":       modelMap["id"],
 					"object":   modelMap["object"],
 					"created":  modelMap["created"],
@@ -667,15 +651,15 @@ func checkModelExists(modelsURL, apiKey, modelName string) (bool, error) {
 		return false, fmt.Errorf("models endpoint returned status %d: %s", resp.StatusCode, string(body))
 	}
 
-	var result map[string]interface{}
+	var result map[string]any
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
 		return false, fmt.Errorf("failed to parse models response: %v", err)
 	}
 
 	// Check models list
-	if data, ok := result["data"].([]interface{}); ok {
+	if data, ok := result["data"].([]any); ok {
 		for _, model := range data {
-			if modelMap, ok := model.(map[string]interface{}); ok {
+			if modelMap, ok := model.(map[string]any); ok {
 				if id, ok := modelMap["id"].(string); ok && id == modelName {
 					return true, nil
 				}

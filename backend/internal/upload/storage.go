@@ -47,11 +47,11 @@ func NewS3Storage(cfg *config.S3Config) (*S3Storage, error) {
 	// Strip protocol prefix from endpoint, minio-go manages SSL separately
 	endpoint := cfg.Endpoint
 	useSSL := true
-	if strings.HasPrefix(endpoint, "http://") {
-		endpoint = strings.TrimPrefix(endpoint, "http://")
+	if after, ok := strings.CutPrefix(endpoint, "http://"); ok {
+		endpoint = after
 		useSSL = false
-	} else if strings.HasPrefix(endpoint, "https://") {
-		endpoint = strings.TrimPrefix(endpoint, "https://")
+	} else if after, ok := strings.CutPrefix(endpoint, "https://"); ok {
+		endpoint = after
 		useSSL = true
 	}
 	endpoint = strings.TrimSuffix(endpoint, "/")
@@ -185,10 +185,10 @@ func (s *LocalStorage) Delete(url string) error {
 //   - Path style: https://s3.amazonaws.com/bucket/path/to/file.jpg
 func ExtractS3Key(url string, cfg *config.S3Config) string {
 	// Remove protocol
-	if strings.HasPrefix(url, "http://") {
-		url = strings.TrimPrefix(url, "http://")
-	} else if strings.HasPrefix(url, "https://") {
-		url = strings.TrimPrefix(url, "https://")
+	if after, ok := strings.CutPrefix(url, "http://"); ok {
+		url = after
+	} else if after, ok := strings.CutPrefix(url, "https://"); ok {
+		url = after
 	}
 
 	// Split by "/"
@@ -199,10 +199,10 @@ func ExtractS3Key(url string, cfg *config.S3Config) string {
 
 	// If using custom domain, check if bucket is included in URL
 	customDomain := cfg.CustomDomain
-	if strings.HasPrefix(customDomain, "http://") {
-		customDomain = strings.TrimPrefix(customDomain, "http://")
-	} else if strings.HasPrefix(customDomain, "https://") {
-		customDomain = strings.TrimPrefix(customDomain, "https://")
+	if after, ok := strings.CutPrefix(customDomain, "http://"); ok {
+		customDomain = after
+	} else if after, ok := strings.CutPrefix(customDomain, "https://"); ok {
+		customDomain = after
 	}
 	if customDomain != "" {
 		if len(parts) > 1 {

@@ -34,7 +34,7 @@ func currentUser(c *gin.Context) (role string, id uint) {
 		}
 	}
 	if userContext, exists := c.Get("user"); exists {
-		if userMap, ok := userContext.(map[string]interface{}); ok {
+		if userMap, ok := userContext.(map[string]any); ok {
 			if r, ok := userMap["role"].(string); ok {
 				role = r
 			}
@@ -110,13 +110,13 @@ func (h *Handler) CreatePost(c *gin.Context) {
 	userRole, _ := currentUser(c)
 
 	var req struct {
-		Title      string      `json:"title" binding:"required"`
-		Content    string      `json:"content" binding:"required"`
-		Category   interface{} `json:"category" binding:"required"`
-		Tags       []string    `json:"tags"`
-		Excerpt    string      `json:"excerpt"`
-		CoverImage string      `json:"coverImage"`
-		Status     string      `json:"status"`
+		Title      string   `json:"title" binding:"required"`
+		Content    string   `json:"content" binding:"required"`
+		Category   any      `json:"category" binding:"required"`
+		Tags       []string `json:"tags"`
+		Excerpt    string   `json:"excerpt"`
+		CoverImage string   `json:"coverImage"`
+		Status     string   `json:"status"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -151,13 +151,13 @@ func (h *Handler) UpdatePost(c *gin.Context) {
 	userID := userIDVal.(uint)
 
 	var req struct {
-		Title      string      `json:"title"`
-		Content    string      `json:"content"`
-		Category   interface{} `json:"category"`
-		Tags       []string    `json:"tags"`
-		Excerpt    string      `json:"excerpt"`
-		CoverImage string      `json:"coverImage"`
-		Status     string      `json:"status"`
+		Title      string   `json:"title"`
+		Content    string   `json:"content"`
+		Category   any      `json:"category"`
+		Tags       []string `json:"tags"`
+		Excerpt    string   `json:"excerpt"`
+		CoverImage string   `json:"coverImage"`
+		Status     string   `json:"status"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})

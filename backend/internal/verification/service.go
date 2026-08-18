@@ -291,8 +291,8 @@ func (s *Service) VerifyCaptcha(id, token string, x int) error {
 func createGradientBackground(width, height int) *image.RGBA {
 	img := image.NewRGBA(image.Rect(0, 0, width, height))
 
-	for y := 0; y < height; y++ {
-		for x := 0; x < width; x++ {
+	for y := range height {
+		for x := range width {
 			// Create a simple blue gradient
 			r := uint8(100 + x*155/width)
 			g := uint8(150 + y*105/height)
@@ -302,9 +302,9 @@ func createGradientBackground(width, height int) *image.RGBA {
 	}
 
 	// Add some simple decorations
-	for i := 0; i < 5; i++ {
+	for i := range 5 {
 		x := i * width / 5
-		for y := 0; y < height; y++ {
+		for y := range height {
 			img.Set(x, y, color.RGBA{255, 255, 255, 100})
 		}
 	}
@@ -332,9 +332,9 @@ func createPuzzleShape(width, height int) [][]bool {
 	// Arm thickness (half of center square)
 	armThickness := armLength / 2
 
-	for y := 0; y < height; y++ {
+	for y := range height {
 		shape[y] = make([]bool, width)
-		for x := 0; x < width; x++ {
+		for x := range width {
 			// Center square area
 			if x >= left && x <= right && y >= top && y <= bottom {
 				shape[y][x] = true
@@ -366,8 +366,8 @@ func createPuzzleShape(width, height int) [][]bool {
 func extractPuzzleImage(bgImage *image.RGBA, x, y int, shape [][]bool, width, height int) *image.RGBA {
 	puzzleImg := image.NewRGBA(image.Rect(0, 0, width, height))
 
-	for py := 0; py < height; py++ {
-		for px := 0; px < width; px++ {
+	for py := range height {
+		for px := range width {
 			if py < len(shape) && px < len(shape[py]) && shape[py][px] {
 				bgX := x + px
 				bgY := y + py
@@ -393,8 +393,8 @@ func drawPuzzleHole(bgImage *image.RGBA, x, y int, shape [][]bool, width, height
 	draw.Draw(bgCopy, bgCopy.Bounds(), bgImage, image.Point{}, draw.Src)
 
 	// Draw semi-transparent shadow at puzzle position
-	for py := 0; py < height; py++ {
-		for px := 0; px < width; px++ {
+	for py := range height {
+		for px := range width {
 			if py < len(shape) && px < len(shape[py]) && shape[py][px] {
 				bgX := x + px
 				bgY := y + py

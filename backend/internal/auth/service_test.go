@@ -92,7 +92,7 @@ func TestLogin_Success(t *testing.T) {
 	}
 
 	// token is signed with the injected secret and carries the user id
-	parsed, err := jwt.Parse(token, func(t *jwt.Token) (interface{}, error) {
+	parsed, err := jwt.Parse(token, func(t *jwt.Token) (any, error) {
 		return testJWTSecret, nil
 	})
 	if err != nil || !parsed.Valid {
@@ -347,7 +347,7 @@ func TestIssueJWT(t *testing.T) {
 	if err != nil {
 		t.Fatalf("IssueJWT error: %v", err)
 	}
-	parsed, err := jwt.Parse(token, func(t *jwt.Token) (interface{}, error) {
+	parsed, err := jwt.Parse(token, func(t *jwt.Token) (any, error) {
 		return testJWTSecret, nil
 	})
 	if err != nil || !parsed.Valid {

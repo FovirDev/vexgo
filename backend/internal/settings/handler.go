@@ -86,7 +86,7 @@ func (h *Handler) TestSMTP(c *gin.Context) {
 
 	// Get recipient email: use configured test email first, otherwise use current admin email
 	var adminEmail string
-	if userMap, ok := userContext.(map[string]interface{}); ok {
+	if userMap, ok := userContext.(map[string]any); ok {
 		adminEmail, _ = userMap["email"].(string)
 	}
 

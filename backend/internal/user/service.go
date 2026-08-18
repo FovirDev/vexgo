@@ -50,7 +50,7 @@ type Deps struct {
 
 // Notifier is the seam for creating notifications; implemented by the message domain.
 type Notifier interface {
-	CreateNotification(userID uint, notificationType string, title string, content string, relatedID string, relatedType string) error
+	CreateNotification(userID uint, notificationType, title, content, relatedID, relatedType string) error
 }
 
 // FileRemover deletes a stored file by its public URL; implemented by upload.Storage.

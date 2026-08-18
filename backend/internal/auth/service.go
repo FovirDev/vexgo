@@ -86,7 +86,7 @@ func (s *Service) captchaEnabled() (bool, error) {
 
 // Login authenticates a user by email and password and returns a signed JWT
 // together with the user record. Captcha is enforced when enabled.
-func (s *Service) Login(email, password string, captchaID, captchaToken string, captchaX int) (string, *model.User, error) {
+func (s *Service) Login(email, password, captchaID, captchaToken string, captchaX int) (string, *model.User, error) {
 	logrus.Info("User login attempt started")
 
 	// Check if captcha verification is enabled
@@ -169,7 +169,7 @@ type RegisterResult struct {
 // captcha when enabled. When SMTP is enabled a verification email is sent and
 // RequiresVerification is set. protocol and host are used to build the
 // verification link.
-func (s *Service) Register(email, password, username string, captchaID, captchaToken string, captchaX int, protocol, host string) (*RegisterResult, error) {
+func (s *Service) Register(email, password, username, captchaID, captchaToken string, captchaX int, protocol, host string) (*RegisterResult, error) {
 	logrus.Info("User registration attempt started")
 
 	// Check if registration is allowed
@@ -599,7 +599,7 @@ func (s *Service) ResetPassword(token, password string) error {
 	}
 
 	// Update password and clear reset token
-	if err := s.db.Model(&user).Updates(map[string]interface{}{
+	if err := s.db.Model(&user).Updates(map[string]any{
 		"password":           string(hashed),
 		"verification_token": "",
 		"token_expires_at":   time.Time{},
