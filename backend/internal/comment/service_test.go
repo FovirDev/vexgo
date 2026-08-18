@@ -73,7 +73,7 @@ func TestCreate_AutoApproved(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Create error: %v", err)
 	}
-	if comment.Status != "published" {
+	if comment.Status != model.CommentStatusPublished {
 		t.Errorf("expected published, got %s", comment.Status)
 	}
 	if count != 1 {
@@ -114,7 +114,7 @@ func TestCreate_ModerationDisabledManualApproval(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Create error: %v", err)
 	}
-	if comment.Status != "pending" {
+	if comment.Status != model.CommentStatusPending {
 		t.Errorf("expected pending, got %s", comment.Status)
 	}
 }
@@ -136,7 +136,7 @@ func TestCreate_ModerationRejectsBlockedKeyword(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Create error: %v", err)
 	}
-	if comment.Status != "rejected" {
+	if comment.Status != model.CommentStatusRejected {
 		t.Errorf("expected rejected, got %s", comment.Status)
 	}
 }
@@ -188,7 +188,7 @@ func TestListByPost_PublishedOnlyAndPrivacy(t *testing.T) {
 	if err := svc.db.Where("content = ?", "pending one").First(&pending).Error; err != nil {
 		t.Fatalf("load failed: %v", err)
 	}
-	pending.Status = "pending"
+	pending.Status = model.CommentStatusPending
 	svc.db.Save(&pending)
 
 	comments, err := svc.ListByPost("1", 0, "")
@@ -272,15 +272,15 @@ func TestSetStatus(t *testing.T) {
 		t.Fatalf("load failed: %v", err)
 	}
 
-	updated, err := svc.SetStatus(strconv.FormatUint(uint64(comment.ID), 10), "published")
+	updated, err := svc.SetStatus(strconv.FormatUint(uint64(comment.ID), 10), model.CommentStatusPublished)
 	if err != nil {
 		t.Fatalf("SetStatus error: %v", err)
 	}
-	if updated.Status != "published" {
+	if updated.Status != model.CommentStatusPublished {
 		t.Errorf("expected published, got %s", updated.Status)
 	}
 
-	if _, err := svc.SetStatus("99999", "published"); !errors.Is(err, ErrCommentNotFound) {
+	if _, err := svc.SetStatus("99999", model.CommentStatusPublished); !errors.Is(err, ErrCommentNotFound) {
 		t.Errorf("expected ErrCommentNotFound, got %v", err)
 	}
 }
@@ -298,7 +298,7 @@ func TestListModeration(t *testing.T) {
 		t.Fatalf("Create error: %v", err)
 	}
 
-	list, total, err := svc.ListModeration("published", 1, 1)
+	list, total, err := svc.ListModeration(model.CommentStatusPublished, 1, 1)
 	if err != nil {
 		t.Fatalf("ListModeration error: %v", err)
 	}
@@ -309,7 +309,7 @@ func TestListModeration(t *testing.T) {
 		t.Errorf("expected 1 item per page, got %d", len(list))
 	}
 
-	list, total, err = svc.ListModeration("pending", 1, 10)
+	list, total, err = svc.ListModeration(model.CommentStatusPending, 1, 10)
 	if err != nil {
 		t.Fatalf("ListModeration error: %v", err)
 	}

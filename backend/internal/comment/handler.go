@@ -6,6 +6,7 @@ import (
 	"strconv"
 
 	"vexgo/backend/internal/middleware"
+	"vexgo/backend/internal/model"
 
 	"github.com/gin-gonic/gin"
 )
@@ -108,7 +109,7 @@ func (h *Handler) CreateComment(c *gin.Context) {
 		"message":            "Comment created successfully",
 		"comment":            comment,
 		"commentsCount":      count,
-		"requiresModeration": comment.Status == "pending",
+		"requiresModeration": comment.Status == model.CommentStatusPending,
 	})
 }
 
@@ -208,21 +209,21 @@ func (h *Handler) UpdateCommentModerationConfig(c *gin.Context) {
 
 // GetPendingComments gets pending comments for moderation
 func (h *Handler) GetPendingComments(c *gin.Context) {
-	h.listModeration(c, "pending")
+	h.listModeration(c, model.CommentStatusPending)
 }
 
 // GetApprovedComments gets approved comments
 func (h *Handler) GetApprovedComments(c *gin.Context) {
-	h.listModeration(c, "published")
+	h.listModeration(c, model.CommentStatusPublished)
 }
 
 // GetRejectedComments gets rejected comments
 func (h *Handler) GetRejectedComments(c *gin.Context) {
-	h.listModeration(c, "rejected")
+	h.listModeration(c, model.CommentStatusRejected)
 }
 
 // listModeration renders the moderation queue for a given comment status.
-func (h *Handler) listModeration(c *gin.Context, status string) {
+func (h *Handler) listModeration(c *gin.Context, status model.CommentStatus) {
 	page, _ := c.GetQuery("page")
 	if page == "" {
 		page = "1"
@@ -261,16 +262,16 @@ func (h *Handler) listModeration(c *gin.Context, status string) {
 
 // ApproveComment approves a comment
 func (h *Handler) ApproveComment(c *gin.Context) {
-	h.setStatus(c, "published", "Comment approved", "Failed to approve comment")
+	h.setStatus(c, model.CommentStatusPublished, "Comment approved", "Failed to approve comment")
 }
 
 // RejectComment rejects a comment
 func (h *Handler) RejectComment(c *gin.Context) {
-	h.setStatus(c, "rejected", "Comment rejected", "Failed to reject comment")
+	h.setStatus(c, model.CommentStatusRejected, "Comment rejected", "Failed to reject comment")
 }
 
 // setStatus approves or rejects a comment and renders the result.
-func (h *Handler) setStatus(c *gin.Context, status, successMsg, failureMsg string) {
+func (h *Handler) setStatus(c *gin.Context, status model.CommentStatus, successMsg, failureMsg string) {
 	comment, err := h.svc.SetStatus(c.Param("id"), status)
 	if err != nil {
 		if errors.Is(err, ErrCommentNotFound) {

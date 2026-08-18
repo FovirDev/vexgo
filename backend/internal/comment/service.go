@@ -79,7 +79,7 @@ func (s *Service) moderationConfig() (model.CommentModerationConfig, error) {
 // filtering for viewers that are neither the author nor an admin.
 func (s *Service) ListByPost(postID string, currentUserID uint, currentUserRole string) ([]model.Comment, error) {
 	var comments []model.Comment
-	if err := s.db.Where("post_id = ? AND status = ?", postID, "published").
+	if err := s.db.Where("post_id = ? AND status = ?", postID, model.CommentStatusPublished).
 		Preload("User").
 		Order("created_at ASC").
 		Find(&comments).Error; err != nil {
@@ -119,13 +119,13 @@ func (s *Service) Create(postID, userID uint, content string, parentID *uint) (*
 	// Set comment status
 	if config.Enabled {
 		// If AI moderation enabled, set to pending status first
-		comment.Status = "pending"
+		comment.Status = model.CommentStatusPending
 	} else {
 		// If AI moderation not enabled, decide whether to auto-approve based on config
 		if config.AutoApproveEnabled {
-			comment.Status = "published"
+			comment.Status = model.CommentStatusPublished
 		} else {
-			comment.Status = "pending" // still requires manual moderation
+			comment.Status = model.CommentStatusPending // still requires manual moderation
 		}
 	}
 
@@ -139,12 +139,12 @@ func (s *Service) Create(postID, userID uint, content string, parentID *uint) (*
 		if err != nil {
 			// If AI moderation fails, log error but don't affect comment creation
 			fmt.Printf("AI moderation failed: %v\n", err)
-			comment.Status = "published" // default to published on failure
+			comment.Status = model.CommentStatusPublished // default to published on failure
 		} else {
 			if approved {
-				comment.Status = "published"
+				comment.Status = model.CommentStatusPublished
 			} else {
-				comment.Status = "rejected"
+				comment.Status = model.CommentStatusRejected
 			}
 		}
 
@@ -156,7 +156,7 @@ func (s *Service) Create(postID, userID uint, content string, parentID *uint) (*
 
 	// Return created comment and updated comment count
 	var count int64
-	s.db.Model(&model.Comment{}).Where("post_id = ? AND status = ?", postID, "published").Count(&count)
+	s.db.Model(&model.Comment{}).Where("post_id = ? AND status = ?", postID, model.CommentStatusPublished).Count(&count)
 
 	// Preload author information
 	s.db.Preload("User").First(&comment, comment.ID)
@@ -339,7 +339,7 @@ func (s *Service) UpdateModerationConfig(req UpdateModerationConfigRequest) (mod
 
 // ListModeration returns the paginated comments with the given status
 // (pending/published/rejected) for the moderation queue.
-func (s *Service) ListModeration(status string, page, limit int) ([]model.Comment, int64, error) {
+func (s *Service) ListModeration(status model.CommentStatus, page, limit int) ([]model.Comment, int64, error) {
 	query := s.db.Model(&model.Comment{}).
 		Preload("User").
 		Preload("Post").
@@ -362,7 +362,7 @@ func (s *Service) ListModeration(status string, page, limit int) ([]model.Commen
 }
 
 // SetStatus approves or rejects a comment.
-func (s *Service) SetStatus(id, status string) (*model.Comment, error) {
+func (s *Service) SetStatus(id string, status model.CommentStatus) (*model.Comment, error) {
 	var comment model.Comment
 	if err := s.db.First(&comment, id).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
