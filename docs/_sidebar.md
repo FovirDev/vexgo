@@ -1,2 +1,12 @@
-- [home](/)
-- [api](api.md)
+- [🏠 Home](/)
+- 🚀 Getting Started
+  - [Quick Start](/getting-started)
+- 📖 Guides
+  - [Installation](/guides/installation)
+  - [Configuration](/guides/configuration)
+  - [Deployment](/guides/deployment)
+- 🧠 Concepts
+  - [Architecture](/concepts/architecture)
+- 📚 Reference
+  - [Configuration](/reference/configuration)
+  - [API](/reference/api)

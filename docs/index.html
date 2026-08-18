@@ -2,13 +2,17 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <title>Document</title>
+    <title>VexGo Documentation</title>
     <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
-    <meta name="description" content="Description" />
+    <meta
+      name="description"
+      content="VexGo is a lightweight, self-hosted blog content management system built with Go and React. Learn how to install, configure, deploy, and extend it."
+    />
     <meta
       name="viewport"
       content="width=device-width, initial-scale=1.0, minimum-scale=1.0"
     />
+    <link rel="icon" type="image/x-icon" href="assets/favicon.ico" />
     <!-- https://github.com/boopathikumar018/docsify-darklight-theme -->
     <link
       rel="stylesheet"
@@ -22,19 +26,50 @@
     <div id="app"></div>
     <script>
       window.$docsify = {
-        name: "VexGo",
+        name: "VexGo Docs",
         repo: "https://github.com/vexgo-org/vexgo",
+
+        // Auto-detect the base path so the site works both at a custom
+        // domain (https://docs.example.com) and as a GitHub Pages project
+        // site (https://user.github.io/vexgo/).
+        basePath: (function () {
+          var path = window.location.pathname;
+          return path.endsWith("/")
+            ? path
+            : path.slice(0, path.lastIndexOf("/") + 1);
+        })(),
 
         loadSidebar: true,
         subMaxLevel: 3,
-
         loadNavbar: true,
+        mergeNavbar: true,
+        auto2top: true,
+        formatUpdated: "{MM}/{DD} {HH}:{mm}",
+        nameLink: {
+          "/zh-cn/": "#/zh-cn/",
+          "/": "#/",
+        },
+
+        // Full text search (docsify search plugin)
+        search: {
+          paths: "auto",
+          placeholder: {
+            "/": "Type to search",
+            "/zh-cn/": "搜索文档",
+          },
+          noData: {
+            "/": "No results found.",
+            "/zh-cn/": "没有找到相关结果",
+          },
+          depth: 3,
+        },
       };
     </script>
     <!-- Docsify v4 -->
     <script src="//cdn.jsdelivr.net/npm/docsify@4"></script>
     <script src="//cdn.jsdelivr.net/npm/docsify-copy-code/dist/docsify-copy-code.min.js"></script>
     <script src="//cdn.jsdelivr.net/npm/docsify/lib/plugins/emoji.min.js"></script>
+    <script src="//cdn.jsdelivr.net/npm/docsify-pagination/dist/docsify-pagination.min.js"></script>
     <script
       src="//cdn.jsdelivr.net/npm/docsify-darklight-theme@latest/dist/index.min.js"
       type="text/javascript"

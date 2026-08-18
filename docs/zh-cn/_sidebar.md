@@ -1,2 +1,12 @@
-- [首页](zh-cn/)
-- [api](zh-cn/api)
+- [🏠 首页](/zh-cn/)
+- 🚀 快速开始
+  - [快速开始](/zh-cn/getting-started)
+- 📖 指南
+  - [安装](/zh-cn/guides/installation)
+  - [配置](/zh-cn/guides/configuration)
+  - [部署](/zh-cn/guides/deployment)
+- 🧠 概念
+  - [架构](/zh-cn/concepts/architecture)
+- 📚 参考
+  - [配置参考](/zh-cn/reference/configuration)
+  - [API 参考](/zh-cn/reference/api)
