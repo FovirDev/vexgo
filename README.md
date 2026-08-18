@@ -2,27 +2,45 @@
 
 **English | [中文](README_zh-cn.md)**
 
+[![Go Version](https://img.shields.io/github/go-mod/go-version/vexgo-org/vexgo)](https://go.dev/)
+[![License](https://img.shields.io/github/license/vexgo-org/vexgo)](./LICENSE)
+[![Build Status](https://img.shields.io/github/actions/workflow/status/vexgo-org/vexgo/build-and-test.yml?branch=main)](https://github.com/vexgo-org/vexgo/actions)
+[![Release](https://img.shields.io/github/v/release/vexgo-org/vexgo)](https://github.com/vexgo-org/vexgo/releases)
+
 ## VexGo - Modern Blog CMS
 
 VexGo is a lightweight, self-hosted blog content management system designed for developers and writers who value simplicity, performance, and control. Built with modern technologies, it provides a complete blogging platform with user management, rich content creation, and extensibility.
 
 ### ✨ Key Features
 
-- **🖥️ Modern Web Interface**: Clean React-based admin panel for content management
+- **🖥️ Modern Web Interface**: React-based admin panel for content management
 - **🚀 High Performance**: Built with Go and Gin for fast, efficient processing
-- **🔐 Secure Authentication**: JWT-based user system with role-based permissions
-- **📝 Rich Content**: Markdown support, categories, tags, and commenting
+- **🔐 Secure Authentication**: JWT-based user system with role-based permissions (user / admin / super_admin)
+- **📝 Rich Content**: Markdown editor, categories, tags, drafts, likes, and comments
+- **🛡️ AI-Powered Moderation**: Automatic comment moderation with configurable prompts, keyword blocking, and score thresholds
 - **🖼️ Media Management**: Built-in file storage with S3-compatible support
-- **🎨 Customizable**: Theme system and plugin architecture
+- **🎨 Theme System**: Server-side-rendered themes, switchable and uploadable from the admin panel
+- **🔔 Notifications**: In-app message inbox for likes, comments, and other events
+- **🔑 SSO**: Login with GitHub, Google, or any OpenID Connect provider
 - **🌐 Self-Hosted**: Complete control over your data and deployment
 
 ### 🛠️ Technology Stack
 
 - **Backend**: Go, Gin, GORM, SQLite/PostgreSQL/MySQL
-- **Frontend**: React, TypeScript
+- **Frontend**: React, TypeScript, Vite, Tailwind CSS
 - **Authentication**: JWT, OAuth (GitHub, Google, OIDC)
 - **Storage**: Local filesystem or S3-compatible services
 - **Email**: SMTP integration
+
+## Table of Contents
+
+- [Quick Start](#quick-start)
+- [Configuration](#configuration)
+- [SSO / Single Sign-On](#sso--single-sign-on)
+- [Database](#database)
+- [Development](#development)
+- [Contributing](#contributing)
+- [License](#license)
 
 ## Quick Start
 
@@ -104,7 +122,7 @@ sudo nixos-rebuild switch --flake .#your-host
 
 Then, visit http://127.0.0.1:3001
 
-The Default super admin account: `admin@example.com`  
+The Default super admin account: `admin@example.com`
 The Default super admin password: `password`
 
 You can change your account password on your profile page.
@@ -273,7 +291,7 @@ You can also configure the application using environment variables.
 | ---------------------- | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `ADDR`                 | `0.0.0.0` | Server listen address                                                                                                                                                                                                                                        |
 | `PORT`                 | `3001`    | Server listen port                                                                                                                                                                                                                                           |
-| `DATA`                 | `./data`  | Data directory path                                                                                                                                                                                                                                          |
+| `DATA_DIR`             | `./data`  | Data directory path                                                                                                                                                                                                                                          |
 | `JWT_SECRET`           | —         | JWT secret key (required for production)                                                                                                                                                                                                                     |
 | `LOG_LEVEL`            | `info`    | Logging level: `debug`, `info`, `warn`, `error`, `fatal`, `panic`                                                                                                                                                                                            |
 | `BEHIND_REVERSE_PROXY` | `false`   | Set to `true` if the server is behind a reverse proxy (nginx, Cloudflare, etc.). This enables proper handling of `X-Forwarded-*` headers.                                                                                                                    |
@@ -359,7 +377,7 @@ sudo docker run -d --name vexgo \
   -e OIDC_ISSUER_URL=https://auth.example.com/realms/myrealm \
   -e OIDC_CLIENT_ID=your-client-id \
   -e OIDC_CLIENT_SECRET=your-client-secret \
-  ghcr.io/antipeth/vexgo:latest
+  ghcr.io/vexgo-org/vexgo:latest
 ```
 
 **Example: environment variables**
@@ -431,7 +449,7 @@ postgres=# CREATE DATABASE vexgo_db OWNER vexgo_user ENCODING 'UTF8' LC_COLLATE 
 Run backend with this command:
 
 ```bash
-go run backend/main.go -c ../examples/config-postgres.yml
+go run backend/main.go -c examples/config-postgres.yml
 ```
 
 ### Mysql
@@ -457,171 +475,98 @@ mysql> FLUSH PRIVILEGES;
 Run backend with this command:
 
 ```bash
-go run backend/main.go -c ../examples/config-mysql.yml
+cd backend
+go run main.go -c ../examples/config-mysql.yml
 ```
 
 ## Development
 
 ### Requirements
 
-- Linux/MacOS
-- go
-- nodejs
-- pnpm
+- Linux/macOS
+- Go 1.25+
+- Node.js and pnpm 10
+- `just`, `gofumpt`, `golangci-lint`, `prettier`, `oxlint` (recommended; a Nix dev shell with all of them is available via `nix develop`)
 
-### Backend Structure and Architecture
+### Common commands
 
-The backend is organized into the following folders with clear separation of concerns:
+```sh
+just format            # gofumpt -w -extra . && prettier --write
+just lint              # golangci-lint + prettier --check + gofumpt check + oxlint
+go build -v ./...      # build the backend
+go test -v ./...       # run backend tests
 
-#### **cmd/** — Application Entry Point and Configuration Parsing
-
-- **Files**: `server.go`
-- **Purpose**: Parses command-line arguments and loads configuration from config files, environment variables, and command-line flags
-- **Key Functions**:
-  - `ParseFlags()`: Parses command-line arguments and config files
-  - `Config` struct: Holds all configuration values
-- **Import Rules**:
-  - ✅ **Can import**: Standard library, external packages (gin, gorm, etc.)
-  - ✅ **Can be imported by**: `main.go`, other initialization modules
-  - ❌ **Cannot import**: Other backend modules (to avoid circular imports and keep it as a pure configuration parser)
-
-#### **config/** — Configuration Initialization (Pure Setup Module)
-
-- **Files**:
-  - `jwt.go`: JWT secret initialization and validation
-  - `s3.go`: S3-compatible storage configuration (AWS S3, MinIO, etc.)
-  - `sso.go`: SSO provider configuration (GitHub, Google, OIDC)
-- **Purpose**: Initializes and manages configuration objects. This is a pure setup module with no business logic.
-- **Key Functions**:
-  - `config.Init(jwtSecret)`: Initializes JWT configuration
-  - `config.LoadFromConfig(cfg)`: Loads SSO configuration from config file
-  - `S3Config.GetURL()`: Generates S3 object URLs
-- **Import Rules**:
-  - ✅ **Can import**: Standard library, external packages only (NO backend modules)
-  - ✅ **Can be imported by**: `main.go`, `handler`, `middleware`, `utils`
-  - ❌ **Cannot import**: `handler`, `middleware`, `model`, `utils`, `public` (maintains isolation)
-  - **Reason**: `config` is a pure initialization module that must not depend on application logic to prevent circular imports
-
-#### **handler/** — HTTP Request Handlers and API Endpoints
-
-- **Files**:
-  - `api.go`: Main API route registration
-  - `auth.go`: Authentication endpoints (login, logout, password reset)
-  - `register.go`: User registration endpoints
-  - `post.go`: Blog post CRUD operations
-  - `comment.go`: Comment management
-  - `comment_moderation.go`: Comment moderation and approval
-  - `post_moderation.go`: Post moderation workflows
-  - `like.go`: Post/comment like functionality
-  - `user_management.go`: Admin user management
-  - `upload.go`: File upload handling
-  - `s3.go`: S3 upload and storage integration
-  - `sso.go`: OAuth2/OIDC login handlers
-  - `verification.go`: Email verification endpoints
-  - `home.go`: Homepage data endpoints
-  - `config.go`: Configuration management endpoints
-  - `db.go`: Database initialization and connection management
-- **Purpose**: Implements all HTTP endpoint handlers with business logic
-- **Import Rules**:
-  - ✅ **Can import**: `config`, `model`, `middleware`, `utils`, standard library, external packages
-  - ✅ **Can be imported by**: `main.go`, other handler files
-  - ❌ **Cannot import**: `cmd`, `public`
-
-#### **middleware/** — HTTP Middleware Functions
-
-- **Files**:
-  - `auth.go`: JWT token verification and authentication
-  - `permission.go`: Role-based authorization and permission checking
-- **Purpose**: Provides reusable middleware for request/response processing
-- **Key Functions**:
-  - `JWTAuth()`: Validates JWT tokens from Authorization header
-  - `OptionalJWTAuth()`: Optional authentication (doesn't fail if no token)
-  - `SetDB()`: Sets database connection for permission checking
-- **Import Rules**:
-  - ✅ **Can import**: `config`, `model`, standard library, external packages
-  - ✅ **Can be imported by**: `main.go`, `handler`
-  - ❌ **Cannot import**: `cmd`, `handler`, `utils`, `public`
-
-#### **model/** — Data Models and Database Schemas
-
-- **Files**:
-  - `post.go`: Post, User, Tag, Like, Comment data models
-  - `roles.go`: User role definitions and permissions
-  - `sso_binding.go`: OAuth provider account bindings
-  - `config.go`: Database configuration models (SMTPConfig, GeneralSettings, etc.)
-- **Purpose**: Defines all data structures and GORM database models
-- **Import Rules**:
-  - ✅ **Can import**: Standard library only (no external dependencies except for GORM struct tags)
-  - ✅ **Can be imported by**: `handler`, `middleware`, `utils`, `config`, other model files
-  - ❌ **Cannot import**: `cmd`, `config`, `handler`, `middleware`, `public`, `utils`
-  - **Reason**: Model is at the core of the dependency graph; it must not import application logic
-
-#### **utils/** — Utility Functions and Helpers
-
-- **Files**:
-  - `mailer.go`: Email sending functionality (SMTP client)
-- **Purpose**: Provides reusable utility functions for common tasks
-- **Import Rules**:
-  - ✅ **Can import**: `model`, `config`, standard library, external packages
-  - ✅ **Can be imported by**: `handler`, `middleware`
-  - ❌ **Cannot import**: `cmd`, `public`
-
-#### **public/** — Embedded Static Resources
-
-- **Files**:
-  - `public.go`: Embedded frontend build output management
-- **Purpose**: Serves the built frontend application as embedded assets
-- **Functions**:
-  - `GetStaticFS()`: Returns filesystem for static assets
-  - `GetIndexHTML()`: Returns the main index.html file
-- **Import Rules**:
-  - ✅ **Can import**: Standard library only
-  - ✅ **Can be imported by**: `main.go`
-  - ❌ **Cannot import**: Any backend modules
-
-### Import Conventions and Rules
-
-The project uses Go modules with the module name `vexgo`. All imports follow the pattern `vexgo/backend/{folder}`.
-
-**Example imports**:
-
-```go
-import (
-    "vexgo/backend/config"    // From config package
-    "vexgo/backend/model"     // From model package
-    "vexgo/backend/handler"   // From handler package
-    "vexgo/backend/middleware" // From middleware package
-    "vexgo/backend/utils"     // From utils package
-)
+cd frontend
+pnpm install
+pnpm run dev           # frontend dev server with HMR
+pnpm run build         # typecheck (tsc -b) + vite build + copy manifest
+pnpm run lint          # oxlint
 ```
 
-**Dependency Graph** (arrows show "can import"):
+The frontend build output is written to `backend/internal/public/dist` and embedded into the backend binary, so rebuild the frontend after changing it.
 
-```
-main.go
-  ↓
-cmd → config → (pure setup, no backend imports)
-  ↓
-main.go → handler → config, model, middleware, utils
-        → middleware → config, model
-        → config
-```
-
-**Critical Rules**:
-
-1. `config/` package must NOT import any other backend modules (prevents circular dependencies)
-2. `model/` package must NOT import application logic modules (keeps data structures clean)
-3. Never import from `cmd/` outside of `main.go` (command-line parsing is initialization-only)
-
-### Steps
+### Run locally
 
 ```bash
 git clone https://github.com/vexgo-org/vexgo.git
-cd vexgo/frontend
+cd vexgo
+cd frontend
 pnpm install
 pnpm run build
 cd ../backend
-go run backend/main.go
+go run main.go
 ```
 
-Then, visit http://127.0.0.1:3001
+Then visit http://127.0.0.1:3001. The default super admin account is `admin@example.com` / `password` — change it on your profile page.
+
+### Backend structure
+
+The backend follows a domain-oriented layout under `backend/internal`:
+
+```text
+backend/
+  main.go            # entry point: flags, config, storage, DB, router, static routes
+  internal/
+    auth/            # registration, login, JWT, profile, password reset
+    comment/         # comments and AI-powered moderation
+    config/          # flag / env / config-file parsing, JWT, S3, SSO setup (pure setup, no backend imports)
+    database/        # connection, auto-migration, seeding
+    home/            # site statistics
+    mailer/          # SMTP mail building and sending
+    message/         # in-app notifications
+    middleware/      # JWT auth, role-based permissions, request logging
+    model/           # GORM data models (post, user, tag, category, like, comment, ...)
+    post/            # post CRUD, categories, tags, likes
+    public/          # embedded frontend, themes, SSR renderer, static routes
+    router/          # route registration (composes every domain)
+    settings/        # admin configuration (SMTP, AI, general, theme)
+    sso/             # GitHub / Google / OIDC login
+    upload/          # file upload (local disk or S3)
+    user/            # user management, roles, creator applications
+    verification/    # email verification and sliding-puzzle captcha
+```
+
+Imports use the module path `vexgo/backend/internal/<package>`, for example:
+
+```go
+import (
+    "vexgo/backend/internal/model"
+    "vexgo/backend/internal/post"
+    "vexgo/backend/internal/router"
+)
+```
+
+### Dependency facts
+
+- **Leaf packages** — `config/` and `model/` import no other backend module. `model` is imported by every domain package (plus `database`, `mailer`, `middleware`, `public`); `config` is imported by `auth`, `database`, `middleware`, `sso`, and `upload`.
+- **Shared layer** — `middleware/` (JWT auth, role permissions, request logging) depends only on `config` and `model`.
+- **Cross-domain edges** — `auth` is used by `comment`, `post`, and `sso`; `auth` itself depends on `verification`; `settings` depends on `public` (theme management) and `mailer` (SMTP); `database` depends on `config` and `model`. The dependency graph is acyclic.
+- **Wiring** — `backend/main.go` is the single entry point: it opens the database, creates storage and the `public.Renderer`, then wires every domain together by calling `router.RegisterAPIRoutes(r, router.Deps{...})` (defined in `internal/router`).
+
+### Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for coding standards, testing requirements, and the issue, pull request, and commit conventions.
+
+### License
+
+VexGo is licensed under the [GNU Affero General Public License v3.0](LICENSE).

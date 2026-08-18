@@ -2,27 +2,45 @@
 
 **[English](README.md) | 中文**
 
+[![Go Version](https://img.shields.io/github/go-mod/go-version/vexgo-org/vexgo)](https://go.dev/)
+[![License](https://img.shields.io/github/license/vexgo-org/vexgo)](./LICENSE)
+[![Build Status](https://img.shields.io/github/actions/workflow/status/vexgo-org/vexgo/build-and-test.yml?branch=main)](https://github.com/vexgo-org/vexgo/actions)
+[![Release](https://img.shields.io/github/v/release/vexgo-org/vexgo)](https://github.com/vexgo-org/vexgo/releases)
+
 ## VexGo - 现代化博客 CMS
 
 VexGo 是一个轻量级的、自托管博客内容管理系统，专为重视简洁性、性能和控制权的开发者和作家而设计。采用现代技术构建，它提供了一个完整的博客平台，包括用户管理、丰富内容创作和可扩展性。
 
 ### ✨ 主要特性
 
-- **🖥️ 现代化 Web 界面**：基于 React 的干净管理面板用于内容管理
+- **🖥️ 现代化 Web 界面**：基于 React 的管理面板用于内容管理
 - **🚀 高性能**：使用 Go 和 Gin 构建，实现快速高效的处理
-- **🔐 安全认证**：基于 JWT 的用户系统，具有基于角色的权限
-- **📝 丰富内容**：支持 Markdown、分类、标签和评论
+- **🔐 安全认证**：基于 JWT 的用户系统，具有基于角色的权限（user / admin / super_admin）
+- **📝 丰富内容**：Markdown 编辑器、分类、标签、草稿、点赞和评论
+- **🛡️ AI 内容审核**：可配置提示词、关键词拦截和评分阈值的自动评论审核
 - **🖼️ 媒体管理**：内置文件存储，支持 S3 兼容服务
-- **🎨 可定制**：主题系统和插件架构
+- **🎨 主题系统**：服务端渲染主题，可在管理面板切换和上传
+- **🔔 通知**：点赞、评论等事件的站内消息收件箱
+- **🔑 SSO**：支持 GitHub、Google 及任意 OpenID Connect 提供商登录
 - **🌐 自托管**：完全控制您的数据和部署
 
 ### 🛠️ 技术栈
 
 - **后端**：Go, Gin, GORM, SQLite/PostgreSQL/MySQL
-- **前端**：React, TypeScript
+- **前端**：React, TypeScript, Vite, Tailwind CSS
 - **认证**：JWT, OAuth (GitHub, Google, OIDC)
 - **存储**：本地文件系统或 S3 兼容服务
 - **邮件**：SMTP 集成
+
+## 目录
+
+- [快速开始](#快速开始)
+- [配置](#配置)
+- [SSO / 单点登录](#sso--单点登录)
+- [数据库](#数据库)
+- [开发环境](#开发环境)
+- [贡献指南](#贡献指南)
+- [许可证](#许可证)
 
 ## 快速开始
 
@@ -42,7 +60,7 @@ sudo docker run -d --name vexgo -p 3001:3001 -v ./data:/app/data ghcr.io/vexgo-o
 
 ### ❄️Nix
 
-无需安装即可立即试用 `VexGo` :
+无需安装即可立即试用 VexGo：
 
 ```bash
 nix run github:vexgo-org/vexgo
@@ -104,8 +122,8 @@ sudo nixos-rebuild switch --flake .#your-host
 
 访问 http://127.0.0.1:3001
 
-**默认超级管理员账号**：admin@example.com  
-**默认超级管理员密码**：password
+**默认超级管理员账号**：`admin@example.com`
+**默认超级管理员密码**：`password`
 
 您可以在个人资料页面修改账号密码。
 
@@ -134,6 +152,10 @@ jwt_secret: "your-secret-key-change-this-in-production"
 
 # 日志级别："debug", "info", "warn", "error", "fatal", "panic"
 log_level: "info"
+
+# 服务是否位于反向代理之后（例如 nginx、Cloudflare）
+# 如果使用了会设置 X-Forwarded-* 请求头的反向代理，请设为 true
+behind_reverse_proxy: false
 
 # 受信任的代理 IP/CIDR 列表（逗号分隔）
 # 仅在 behind_reverse_proxy=true 时生效
@@ -185,8 +207,7 @@ google_client_secret: ""
 oidc_enabled: false
 
 # OIDC discovery URL（启用时必填）
-# 服务器会从以下地址获取 OIDC 配置：
-# {issuer_url}/.well-known/openid-configuration
+# 服务器会从以下地址获取 OIDC 配置：{issuer_url}/.well-known/openid-configuration
 # 示例: "https://auth.example.com/realms/myrealm"
 oidc_issuer_url: ""
 
@@ -201,8 +222,7 @@ oidc_token_url: "" # Token 端点
 oidc_userinfo_url: "" # UserInfo 端点（可选备用）
 
 # OIDC scope（空格分隔，默认: "openid profile email"）
-# 如果提供商需要，可以添加额外 scope，例如：
-# "openid profile email groups"
+# 如果提供商需要，可以添加额外 scope，例如："openid profile email groups"
 oidc_scopes: "openid profile email"
 
 # OIDC claim 名称（默认是标准 OIDC claim）
@@ -247,8 +267,7 @@ s3_secret_key: ""
 # 强制使用 path-style URL（MinIO / Wasabi 等需要）
 s3_force_path: false
 
-# 可选自定义域名（用于公开文件 URL）
-# 例如 CDN 域名: "cdn.example.com"
+# 可选自定义域名用于公开文件 URL （例如 CDN 域名: "cdn.example.com"）
 # 留空则使用默认 S3 地址
 s3_custom_domain: ""
 
@@ -268,86 +287,86 @@ s3_disable_bucket_in_custom_url: false
 
 #### Server
 
-| 变量                 | 默认值  | 说明                                                                                                                                                                                                                           |
-| -------------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| ADDR                 | 0.0.0.0 | 服务监听地址                                                                                                                                                                                                                   |
-| PORT                 | 3001    | 服务监听端口                                                                                                                                                                                                                   |
-| DATA                 | ./data  | 数据目录路径                                                                                                                                                                                                                   |
-| JWT_SECRET           | —       | JWT 签名密钥（生产环境必填）                                                                                                                                                                                                   |
-| LOG_LEVEL            | info    | 日志级别：debug、info、warn、error、fatal、panic                                                                                                                                                                               |
-| BEHIND_REVERSE_PROXY | false   | 设置为 `true` 表示服务器位于反向代理（如 nginx、Cloudflare 等）之后。启用后才会正确处理 `X-Forwarded-*` 头部。                                                                                                                 |
-| TRUSTED_PROXIES      | —       | 受信任的代理 IP/CIDR 列表（逗号分隔）。仅在 `BEHIND_REVERSE_PROXY=true` 时生效。如果留空，默认使用常见私有网络（127.0.0.1、::1、192.168.0.0/16、10.0.0.0/8、172.16.0.0/12）。示例：`TRUSTED_PROXIES="192.168.1.100, 10.0.0.1"` |
+| 变量                   | 默认值    | 说明                                                                                                                                                                                                                           |
+| ---------------------- | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `ADDR`                 | `0.0.0.0` | 服务监听地址                                                                                                                                                                                                                   |
+| `PORT`                 | `3001`    | 服务监听端口                                                                                                                                                                                                                   |
+| `DATA_DIR`             | `./data`  | 数据目录路径                                                                                                                                                                                                                   |
+| `JWT_SECRET`           | —         | JWT 签名密钥（生产环境必填）                                                                                                                                                                                                   |
+| `LOG_LEVEL`            | `info`    | 日志级别：`debug`、`info`、`warn`、`error`、`fatal`、`panic`                                                                                                                                                                   |
+| `BEHIND_REVERSE_PROXY` | `false`   | 设置为 `true` 表示服务器位于反向代理（如 nginx、Cloudflare 等）之后。启用后才会正确处理 `X-Forwarded-*` 头部。                                                                                                                 |
+| `TRUSTED_PROXIES`      | —         | 受信任的代理 IP/CIDR 列表（逗号分隔）。仅在 `BEHIND_REVERSE_PROXY=true` 时生效。如果留空，默认使用常见私有网络（127.0.0.1、::1、192.168.0.0/16、10.0.0.0/8、172.16.0.0/12）。示例：`TRUSTED_PROXIES="192.168.1.100, 10.0.0.1"` |
 
 #### Database
 
-| 变量        | 默认值  | 说明                                |
-| ----------- | ------- | ----------------------------------- |
-| DB_TYPE     | sqlite  | 数据库类型：sqlite、mysql、postgres |
-| DB_HOST     | —       | 数据库主机（mysql/postgres 必填）   |
-| DB_PORT     | —       | 数据库端口（mysql/postgres 必填）   |
-| DB_USER     | —       | 数据库用户名（mysql/postgres 必填） |
-| DB_PASSWORD | —       | 数据库密码（mysql/postgres 必填）   |
-| DB_NAME     | —       | 数据库名称（mysql/postgres 必填）   |
-| DB_SSL_MODE | disable | Postgres SSL 模式                   |
+| 变量          | 默认值    | 说明                                      |
+| ------------- | --------- | ----------------------------------------- |
+| `DB_TYPE`     | `sqlite`  | 数据库类型：`sqlite`、`mysql`、`postgres` |
+| `DB_HOST`     | —         | 数据库主机（mysql/postgres 必填）         |
+| `DB_PORT`     | —         | 数据库端口（mysql/postgres 必填）         |
+| `DB_USER`     | —         | 数据库用户名（mysql/postgres 必填）       |
+| `DB_PASSWORD` | —         | 数据库密码（mysql/postgres 必填）         |
+| `DB_NAME`     | —         | 数据库名称（mysql/postgres 必填）         |
+| `DB_SSL_MODE` | `disable` | Postgres SSL 模式                         |
 
-## SSO / 单点登录
+#### SSO / 单点登录
 
 VexGo 支持 GitHub、Google 以及任何兼容 OpenID Connect (OIDC) 的提供商（Keycloak、Authentik、Authelia、Okta、Casdoor 等）。
 
-### 通用配置
+**通用配置**
 
-| 变量              | 默认值 | 说明                                                                                                       |
-| ----------------- | ------ | ---------------------------------------------------------------------------------------------------------- |
-| BASE_URL          | —      | 实例的公网访问地址（如 https://vexgo.example.com）。使用反向代理时必须填写，用于正确生成 OAuth2 回调地址。 |
-| ALLOW_LOCAL_LOGIN | true   | 设置为 false 可禁用密码登录，强制仅使用 SSO 登录。                                                         |
+| 变量                | 默认值 | 说明                                                                                                         |
+| ------------------- | ------ | ------------------------------------------------------------------------------------------------------------ |
+| `BASE_URL`          | —      | 实例的公网访问地址（如 `https://vexgo.example.com`）。使用反向代理时必须填写，用于正确生成 OAuth2 回调地址。 |
+| `ALLOW_LOCAL_LOGIN` | `true` | 设置为 `false` 可禁用密码登录，强制仅使用 SSO 登录。                                                         |
 
-### GitHub
+**GitHub**
 
-| 变量                 | 说明                           |
-| -------------------- | ------------------------------ |
-| GITHUB_CLIENT_ID     | GitHub OAuth App Client ID     |
-| GITHUB_CLIENT_SECRET | GitHub OAuth App Client Secret |
+| 变量                   | 说明                           |
+| ---------------------- | ------------------------------ |
+| `GITHUB_CLIENT_ID`     | GitHub OAuth App Client ID     |
+| `GITHUB_CLIENT_SECRET` | GitHub OAuth App Client Secret |
 
 在 https://github.com/settings/developers 注册 OAuth App，回调地址设置为 `https://your-domain/api/sso/github/callback`。
 
-### Google
+**Google**
 
-| 变量                 | 说明                           |
-| -------------------- | ------------------------------ |
-| GOOGLE_CLIENT_ID     | Google OAuth 2.0 Client ID     |
-| GOOGLE_CLIENT_SECRET | Google OAuth 2.0 Client Secret |
+| 变量                   | 说明                           |
+| ---------------------- | ------------------------------ |
+| `GOOGLE_CLIENT_ID`     | Google OAuth 2.0 Client ID     |
+| `GOOGLE_CLIENT_SECRET` | Google OAuth 2.0 Client Secret |
 
 在 https://console.developers.google.com 创建凭证，回调地址设置为 `https://your-domain/api/sso/google/callback`。
 
-### OIDC
+**OIDC**
 
-| 变量               | 默认值 | 说明                                                                                                                                             |
-| ------------------ | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------ |
-| OIDC_ENABLED       | false  | 设置为 true 启用 OIDC 登录                                                                                                                       |
-| OIDC_ISSUER_URL    | —      | OIDC 提供商的 Issuer URL，例如 `https://auth.example.com/realms/myrealm` VexGo 会自动通过 `<issuer>/.well-known/openid-configuration` 发现端点。 |
-| OIDC_CLIENT_ID     | —      | 提供商颁发的 Client ID                                                                                                                           |
-| OIDC_CLIENT_SECRET | —      | 提供商颁发的 Client Secret                                                                                                                       |
+| 变量                 | 默认值  | 说明                                                                                                                                              |
+| -------------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `OIDC_ENABLED`       | `false` | 设置为 `true` 启用 OIDC 登录                                                                                                                      |
+| `OIDC_ISSUER_URL`    | —       | OIDC 提供商的 Issuer URL，例如 `https://auth.example.com/realms/myrealm`。VexGo 会自动通过 `<issuer>/.well-known/openid-configuration` 发现端点。 |
+| `OIDC_CLIENT_ID`     | —       | 提供商颁发的 Client ID                                                                                                                            |
+| `OIDC_CLIENT_SECRET` | —       | 提供商颁发的 Client Secret                                                                                                                        |
 
 **高级选项：**
 
-| 变量                | 默认值               | 说明                                                  |
-| ------------------- | -------------------- | ----------------------------------------------------- |
-| OIDC_SCOPES         | openid profile email | 空格分隔的作用域。如需组权限可添加 `groups`。         |
-| OIDC_EMAIL_CLAIM    | email                | 用户邮箱对应的 Claim 名称                             |
-| OIDC_NAME_CLAIM     | name                 | 用户显示名称对应的 Claim 名称                         |
-| OIDC_GROUP_CLAIM    | groups               | 用户组对应的 Claim 名称                               |
-| OIDC_ALLOWED_GROUPS | —                    | 允许登录的组列表（逗号分隔）。留空表示允许所有用户。  |
-| OIDC_AUTO_REDIRECT  | false                | 登录页自动跳转到 OIDC 提供商，跳过密码表单。          |
-| OIDC_VERIFY_EMAIL   | false                | 要求 token 中 `email_verified=true` 才允许登录。      |
-| OIDC_AUTH_URL       | —                    | 手动指定授权端点（仅在自动发现不可用时使用）          |
-| OIDC_TOKEN_URL      | —                    | 手动指定 Token 端点                                   |
-| OIDC_USERINFO_URL   | —                    | 手动指定 UserInfo 端点（id_token 缺少必要信息时备用） |
+| 变量                  | 默认值                 | 说明                                                                           |
+| --------------------- | ---------------------- | ------------------------------------------------------------------------------ |
+| `OIDC_SCOPES`         | `openid profile email` | 空格分隔的作用域。如需组权限可添加 `groups`。                                  |
+| `OIDC_EMAIL_CLAIM`    | `email`                | 用户邮箱对应的 Claim 名称                                                      |
+| `OIDC_NAME_CLAIM`     | `name`                 | 用户显示名称对应的 Claim 名称                                                  |
+| `OIDC_GROUP_CLAIM`    | `groups`               | 用户组对应的 Claim 名称                                                        |
+| `OIDC_ALLOWED_GROUPS` | —                      | 允许登录的组列表（逗号分隔），例如 `admins,developers`。留空表示允许所有用户。 |
+| `OIDC_AUTO_REDIRECT`  | `false`                | 登录页自动跳转到 OIDC 提供商，跳过密码表单。                                   |
+| `OIDC_VERIFY_EMAIL`   | `false`                | 要求 token 中 `email_verified=true` 才允许登录。                               |
+| `OIDC_AUTH_URL`       | —                      | 手动指定授权端点（仅在自动发现不可用时使用）                                   |
+| `OIDC_TOKEN_URL`      | —                      | 手动指定 Token 端点                                                            |
+| `OIDC_USERINFO_URL`   | —                      | 手动指定 UserInfo 端点（`id_token` 缺少必要信息时备用）                        |
 
 OIDC 客户端回调地址：`https://your-domain/api/sso/oidc/callback`。
 
-**提示**：要查找 Issuer URL，可打开 `<provider-base-url>/.well-known/openid-configuration` 并查看 `issuer` 字段。
+> **提示：** 要查找 Issuer URL，可打开 `<provider-base-url>/.well-known/openid-configuration` 并查看 `issuer` 字段。
 
-#### 示例：Docker + OIDC
+**示例：Docker + OIDC**
 
 ```bash
 sudo docker run -d --name vexgo \
@@ -358,10 +377,10 @@ sudo docker run -d --name vexgo \
   -e OIDC_ISSUER_URL=https://auth.example.com/realms/myrealm \
   -e OIDC_CLIENT_ID=your-client-id \
   -e OIDC_CLIENT_SECRET=your-client-secret \
-  ghcr.io/antipeth/vexgo:latest
+  ghcr.io/vexgo-org/vexgo:latest
 ```
 
-#### 示例：环境变量方式
+**示例：环境变量方式**
 
 ```bash
 export BASE_URL=https://vexgo.example.com
@@ -409,7 +428,9 @@ sudo docker run -d --name vexgo \
 
 ## 数据库
 
-### Postgres（推荐版本：Postgres 18）
+### Postgres
+
+推荐版本：Postgres 18
 
 先启动 Postgres：
 
@@ -428,10 +449,12 @@ postgres=# CREATE DATABASE vexgo_db OWNER vexgo_user ENCODING 'UTF8' LC_COLLATE 
 然后使用以下命令启动后端：
 
 ```bash
-go run main.go -c ../examples/config-postgres.yml
+go run backend/main.go -c examples/config-postgres.yml
 ```
 
-### MySQL（推荐版本：MySQL 8）
+### MySQL
+
+推荐版本：MySQL 8
 
 先启动 MySQL：
 
@@ -452,6 +475,7 @@ mysql> FLUSH PRIVILEGES;
 然后使用以下命令启动后端：
 
 ```bash
+cd backend
 go run main.go -c ../examples/config-mysql.yml
 ```
 
@@ -460,177 +484,89 @@ go run main.go -c ../examples/config-mysql.yml
 ### 环境要求
 
 - Linux / macOS
-- Go
-- Node.js
-- pnpm
+- Go 1.25+
+- Node.js 和 pnpm 10
+- `just`、`gofumpt`、`golangci-lint`、`prettier`、`oxlint`（推荐；也可通过 `nix develop` 进入包含全部工具的 Nix 开发环境）
 
-### 后端结构与架构
+### 常用命令
 
-后端按照职责清晰划分为以下目录：
+```sh
+just format            # gofumpt -w -extra . && prettier --write
+just lint              # golangci-lint + prettier --check + gofumpt 检查 + oxlint
+go build -v ./...      # 构建后端
+go test -v ./...       # 运行后端测试
 
-#### **cmd/** — 应用入口与配置解析
-
-- **文件**: `server.go`
-- **用途**: 解析命令行参数，并从配置文件、环境变量和命令行参数中加载配置
-- **关键函数**:
-  - `ParseFlags()`: 解析命令行参数和配置文件
-  - `Config` 结构体: 保存所有配置项
-
-- **导入规则**:
-  - ✅ **可以导入**: 标准库、外部包（gin、gorm 等）
-  - ✅ **可以被导入**: `main.go`、其他初始化模块
-  - ❌ **不能导入**: 其他后端模块（避免循环依赖，并保持为纯配置解析模块）
-
-#### **config/** — 配置初始化（纯初始化模块）
-
-- **文件**:
-  - `jwt.go`: JWT 密钥初始化与校验
-  - `s3.go`: S3 兼容存储配置（AWS S3、MinIO 等）
-  - `sso.go`: SSO 提供商配置（GitHub、Google、OIDC）
-
-- **用途**: 初始化并管理配置对象。该模块为纯初始化模块，不包含业务逻辑。
-- **关键函数**:
-  - `config.Init(jwtSecret)`: 初始化 JWT 配置
-  - `config.LoadFromConfig(cfg)`: 从配置文件加载 SSO 配置
-  - `S3Config.GetURL()`: 生成 S3 对象访问 URL
-
-- **导入规则**:
-  - ✅ **可以导入**: 仅标准库和外部包（不能导入 backend 内部模块）
-  - ✅ **可以被导入**: `main.go`、`handler`、`middleware`、`utils`
-  - ❌ **不能导入**: `handler`、`middleware`、`model`、`utils`、`public`
-  - **原因**: `config` 是纯初始化模块，不能依赖应用逻辑，以防止循环依赖
-
-#### **handler/** — HTTP 请求处理与 API 端点
-
-- **文件**:
-  - `api.go`: 主 API 路由注册
-  - `auth.go`: 认证接口（登录、登出、重置密码）
-  - `register.go`: 用户注册接口
-  - `post.go`: 博客文章 CRUD
-  - `comment.go`: 评论管理
-  - `comment_moderation.go`: 评论审核
-  - `post_moderation.go`: 文章审核流程
-  - `like.go`: 点赞功能
-  - `user_management.go`: 管理员用户管理
-  - `upload.go`: 文件上传处理
-  - `s3.go`: S3 上传与存储集成
-  - `sso.go`: OAuth2 / OIDC 登录处理
-  - `verification.go`: 邮件验证接口
-  - `home.go`: 首页数据接口
-  - `config.go`: 配置管理接口
-  - `db.go`: 数据库初始化与连接管理
-
-- **用途**: 实现所有 HTTP 接口与业务逻辑
-- **导入规则**:
-  - ✅ **可以导入**: `config`、`model`、`middleware`、`utils`、标准库、外部包
-  - ✅ **可以被导入**: `main.go`、其他 handler 文件
-  - ❌ **不能导入**: `cmd`、`public`
-
-#### **middleware/** — HTTP 中间件
-
-- **文件**:
-  - `auth.go`: JWT 验证与身份认证
-  - `permission.go`: 基于角色的权限检查
-
-- **用途**: 提供可复用的请求/响应处理中间件
-- **关键函数**:
-  - `JWTAuth()`: 校验 Authorization Header 中的 JWT
-  - `OptionalJWTAuth()`: 可选认证（没有 token 时不报错）
-  - `SetDB()`: 设置数据库连接用于权限检查
-
-- **导入规则**:
-  - ✅ **可以导入**: `config`、`model`、标准库、外部包
-  - ✅ **可以被导入**: `main.go`、`handler`
-  - ❌ **不能导入**: `cmd`、`handler`、`utils`、`public`
-
-#### **model/** — 数据模型与数据库结构
-
-- **文件**:
-  - `post.go`: Post、User、Tag、Like、Comment 模型
-  - `roles.go`: 用户角色与权限定义
-  - `sso_binding.go`: OAuth 账号绑定
-  - `config.go`: 数据库存储的配置模型（SMTPConfig、GeneralSettings 等）
-
-- **用途**: 定义所有数据结构与 GORM 数据库模型
-- **导入规则**:
-  - ✅ **可以导入**: 仅标准库（除 GORM struct tag 外不依赖外部库）
-  - ✅ **可以被导入**: `handler`、`middleware`、`utils`、`config`、其他 model 文件
-  - ❌ **不能导入**: `cmd`、`config`、`handler`、`middleware`、`public`、`utils`
-  - **原因**: model 位于依赖图核心，不能依赖应用逻辑
-
-#### **utils/** — 工具函数
-
-- **文件**:
-  - `mailer.go`: 邮件发送功能（SMTP 客户端）
-
-- **用途**: 提供通用工具函数
-- **导入规则**:
-  - ✅ **可以导入**: `model`、`config`、标准库、外部包
-  - ✅ **可以被导入**: `handler`、`middleware`
-  - ❌ **不能导入**: `cmd`、`public`
-
-#### **public/** — 内嵌静态资源
-
-- **文件**:
-  - `public.go`: 管理嵌入的前端构建产物
-
-- **用途**: 提供前端静态文件（embed）
-- **函数**:
-  - `GetStaticFS()`: 返回静态资源文件系统
-  - `GetIndexHTML()`: 返回 index.html
-
-- **导入规则**:
-  - ✅ **可以导入**: 仅标准库
-  - ✅ **可以被导入**: `main.go`
-  - ❌ **不能导入**: 任何 backend 模块
-
-### 导入规范
-
-项目使用 Go Modules，模块名为 `vexgo`
-
-所有导入遵循：
-
-```go
-import (
-    "vexgo/backend/config"
-    "vexgo/backend/model"
-    "vexgo/backend/handler"
-    "vexgo/backend/middleware"
-    "vexgo/backend/utils"
-)
+cd frontend
+pnpm install
+pnpm run dev           # 前端开发服务器（HMR）
+pnpm run build         # 类型检查（tsc -b）+ vite 构建 + 拷贝 manifest
+pnpm run lint          # oxlint
 ```
 
-### 依赖关系图
+前端构建产物会输出到 `backend/internal/public/dist` 并嵌入后端二进制，修改前端后需要重新构建。
 
-箭头表示 **可以导入**
-
-```
-main.go
-  ↓
-cmd → config → (纯初始化模块，无 backend 依赖)
-  ↓
-main.go → handler → config, model, middleware, utils
-        → middleware → config, model
-        → config
-```
-
----
-
-### 关键规则
-
-1. `config/` 不能导入任何 backend 模块（防止循环依赖）
-2. `model/` 不能导入业务逻辑模块（保持数据层纯净）
-3. 除 `main.go` 外，禁止从其他模块导入 `cmd/`（命令行解析仅用于初始化）
-
-### 构建步骤
+### 本地运行
 
 ```bash
 git clone https://github.com/vexgo-org/vexgo.git
-cd vexgo/frontend
+cd vexgo
+cd frontend
 pnpm install
 pnpm run build
 cd ../backend
 go run main.go
 ```
 
-然后访问 http://127.0.0.1:3001
+然后访问 http://127.0.0.1:3001。默认超级管理员账号：`admin@example.com` / `password`——请在个人资料页面修改密码。
+
+### 后端结构
+
+后端采用领域化布局，代码位于 `backend/internal` 下：
+
+```text
+backend/
+  main.go            # 入口：命令行参数、配置、存储、数据库、路由、静态资源
+  internal/
+    auth/            # 注册、登录、JWT、个人资料、密码重置
+    comment/         # 评论与 AI 审核
+    config/          # 命令行 / 环境变量 / 配置文件解析，JWT、S3、SSO 初始化（纯配置，不依赖后端模块）
+    database/        # 数据库连接、自动迁移、种子数据
+    home/            # 站点统计
+    mailer/          # SMTP 邮件构建与发送
+    message/         # 站内通知
+    middleware/      # JWT 认证、角色权限、请求日志
+    model/           # GORM 数据模型（post、user、tag、category、like、comment 等）
+    post/            # 文章 CRUD、分类、标签、点赞
+    public/          # 内嵌前端、主题、SSR 渲染、静态路由
+    router/          # 路由注册（组合所有领域模块）
+    settings/        # 管理端配置（SMTP、AI、通用设置、主题）
+    sso/             # GitHub / Google / OIDC 登录
+    upload/          # 文件上传（本地磁盘或 S3）
+    user/            # 用户管理、角色、创作者申请
+    verification/    # 邮箱验证与滑块验证码
+```
+
+导入使用模块路径 `vexgo/backend/internal/<package>`，例如：
+
+```go
+import (
+    "vexgo/backend/internal/model"
+    "vexgo/backend/internal/post"
+    "vexgo/backend/internal/router"
+)
+```
+
+### 依赖事实
+
+- **叶子包** — `config/` 和 `model/` 不导入任何其他后端模块。`model` 被所有领域包引用（另有 `database`、`mailer`、`middleware`、`public`）；`config` 被 `auth`、`database`、`middleware`、`sso`、`upload` 引用。
+- **共享层** — `middleware/`（JWT 认证、角色权限、请求日志）只依赖 `config` 和 `model`。
+- **领域间依赖** — `auth` 被 `comment`、`post`、`sso` 引用；`auth` 自身依赖 `verification`；`settings` 依赖 `public`（主题管理）和 `mailer`（SMTP）；`database` 依赖 `config` 和 `model`。依赖图无环。
+- **接线** — `backend/main.go` 是唯一入口：打开数据库、创建存储和 `public.Renderer`，然后通过调用 `router.RegisterAPIRoutes(r, router.Deps{...})`（定义于 `internal/router`）组装所有领域包。
+
+### 贡献指南
+
+请参阅 [CONTRIBUTING.md](CONTRIBUTING.md) 了解编码规范、测试要求以及 Issue、Pull Request 和提交信息规范。
+
+### 许可证
+
+VexGo 使用 [GNU Affero General Public License v3.0](LICENSE) 许可证。
