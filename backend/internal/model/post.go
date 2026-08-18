@@ -28,24 +28,6 @@ type Post struct {
 	CommentsCount int `json:"commentsCount" gorm:"-"`
 }
 
-// ToJSON converts a Post to JSON string
-func (p Post) ToJSON() (string, error) {
-	data, err := json.Marshal(p)
-	if err != nil {
-		return "", err
-	}
-	return string(data), nil
-}
-
-// ToJSON converts a slice of Post to JSON string
-func ToJSON(v any) (string, error) {
-	data, err := json.Marshal(v)
-	if err != nil {
-		return "", err
-	}
-	return string(data), nil
-}
-
 type Tag struct {
 	ID   uint   `json:"id" gorm:"primaryKey"`
 	Name string `json:"name" gorm:"size:100;uniqueIndex"`
@@ -67,4 +49,13 @@ type Like struct {
 	UserID    uint      `json:"userId"`
 	User      User      `json:"-" gorm:"foreignKey:UserID"`
 	CreatedAt time.Time `json:"createdAt"`
+}
+
+// ToJSON converts a slice of Post to JSON string
+func ToJSON(v any) (string, error) {
+	data, err := json.Marshal(v)
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
 }
