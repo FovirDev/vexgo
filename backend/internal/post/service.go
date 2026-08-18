@@ -211,9 +211,9 @@ func (s *Service) Create(userRole string, userID uint, req CreateRequest) (*mode
 	initialStatus := req.Status
 	if initialStatus == "" {
 		switch userRole {
-		case "contributor":
+		case model.RoleContributor:
 			initialStatus = "pending"
-		case "author", "admin", "super_admin":
+		case model.RoleAuthor, model.RoleAdmin, model.RoleSuperAdmin:
 			initialStatus = "published"
 		default:
 			initialStatus = "draft"
@@ -265,7 +265,7 @@ func (s *Service) Update(id string, userID uint, req UpdateRequest) (*model.Post
 	// Permission check
 	var user model.User
 	if err := s.db.First(&user, userID).Error; err == nil {
-		if user.Role != "admin" && user.Role != "super_admin" && post.AuthorID != userID {
+		if user.Role != model.RoleAdmin && user.Role != model.RoleSuperAdmin && post.AuthorID != userID {
 			return nil, ErrForbidden
 		}
 	}
@@ -324,7 +324,7 @@ func (s *Service) Delete(id string, userID uint) error {
 
 	var user model.User
 	if err := s.db.First(&user, userID).Error; err == nil {
-		if user.Role != "admin" && user.Role != "super_admin" && post.AuthorID != userID {
+		if user.Role != model.RoleAdmin && user.Role != model.RoleSuperAdmin && post.AuthorID != userID {
 			return ErrForbidden
 		}
 	}

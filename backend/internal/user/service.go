@@ -316,9 +316,9 @@ func (s *Service) ApplyForCreator(user model.User, reason string) (uint, error) 
 	targetRole := ""
 	switch user.Role {
 	case model.RoleGuest:
-		targetRole = "contributor"
+		targetRole = model.RoleContributor
 	case model.RoleContributor:
-		targetRole = "author"
+		targetRole = model.RoleAuthor
 	}
 
 	// Send notification to admins and super admins

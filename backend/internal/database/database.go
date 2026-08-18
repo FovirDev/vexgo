@@ -203,7 +203,7 @@ func Seed(db *gorm.DB) {
 					Username:          "admin",
 					Email:             "admin@example.com",
 					Password:          string(pwHash),
-					Role:              "super_admin",
+					Role:              model.RoleSuperAdmin,
 					EmailVerified:     true,
 					VerificationToken: "",
 					TokenExpiresAt:    nil,

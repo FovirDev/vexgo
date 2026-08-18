@@ -73,7 +73,7 @@ func (s *Service) Delete(id string, userID uint) error {
 
 	var user model.User
 	if err := s.db.First(&user, userID).Error; err == nil {
-		if user.Role != "admin" && media.UserID != userID {
+		if user.Role != model.RoleAdmin && media.UserID != userID {
 			return ErrForbidden
 		}
 	}
