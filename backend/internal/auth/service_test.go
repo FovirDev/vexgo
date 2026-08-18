@@ -144,7 +144,7 @@ func TestLogin_WithCaptcha(t *testing.T) {
 	seedUser(t, svc.db, "alice@example.com", "password123", model.RoleAuthor, true)
 
 	// missing captcha fields
-	if _, _, err := svc.Login("alice@example.com", "password123", "", "", 0); !errors.Is(err, ErrCaptchaRequiredLogin) {
+	if _, _, err := svc.Login("alice@example.com", "password123", "", "", 0); !errors.Is(err, ErrCaptchaRequired) {
 		t.Errorf("expected ErrCaptchaRequiredLogin, got %v", err)
 	}
 

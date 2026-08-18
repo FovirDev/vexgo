@@ -18,16 +18,15 @@ import (
 // Sentinel errors mapped to HTTP responses by the handler. Each error carries
 // the exact message of the original handler response it replaces.
 var (
-	ErrInvalidCredentials   = errors.New("invalid email or password")
-	ErrCaptchaCheckFailed   = errors.New("failed to check captcha settings")
-	ErrCaptchaRequiredLogin = errors.New("please complete the captcha verification")
-	ErrCaptchaRequiredReg   = errors.New("please complete captcha verification")
-	ErrCaptchaNotFound      = errors.New("captcha does not exist or has expired")
-	ErrCaptchaExpired       = errors.New("captcha has expired")
-	ErrCaptchaMismatch      = errors.New("verification failed, please try again")
-	ErrCaptchaFailed        = errors.New("captcha verification failed")
-	ErrEmailUnverified      = errors.New("email not verified")
-	ErrTokenGeneration      = errors.New("token generation failed")
+	ErrInvalidCredentials = errors.New("invalid email or password")
+	ErrCaptchaCheckFailed = errors.New("failed to check captcha settings")
+	ErrCaptchaRequired    = errors.New("please complete the captcha verification")
+	ErrCaptchaNotFound    = errors.New("captcha does not exist or has expired")
+	ErrCaptchaExpired     = errors.New("captcha has expired")
+	ErrCaptchaMismatch    = errors.New("verification failed, please try again")
+	ErrCaptchaFailed      = errors.New("captcha verification failed")
+	ErrEmailUnverified    = errors.New("email not verified")
+	ErrTokenGeneration    = errors.New("token generation failed")
 
 	ErrRegistrationDisabled = errors.New("registration is disabled, please contact administrator")
 	ErrSettingsCheckFailed  = errors.New("failed to check registration settings")
@@ -89,42 +88,14 @@ func (s *Service) captchaEnabled() (bool, error) {
 func (s *Service) Login(email, password, captchaID, captchaToken string, captchaX int) (string, *model.User, error) {
 	logrus.Info("User login attempt started")
 
-	// Check if captcha verification is enabled
-	captchaEnabled, err := s.captchaEnabled()
-	if err != nil {
-		return "", nil, ErrCaptchaCheckFailed
-	}
-
-	// If captcha verification is enabled, verify captcha
-	if captchaEnabled {
-		if captchaID == "" || captchaToken == "" || captchaX == 0 {
-			return "", nil, ErrCaptchaRequiredLogin
-		}
-		// Query captcha
-		var captcha model.Captcha
-		if err := s.db.Where("id = ? AND token = ?", captchaID, captchaToken).First(&captcha).Error; err != nil {
-			return "", nil, ErrCaptchaNotFound
-		}
-
-		// Check if expired
-		if time.Now().After(captcha.ExpiresAt) {
-			return "", nil, ErrCaptchaExpired
-		}
-
-		// Verify position (allow certain tolerance)
-		tolerance := 10
-		if math.Abs(float64(captchaX-captcha.X)) > float64(tolerance) {
-			return "", nil, ErrCaptchaMismatch
-		}
-
-		// If captcha has not been used yet, mark it as used
-		if !captcha.Used {
-			captcha.Used = true
-			if err := s.db.Save(&captcha).Error; err != nil {
-				return "", nil, ErrCaptchaFailed
-			}
-		}
-		// If captcha already used, pre-verification successful, pass directly
+	if err := s.verifyCaptcha(&verifyCaptchaArgs{
+		Token:     captchaToken,
+		X:         captchaX,
+		Email:     email,
+		ID:        captchaID,
+		Tolerance: 10,
+	}); err != nil {
+		return "", nil, err
 	}
 
 	var user model.User
@@ -187,74 +158,14 @@ func (s *Service) Register(email, password, username, captchaID, captchaToken st
 		return nil, ErrRegistrationDisabled
 	}
 
-	// Check if captcha verification is enabled
-	captchaEnabled, err := s.captchaEnabled()
-	if err != nil {
-		return nil, ErrCaptchaCheckFailed
-	}
-
-	// If captcha verification is enabled, verify captcha
-	if captchaEnabled {
-		logrus.Debug("Captcha verification enabled, validating user captcha")
-		if captchaID == "" || captchaToken == "" || captchaX == 0 {
-			logrus.WithFields(logrus.Fields{
-				"email":     email,
-				"captchaID": captchaID,
-				"captchaX":  captchaX,
-			}).Warn("Captcha verification failed: missing required fields")
-			return nil, ErrCaptchaRequiredReg
-		}
-		// Query captcha
-		var captcha model.Captcha
-		if err := s.db.Where("id = ? AND token = ?", captchaID, captchaToken).First(&captcha).Error; err != nil {
-			logrus.WithFields(logrus.Fields{
-				"captchaID": captchaID,
-				"email":     email,
-			}).Warn("Captcha verification failed: captcha not found or invalid token")
-			return nil, ErrCaptchaNotFound
-		}
-
-		// Check if expired
-		if time.Now().After(captcha.ExpiresAt) {
-			logrus.WithFields(logrus.Fields{
-				"captchaID": captchaID,
-				"expiresAt": captcha.ExpiresAt,
-				"email":     email,
-			}).Warn("Captcha verification failed: captcha expired")
-			return nil, ErrCaptchaExpired
-		}
-
-		// Verify position (allow certain tolerance)
-		tolerance := 5
-		if math.Abs(float64(captchaX-captcha.X)) > float64(tolerance) {
-			logrus.WithFields(logrus.Fields{
-				"captchaID": captchaID,
-				"userX":     captchaX,
-				"correctX":  captcha.X,
-				"tolerance": tolerance,
-				"email":     email,
-			}).Warn("Captcha verification failed: incorrect position")
-			return nil, ErrCaptchaMismatch
-		}
-
-		logrus.WithFields(logrus.Fields{
-			"captchaID": captchaID,
-			"email":     email,
-		}).Debug("Captcha verification passed")
-
-		// If captcha has not been used yet, mark it as used
-		if !captcha.Used {
-			captcha.Used = true
-			if err := s.db.Save(&captcha).Error; err != nil {
-				logrus.WithFields(logrus.Fields{
-					"captchaID": captchaID,
-					"email":     email,
-				}).WithError(err).Error("Failed to mark captcha as used")
-				return nil, ErrCaptchaFailed
-			}
-			logrus.WithField("captchaID", captchaID).Debug("Captcha marked as used")
-		}
-		// If captcha already used, pre-verification successful, pass directly
+	if err := s.verifyCaptcha(&verifyCaptchaArgs{
+		Token:     captchaToken,
+		X:         captchaX,
+		Email:     email,
+		ID:        captchaID,
+		Tolerance: 5,
+	}); err != nil {
+		return nil, err
 	}
 
 	// Check if user already exists
@@ -606,6 +517,90 @@ func (s *Service) ResetPassword(token, password string) error {
 	}).Error; err != nil {
 		return ErrUpdatePassword
 	}
+
+	return nil
+}
+
+type verifyCaptchaArgs struct {
+	Token     string
+	X         int
+	Email     string
+	ID        string
+	Tolerance int
+}
+
+func (s *Service) verifyCaptcha(arg *verifyCaptchaArgs) error {
+	// Check if captcha verification is enabled
+	captchaEnabled, err := s.captchaEnabled()
+	if err != nil {
+		return ErrCaptchaCheckFailed
+	}
+
+	// If captcha verification is not enabled, return `nil`
+	if !captchaEnabled {
+		return nil
+	}
+
+	// Verify captcha
+	logrus.Debug("Captcha verification enabled, validating user captcha")
+	if arg.ID == "" || arg.Token == "" || arg.X == 0 {
+		logrus.WithFields(logrus.Fields{
+			"email":     arg.Email,
+			"captchaID": arg.ID,
+			"captchaX":  arg.X,
+		}).Warn("Captcha verification failed: missing required fields")
+		return ErrCaptchaRequired
+	}
+	// Query captcha
+	var captcha model.Captcha
+	if err := s.db.Where("id = ? AND token = ?", arg.ID, arg.Token).First(&captcha).Error; err != nil {
+		logrus.WithFields(logrus.Fields{
+			"captchaID": arg.ID,
+			"email":     arg.Email,
+		}).Warn("Captcha verification failed: captcha not found or invalid token")
+		return ErrCaptchaNotFound
+	}
+
+	// Check if expired
+	if time.Now().After(captcha.ExpiresAt) {
+		logrus.WithFields(logrus.Fields{
+			"captchaID": arg.ID,
+			"expiresAt": captcha.ExpiresAt,
+			"email":     arg.Email,
+		}).Warn("Captcha verification failed: captcha expired")
+		return ErrCaptchaExpired
+	}
+
+	// Verify position (allow certain tolerance)
+	if math.Abs(float64(arg.X-captcha.X)) > float64(arg.Tolerance) {
+		logrus.WithFields(logrus.Fields{
+			"captchaID": arg.ID,
+			"userX":     arg.X,
+			"correctX":  captcha.X,
+			"tolerance": arg.Tolerance,
+			"email":     arg.Email,
+		}).Warn("Captcha verification failed: incorrect position")
+		return ErrCaptchaMismatch
+	}
+
+	logrus.WithFields(logrus.Fields{
+		"captchaID": arg.ID,
+		"email":     arg.Email,
+	}).Debug("Captcha verification passed")
+
+	// If captcha has not been used yet, mark it as used
+	if !captcha.Used {
+		captcha.Used = true
+		if err := s.db.Save(&captcha).Error; err != nil {
+			logrus.WithFields(logrus.Fields{
+				"captchaID": arg.ID,
+				"email":     arg.Email,
+			}).WithError(err).Error("Failed to mark captcha as used")
+			return ErrCaptchaFailed
+		}
+		logrus.WithField("captchaID", arg.ID).Debug("Captcha marked as used")
+	}
+	// If captcha already used, pre-verification successful, pass directly
 
 	return nil
 }

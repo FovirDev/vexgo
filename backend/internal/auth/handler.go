@@ -56,7 +56,7 @@ func (h *Handler) Login(c *gin.Context) {
 		switch {
 		case errors.Is(err, ErrCaptchaCheckFailed):
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		case errors.Is(err, ErrCaptchaRequiredLogin):
+		case errors.Is(err, ErrCaptchaRequired):
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		case errors.Is(err, ErrCaptchaNotFound):
 			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
@@ -125,7 +125,7 @@ func (h *Handler) Register(c *gin.Context) {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		case errors.Is(err, ErrRegistrationDisabled):
 			c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
-		case errors.Is(err, ErrCaptchaRequiredReg):
+		case errors.Is(err, ErrCaptchaRequired):
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		case errors.Is(err, ErrCaptchaNotFound):
 			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
