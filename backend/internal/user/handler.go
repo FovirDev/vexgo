@@ -209,7 +209,8 @@ func (h *Handler) GetCreatorApplications(c *gin.Context) {
 
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "10"))
-	status := c.DefaultQuery("status", string(model.CreatorApplicationStatusPending))
+	statusStr := c.DefaultQuery("status", string(model.CreatorApplicationStatusPending))
+	status := model.CreatorApplicationStatus(statusStr)
 
 	if page < 1 {
 		page = 1

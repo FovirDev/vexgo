@@ -343,7 +343,7 @@ func (s *Service) ApplyForCreator(user model.User, reason string) (uint, error) 
 
 // ListCreatorApplications returns the paginated creator applications with the
 // applicant preloaded, filtered by status.
-func (s *Service) ListCreatorApplications(actorRole, status string, page, limit int) ([]model.CreatorApplication, int64, error) {
+func (s *Service) ListCreatorApplications(actorRole string, status model.CreatorApplicationStatus, page, limit int) ([]model.CreatorApplication, int64, error) {
 	// Only admins and super admins can access this endpoint
 	if actorRole != model.RoleAdmin && actorRole != model.RoleSuperAdmin {
 		return nil, 0, ErrNoPermissionAccessApps

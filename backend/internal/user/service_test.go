@@ -240,11 +240,11 @@ func TestListCreatorApplications_PermissionAndFilter(t *testing.T) {
 	}
 
 	// non-admin forbidden
-	if _, _, err := svc.ListCreatorApplications(guest.Role, "pending", 1, 10); !errors.Is(err, ErrNoPermissionAccessApps) {
+	if _, _, err := svc.ListCreatorApplications(guest.Role, model.CreatorApplicationStatusPending, 1, 10); !errors.Is(err, ErrNoPermissionAccessApps) {
 		t.Errorf("expected ErrNoPermissionAccessApps, got %v", err)
 	}
 
-	apps, total, err := svc.ListCreatorApplications(admin.Role, "pending", 1, 10)
+	apps, total, err := svc.ListCreatorApplications(admin.Role, model.CreatorApplicationStatusPending, 1, 10)
 	if err != nil {
 		t.Fatalf("ListCreatorApplications error: %v", err)
 	}
@@ -255,7 +255,7 @@ func TestListCreatorApplications_PermissionAndFilter(t *testing.T) {
 		t.Errorf("expected applicant preloaded")
 	}
 
-	apps, total, err = svc.ListCreatorApplications(admin.Role, "approved", 1, 10)
+	apps, total, err = svc.ListCreatorApplications(admin.Role, model.CreatorApplicationStatusApproved, 1, 10)
 	if err != nil {
 		t.Fatalf("ListCreatorApplications error: %v", err)
 	}
