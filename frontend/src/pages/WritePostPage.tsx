@@ -106,12 +106,23 @@ export function WritePostPage() {
   const loadCategories = async () => {
     try {
       const response = await categoriesApi.getCategories();
+      if (!response || response.data.categories.length === 0) {
+        throw Error("no default category");
+      }
+
       // Ensure category ids are strings so they match the Select options (the backend may return numeric ids)
       const normalized = (response.data.categories || []).map((c) => ({
         ...c,
         id: String(c.id),
       }));
       setCategories(normalized);
+
+      if (!isEditMode) {
+        const def = normalized.find((c) => c.name.toLowerCase() === "default");
+        if (def) {
+          setCategory(def.name);
+        }
+      }
     } catch (error) {
       console.error("Failed to load categories:", error);
     }
@@ -291,46 +302,6 @@ export function WritePostPage() {
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-8">
-        <Button variant="ghost" size="sm" onClick={() => navigate(-1)}>
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          {t("writePostPage.goBack")}
-        </Button>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            onClick={() => handleSubmit("draft")}
-            disabled={saving}
-          >
-            <Save className="w-4 h-4 mr-2" />
-            {t("writePostPage.saveDraft")}
-          </Button>
-          {/* Contributors can only submit posts for review, not publish directly */}
-          {isContributor ? (
-            <Button onClick={() => handleSubmit("pending")} disabled={saving}>
-              {saving ? (
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              ) : (
-                <Send className="w-4 h-4 mr-2" />
-              )}
-              {t("writePostPage.submitReview")}
-            </Button>
-          ) : (
-            <Button onClick={() => handleSubmit("published")} disabled={saving}>
-              {saving ? (
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              ) : (
-                <Send className="w-4 h-4 mr-2" />
-              )}
-              {isEditMode
-                ? t("writePostPage.update")
-                : t("writePostPage.publish")}
-            </Button>
-          )}
-        </div>
-      </div>
-
       {/* Form */}
       <div className="space-y-6">
         {/* Title */}
@@ -503,6 +474,45 @@ export function WritePostPage() {
             onCrop={handleCropConfirm}
           />
         )}
+      </div>
+      {/* Footer */}
+      <div className="flex items-center justify-between mt-4">
+        <Button variant="ghost" size="sm" onClick={() => navigate(-1)}>
+          <ArrowLeft className="w-4 h-4 mr-2" />
+          {t("writePostPage.goBack")}
+        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            onClick={() => handleSubmit("draft")}
+            disabled={saving}
+          >
+            <Save className="w-4 h-4 mr-2" />
+            {t("writePostPage.saveDraft")}
+          </Button>
+          {/* Contributors can only submit posts for review, not publish directly */}
+          {isContributor ? (
+            <Button onClick={() => handleSubmit("pending")} disabled={saving}>
+              {saving ? (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                <Send className="w-4 h-4 mr-2" />
+              )}
+              {t("writePostPage.submitReview")}
+            </Button>
+          ) : (
+            <Button onClick={() => handleSubmit("published")} disabled={saving}>
+              {saving ? (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                <Send className="w-4 h-4 mr-2" />
+              )}
+              {isEditMode
+                ? t("writePostPage.update")
+                : t("writePostPage.publish")}
+            </Button>
+          )}
+        </div>
       </div>
     </div>
   );
