@@ -46,29 +46,6 @@ func ToJSON(v any) (string, error) {
 	return string(data), nil
 }
 
-type User struct {
-	ID                uint       `json:"id" gorm:"primaryKey"`
-	Username          string     `json:"username" binding:"required" gorm:"size:100;uniqueIndex"`
-	Email             string     `json:"email" binding:"required,email" gorm:"size:255;uniqueIndex"`
-	Password          string     `json:"-"`                                       // not serialized
-	Role              string     `json:"role" gorm:"size:50"`                     // super_admin/admin/author/contributor/guest
-	Avatar            string     `json:"avatar,omitempty"`                        // avatar URL
-	EmailVerified     bool       `json:"email_verified"`                          // whether email is verified
-	VerificationToken string     `json:"verification_token" gorm:"size:255"`      // verification token
-	TokenExpiresAt    *time.Time `json:"token_expires_at"`                        // token expiration time (can be NULL)
-	PendingEmail      string     `json:"pending_email,omitempty" gorm:"size:255"` // new email pending confirmation (for email change)
-	PasswordVersion   int        `json:"-" gorm:"default:1"`                      // password version, used to invalidate old tokens after password modification
-	LastLoginAt       time.Time  `json:"last_login_at"`                           // last login time to invalidate old tokens
-	Birthday          string     `json:"birthday,omitempty"`                      // birthday
-	Bio               string     `json:"bio,omitempty"`                           // personal bio
-	CreatedAt         time.Time  `json:"createdAt"`                               // registration time
-	// Privacy settings
-	ProfileVisibility string `json:"profile_visibility,omitempty" gorm:"size:20;default:'public'"` // public/private
-	HideEmail         bool   `json:"hide_email,omitempty" gorm:"default:false"`                    // hide email
-	HideBirthday      bool   `json:"hide_birthday,omitempty" gorm:"default:false"`                 // hide birthday
-	HideBio           bool   `json:"hide_bio,omitempty" gorm:"default:false"`                      // hide bio
-}
-
 type Tag struct {
 	ID   uint   `json:"id" gorm:"primaryKey"`
 	Name string `json:"name" gorm:"size:100;uniqueIndex"`
@@ -80,25 +57,6 @@ type Category struct {
 	Description string `json:"description"`
 }
 
-// Comment model
-// Supports parent comments (parentId) for nesting
-// Associated with User to return author information
-// Associated with Post for cascading on statistics or deletion
-// GORM automatically creates foreign key
-
-type Comment struct {
-	ID        uint      `json:"id" gorm:"primaryKey"`
-	PostID    uint      `json:"postId"`
-	Post      Post      `json:"-" gorm:"foreignKey:PostID"`
-	UserID    uint      `json:"userId"`
-	User      User      `json:"author" gorm:"foreignKey:UserID"`
-	Content   string    `json:"content" gorm:"type:text"`
-	Status    string    `json:"status" gorm:"size:20;default:'published'"` // published, pending, rejected
-	ParentID  *uint     `json:"parentId,omitempty"`
-	CreatedAt time.Time `json:"createdAt"`
-	UpdatedAt time.Time `json:"updatedAt"`
-}
-
 // Like model
 // Each record represents a user's like for a post
 
@@ -106,18 +64,6 @@ type Like struct {
 	ID        uint      `json:"id" gorm:"primaryKey"`
 	PostID    uint      `json:"postId"`
 	Post      Post      `json:"-" gorm:"foreignKey:PostID"`
-	UserID    uint      `json:"userId"`
-	User      User      `json:"-" gorm:"foreignKey:UserID"`
-	CreatedAt time.Time `json:"createdAt"`
-}
-
-// Media file model, used to record user uploaded resources
-
-type MediaFile struct {
-	ID        uint      `json:"id" gorm:"primaryKey"`
-	URL       string    `json:"url" gorm:"size:500"`
-	Size      int64     `json:"size"`
-	Type      string    `json:"type" gorm:"size:50"` // image/video etc.
 	UserID    uint      `json:"userId"`
 	User      User      `json:"-" gorm:"foreignKey:UserID"`
 	CreatedAt time.Time `json:"createdAt"`
